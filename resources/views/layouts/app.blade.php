@@ -28,6 +28,7 @@
             #sidebar.show { transform: translateX(0); }
             #main-content { margin-left: 0; }
         }
+        .navbar.bg-primary { background-color: #0f391d !important; }
     </style>
 </head>
 <body>
