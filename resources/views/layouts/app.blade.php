@@ -78,12 +78,23 @@
                 <i class="bi bi-speedometer2 me-2"></i> Dashboard
             </a>
             <a href="#" class="list-group-item list-group-item-action py-3">
+                <i class="bi bi-speedometer2 me-2"></i> Submission
+            </a>
+            <a href="#" class="list-group-item list-group-item-action py-3">
                 <i class="bi bi-bell me-2"></i> Notifications
             </a>
             <a href="#" class="list-group-item list-group-item-action py-3">
                 <i class="bi bi-clipboard-data me-2"></i> Audit Logs
             </a>
             <!-- add more feature links here -->
+             <a href="#" class="list-group-item list-group-item-action py-3">
+                <i class="bi bi-clipboard-data me-2"></i> Settings
+             </a>
+             @role('admin')
+             <a href="#" class="list-group-item list-group-item-action py-3">
+                <i class="bi bi-clipboard-data -me-2"></i> User Management
+             </a>
+             @endrole
         </div>
     </div>
 
