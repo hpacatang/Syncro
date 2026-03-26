@@ -1,3 +1,7 @@
+@extends('layouts.app')
+
+@section('content')
 <div>
-    <!-- Breathing in, I calm body and mind. Breathing out, I smile. - Thich Nhat Hanh -->
+    <!-- Always remember that you are absolutely unique. Just like everyone else. - Margaret Mead -->
 </div>
+@endsection

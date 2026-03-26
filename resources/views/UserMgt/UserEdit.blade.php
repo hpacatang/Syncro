@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('content')
 <div>
-    <!-- Live as if you were to die tomorrow. Learn as if you were to live forever. - Mahatma Gandhi -->
+    <!-- Always remember that you are absolutely unique. Just like everyone else. - Margaret Mead -->
 </div>
+@endsection
