@@ -16,4 +16,6 @@ Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 
 Route::middleware('auth')->group(function(){
     Route::get('/dashboard', [MainController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/submissions', [MainController::class, 'submissions'])->name('dashboard.submissions');
+    Route::get('/dashboard/notifications', [MainController::class, 'notifications'])->name('dashboard.notifications');
 });

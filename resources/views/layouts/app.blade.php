@@ -74,13 +74,13 @@
     <!-- Sidebar -->
     <div id="sidebar" class="bg-light border-end position-fixed d-lg-block">
         <div class="list-group list-group-flush">
-            <a href="#" class="list-group-item list-group-item-action py-3">
+            <a href="{{ route('dashboard') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <i class="bi bi-speedometer2 me-2"></i> Dashboard
             </a>
-            <a href="#" class="list-group-item list-group-item-action py-3">
-                <i class="bi bi-speedometer2 me-2"></i> Submission
+            <a href="{{ route('dashboard.submissions') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('dashboard.submissions') ? 'active' : '' }}">
+                <i class="bi bi-file-earmark-text me-2"></i> Submission
             </a>
-            <a href="#" class="list-group-item list-group-item-action py-3">
+            <a href="{{ route('dashboard.notifications') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('dashboard.notifications') ? 'active' : '' }}">
                 <i class="bi bi-bell me-2"></i> Notifications
             </a>
             <a href="#" class="list-group-item list-group-item-action py-3">
@@ -90,11 +90,11 @@
              <a href="#" class="list-group-item list-group-item-action py-3">
                 <i class="bi bi-clipboard-data me-2"></i> Settings
              </a>
-             @role('admin')
+             {{-- @role('admin') --}}
              <a href="#" class="list-group-item list-group-item-action py-3">
-                <i class="bi bi-clipboard-data -me-2"></i> User Management
+                <i class="bi bi-people me-2"></i> User Management
              </a>
-             @endrole
+             {{-- @endrole --}}
         </div>
     </div>
 
