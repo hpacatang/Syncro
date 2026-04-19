@@ -72,9 +72,9 @@
                 <div class="card-header bg-white border-bottom">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 fw-bold">Your Submissions</h5>
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#submitModal">
+                        <a href="{{ route('org.submit') }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-plus"></i> New Submission
-                        </button>
+                        </a>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -83,9 +83,9 @@
                             <i class="fas fa-inbox text-muted" style="font-size: 3rem;"></i>
                             <p class="text-muted mt-3">No submissions yet</p>
                             <p class="text-muted small">Start by submitting your first content for PAIR review</p>
-                            <button class="btn btn-primary btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#submitModal">
+                            <a href="{{ route('org.submit') }}" class="btn btn-primary btn-sm mt-2">
                                 <i class="fas fa-plus"></i> Create First Submission
-                            </button>
+                            </a>
                         </div>
                     @else
                         <div class="table-responsive">
@@ -159,9 +159,9 @@
                     <h5 class="mb-0 fw-bold">Quick Actions</h5>
                 </div>
                 <div class="card-body">
-                    <button class="btn btn-primary w-100 mb-2" data-bs-toggle="modal" data-bs-target="#submitModal">
+                    <a href="{{ route('org.submit') }}" class="btn btn-primary w-100 mb-2">
                         <i class="fas fa-upload"></i> Submit Content
-                    </button>
+                    </a>
                     <a href="{{ route('org.submissions') }}" class="btn btn-outline-secondary w-100">
                         <i class="fas fa-list"></i> View All Submissions
                     </a>
@@ -171,34 +171,7 @@
     </div>
 </div>
 
-<!-- Submission Modal -->
-<div class="modal fade" id="submitModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Submit New Content</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="submitForm">
-                    <div class="mb-3">
-                        <label for="caption" class="form-label">Caption/Description</label>
-                        <textarea id="caption" name="original_caption" class="form-control" rows="4" placeholder="Write your content caption here..."></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="media" class="form-label">Upload Images (Optional)</label>
-                        <input type="file" id="media" name="media[]" class="form-control" multiple accept="image/*">
-                        <small class="text-muted">You can upload multiple images</small>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="submitBtn">Submit Content</button>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

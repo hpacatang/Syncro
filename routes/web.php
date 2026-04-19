@@ -25,6 +25,9 @@ Route::middleware('auth')->group(function(){
     // Organization Dashboard
     Route::middleware('role:org')->group(function(){
         Route::get('/org/dashboard', [MainController::class, 'orgDashboard'])->name('org.dashboard');
+        Route::get('/org/submit', function() {
+            return view('Submission.OrgSubmit');
+        })->name('org.submit');
         Route::get('/org/submissions', [MainController::class, 'submissions'])->name('org.submissions');
         Route::get('/org/notifications', [MainController::class, 'notifications'])->name('org.notifications');
     });

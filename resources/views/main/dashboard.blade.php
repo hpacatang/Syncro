@@ -117,9 +117,9 @@
                                             </td>
                                             <td class="text-muted small">{{ $submission->created_at->format('M d, Y') }}</td>
                                             <td>
-                                                <a href="#" class="btn btn-sm btn-outline-primary" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" title="Generate Caption" data-bs-toggle="modal" data-bs-target="#generateModal" onclick="setupGenerateModal({{ $submission->id }}, '{{ addslashes($submission->original_caption) }}')">
+                                                    <i class="fas fa-wand-magic-sparkles"></i> Generate
+                                                </button>
                                             </td>
                                         </tr>
                                     @empty
@@ -259,5 +259,189 @@
 
 <!-- Font Awesome for icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Caption Generation Modal -->
+<div class="modal fade" id="generateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white border-0">
+                <div>
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-wand-magic-sparkles"></i> AI Caption Enhancement
+                    </h5>
+                    <small class="text-white-50">Powered by OpenAI, Gemini, or Deepseek</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="generateForm">
+                    <!-- Original Caption Display -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Original Caption</label>
+                        <div class="alert alert-light border">
+                            <p id="originalCaption" class="mb-0" style="max-height: 150px; overflow-y: auto;"></p>
+                        </div>
+                    </div>
+
+                    <!-- LLM Provider Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-cube text-primary"></i> AI Provider
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <input type="radio" class="btn-check" name="llm_provider" value="openai" id="openai" checked>
+                                <label class="btn btn-outline-primary w-100" for="openai">
+                                    <i class="fas fa-brain"></i> OpenAI
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="radio" class="btn-check" name="llm_provider" value="gemini" id="gemini">
+                                <label class="btn btn-outline-primary w-100" for="gemini">
+                                    <i class="fas fa-sparkles"></i> Gemini
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="radio" class="btn-check" name="llm_provider" value="deepseek" id="deepseek">
+                                <label class="btn btn-outline-primary w-100" for="deepseek">
+                                    <i class="fas fa-zap"></i> Deepseek
+                                </label>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            <i class="fas fa-info-circle"></i> Choose your preferred AI model
+                        </small>
+                    </div>
+
+                    <!-- Tone Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-palette text-primary"></i> Tone
+                        </label>
+                        <select class="form-select" name="tone" id="toneSelect">
+                            <option value="formal">📋 Formal & Professional</option>
+                            <option value="friendly">😊 Friendly & Casual</option>
+                            <option value="enthusiastic">🎉 Enthusiastic & Energetic</option>
+                            <option value="urgent">⚡ Urgent & Action-Oriented</option>
+                            <option value="professional">💼 Professional & Academic</option>
+                        </select>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="generatingAlert" class="alert alert-info d-none" role="alert">
+                        <div class="spinner-border spinner-border-sm me-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <strong>Generating enhanced caption...</strong> This may take a moment.
+                    </div>
+
+                    <!-- Enhanced Caption Display -->
+                    <div id="enhancedCaptionContainer" class="d-none">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-check-circle text-success"></i> Enhanced Caption
+                        </label>
+                        <div class="alert alert-success border-0 bg-light-success">
+                            <p id="enhancedCaption" class="mb-0" style="max-height: 150px; overflow-y: auto;"></p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" id="approveBtn" onclick="approveCaption()" style="display: none;">
+                    <i class="fas fa-check"></i> Approve & Update
+                </button>
+                <button type="button" class="btn btn-primary" id="generateBtn" onclick="generateCaption()">
+                    <i class="fas fa-wand-magic-sparkles"></i> Generate Caption
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentSubmissionId = null;
+
+function setupGenerateModal(submissionId, originalCaption) {
+    currentSubmissionId = submissionId;
+    document.getElementById('originalCaption').textContent = originalCaption;
+    document.getElementById('enhancedCaptionContainer').classList.add('d-none');
+    document.getElementById('generateBtn').style.display = 'block';
+    document.getElementById('approveBtn').style.display = 'none';
+    document.getElementById('generatingAlert').classList.add('d-none');
+}
+
+async function generateCaption() {
+    const provider = document.querySelector('input[name="llm_provider"]:checked').value;
+    const tone = document.getElementById('toneSelect').value;
+    const generateBtn = document.getElementById('generateBtn');
+    const generatingAlert = document.getElementById('generatingAlert');
+
+    generateBtn.disabled = true;
+    generatingAlert.classList.remove('d-none');
+
+    try {
+        const response = await fetch(`/api/submissions/${currentSubmissionId}/enhance`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                llm_provider: provider,
+                tone: tone
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Show enhanced caption
+            document.getElementById('enhancedCaption').textContent = data.data.enhanced_caption;
+            document.getElementById('enhancedCaptionContainer').classList.remove('d-none');
+            document.getElementById('generateBtn').style.display = 'none';
+            document.getElementById('approveBtn').style.display = 'block';
+            
+            // Show success message
+            generatingAlert.classList.add('d-none');
+            generatingAlert.className = 'alert alert-success d-none';
+            generatingAlert.innerHTML = '<i class="fas fa-check-circle"></i> <strong>Success!</strong> Caption generated successfully.';
+        } else {
+            showGeneratingError(data.message || 'Failed to generate caption');
+        }
+    } catch (error) {
+        showGeneratingError('Error: ' + error.message);
+    }
+}
+
+function showGeneratingError(message) {
+    const generatingAlert = document.getElementById('generatingAlert');
+    generatingAlert.className = 'alert alert-danger d-none';
+    generatingAlert.innerHTML = `<i class="fas fa-exclamation-circle"></i> <strong>Error:</strong> ${message}`;
+    document.getElementById('generateBtn').disabled = false;
+}
+
+function approveCaption() {
+    // Update the submission status and show success
+    const modal = bootstrap.Modal.getInstance(document.getElementById('generateModal'));
+    
+    // Show a success toast/alert
+    const successAlert = document.createElement('div');
+    successAlert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+    successAlert.style.zIndex = '9999';
+    successAlert.innerHTML = `
+        <i class="fas fa-check-circle"></i> <strong>Perfect!</strong> Caption has been enhanced and saved.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(successAlert);
+    
+    // Close modal after 1 second
+    setTimeout(() => {
+        modal.hide();
+        // Reload page to show updated submission
+        setTimeout(() => location.reload(), 500);
+    }, 1500);
+}
+</script>
 
 @endsection
