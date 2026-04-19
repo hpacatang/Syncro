@@ -22,6 +22,7 @@ Route::get('/submissions/{id}', [SubmissionController::class, 'show']);
 
 // For PAIR - Submission management
 Route::post('/submissions/{id}/enhance', [SubmissionController::class, 'enhance']); 
+Route::post('/submissions/{id}/save-manual-caption', [SubmissionController::class, 'saveManualCaption']); 
 Route::put('/submissions/{id}/approve', [SubmissionController::class, 'approve']); 
 Route::put('/submissions/{id}', [SubmissionController::class, 'update']);
 Route::delete('/submissions/{id}', [SubmissionController::class, 'destroy']);

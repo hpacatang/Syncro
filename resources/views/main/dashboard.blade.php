@@ -117,7 +117,7 @@
                                             </td>
                                             <td class="text-muted small">{{ $submission->created_at->format('M d, Y') }}</td>
                                             <td>
-                                                <button type="button" class="btn btn-sm btn-outline-primary" title="Generate Caption" data-bs-toggle="modal" data-bs-target="#generateModal" onclick="setupGenerateModal({{ $submission->id }}, '{{ addslashes($submission->original_caption) }}')">
+                                                <button type="button" class="btn btn-sm btn-outline-primary generate-btn" title="Generate Caption" data-bs-toggle="modal" data-bs-target="#generateModal" data-submission-id="{{ $submission->id }}" data-caption="{{ htmlspecialchars($submission->original_caption, ENT_QUOTES) }}">
                                                     <i class="fas fa-wand-magic-sparkles"></i> Generate
                                                 </button>
                                             </td>
@@ -267,9 +267,9 @@
             <div class="modal-header bg-primary text-white border-0">
                 <div>
                     <h5 class="modal-title fw-bold">
-                        <i class="fas fa-wand-magic-sparkles"></i> AI Caption Enhancement
+                        <i class="fas fa-pen-fancy"></i> Enhance Caption
                     </h5>
-                    <small class="text-white-50">Powered by OpenAI, Gemini, or Deepseek</small>
+                    <small class="text-white-50">Choose AI-assisted or manual enhancement</small>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -344,15 +344,38 @@
                             <p id="enhancedCaption" class="mb-0" style="max-height: 150px; overflow-y: auto;"></p>
                         </div>
                     </div>
+
+                    <!-- Manual Caption Fallback (when AI fails) -->
+                    <div id="manualCaptionContainer" class="d-none">
+                        <div class="alert alert-warning border-2 border-warning mb-3">
+                            <i class="fas fa-lightbulb"></i> <strong>AI Generation Failed</strong>
+                            <p class="mb-2">The AI service is temporarily unavailable. No problem! You can manually enhance the caption below:</p>
+                        </div>
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-pen-fancy text-info"></i> Enhanced Caption (Manual)
+                        </label>
+                        <textarea 
+                            id="manualCaption" 
+                            class="form-control form-control-lg" 
+                            rows="5" 
+                            placeholder="Type your enhanced caption here. Be engaging, professional, and grammatically correct."
+                            minlength="10">
+                        </textarea>
+                        <small class="text-muted d-block mt-2">
+                            <i class="fas fa-info-circle"></i> Minimum 10 characters required
+                        </small>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer border-top">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success" id="approveBtn" onclick="approveCaption()" style="display: none;">
-                    <i class="fas fa-check"></i> Approve & Update
-                </button>
+                
+                <!-- AI Success Path -->
                 <button type="button" class="btn btn-primary" id="generateBtn" onclick="generateCaption()">
-                    <i class="fas fa-wand-magic-sparkles"></i> Generate Caption
+                    <i class="fas fa-wand-magic-sparkles"></i> Generate with AI
+                </button>
+                <button type="button" class="btn btn-success" id="approveBtn" onclick="approveFinalCaption()">
+                    <i class="fas fa-check"></i> Approve & Update
                 </button>
             </div>
         </div>
@@ -362,16 +385,31 @@
 <script>
 let currentSubmissionId = null;
 
-function setupGenerateModal(submissionId, originalCaption) {
-    currentSubmissionId = submissionId;
-    document.getElementById('originalCaption').textContent = originalCaption;
-    document.getElementById('enhancedCaptionContainer').classList.add('d-none');
-    document.getElementById('generateBtn').style.display = 'block';
-    document.getElementById('approveBtn').style.display = 'none';
-    document.getElementById('generatingAlert').classList.add('d-none');
-}
+// Handle modal show event to capture button data
+document.getElementById('generateModal').addEventListener('show.bs.modal', function(event) {
+    const button = event.relatedTarget;
+    if (button && button.classList.contains('generate-btn')) {
+        currentSubmissionId = button.getAttribute('data-submission-id');
+        const caption = button.getAttribute('data-caption');
+        
+        document.getElementById('originalCaption').textContent = caption || 'No caption provided';
+        document.getElementById('manualCaption').value = '';
+        document.getElementById('generateBtn').disabled = false;
+        document.getElementById('approveBtn').disabled = false;
+        document.getElementById('generatingAlert').classList.add('d-none');
+        
+        console.log('Modal setup - Submission ID:', currentSubmissionId, 'Caption:', caption);
+    }
+});
 
 async function generateCaption() {
+    console.log('Generating caption for submission:', currentSubmissionId);
+    
+    if (!currentSubmissionId) {
+        alert('Error: Submission ID not found. Please close and try again.');
+        return;
+    }
+    
     const provider = document.querySelector('input[name="llm_provider"]:checked').value;
     const tone = document.getElementById('toneSelect').value;
     const generateBtn = document.getElementById('generateBtn');
@@ -379,6 +417,8 @@ async function generateCaption() {
 
     generateBtn.disabled = true;
     generatingAlert.classList.remove('d-none');
+    generatingAlert.className = 'alert alert-info';
+    generatingAlert.innerHTML = '<div class=\"spinner-border spinner-border-sm me-2\" role=\"status\"><span class=\"visually-hidden\">Loading...</span></div><strong>Generating with ' + provider + '...</strong>';
 
     try {
         const response = await fetch(`/api/submissions/${currentSubmissionId}/enhance`, {
@@ -396,34 +436,91 @@ async function generateCaption() {
         const data = await response.json();
 
         if (data.success) {
-            // Show enhanced caption
-            document.getElementById('enhancedCaption').textContent = data.data.enhanced_caption;
-            document.getElementById('enhancedCaptionContainer').classList.remove('d-none');
-            document.getElementById('generateBtn').style.display = 'none';
-            document.getElementById('approveBtn').style.display = 'block';
-            
-            // Show success message
-            generatingAlert.classList.add('d-none');
-            generatingAlert.className = 'alert alert-success d-none';
-            generatingAlert.innerHTML = '<i class="fas fa-check-circle"></i> <strong>Success!</strong> Caption generated successfully.';
+            // AI Generation Successful - Fill the manual textarea with AI result
+            document.getElementById('manualCaption').value = data.data.enhanced_caption;
+            generatingAlert.className = 'alert alert-success';
+            generatingAlert.innerHTML = '<i class=\"fas fa-check-circle\"></i> <strong>Success!</strong> AI-generated caption loaded. Review and click Approve to finalize.';
+        } else if (data.fallback) {
+            // AI Generation Failed - Show helpful message but keep manual input visible
+            generatingAlert.className = 'alert alert-warning';
+            generatingAlert.innerHTML = '<i class=\"fas fa-lightbulb\"></i> <strong>AI Service Unavailable</strong> - No problem! Manually enhance the caption below and click Approve.';
         } else {
-            showGeneratingError(data.message || 'Failed to generate caption');
+            // Other error
+            generatingAlert.className = 'alert alert-danger';
+            generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${data.message || 'Failed to generate caption'}`;
         }
     } catch (error) {
-        showGeneratingError('Error: ' + error.message);
+        console.error('Error:', error);
+        generatingAlert.className = 'alert alert-danger';
+        generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${error.message}`;
+    }
+
+    generateBtn.disabled = false;
+}
+
+async function approveFinalCaption() {
+    const finalCaption = document.getElementById('manualCaption').value.trim();
+    
+    if (!finalCaption) {
+        alert('Please enter or generate a caption before approving.');
+        document.getElementById('manualCaption').focus();
+        return;
+    }
+
+    if (finalCaption.length < 10) {
+        alert('Caption must be at least 10 characters long.');
+        return;
+    }
+
+    if (!currentSubmissionId) {
+        alert('Error: Submission ID not found. Please close and try again.');
+        return;
+    }
+
+    const approveBtn = document.getElementById('approveBtn');
+    const generatingAlert = document.getElementById('generatingAlert');
+
+    approveBtn.disabled = true;
+    generatingAlert.classList.remove('d-none');
+    generatingAlert.className = 'alert alert-info';
+    generatingAlert.innerHTML = '<div class=\"spinner-border spinner-border-sm me-2\" role=\"status\"><span class=\"visually-hidden\">Loading...</span></div><strong>Finalizing...</strong>';
+
+    try {
+        const response = await fetch(`/api/submissions/${currentSubmissionId}/save-manual-caption`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                manual_caption: finalCaption
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            generatingAlert.className = 'alert alert-success';
+            generatingAlert.innerHTML = '<i class=\"fas fa-check-circle\"></i> <strong>Success!</strong> Caption approved and updated.';
+            
+            // Close modal after brief delay
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('generateModal'));
+                if (modal) modal.hide();
+                location.reload(); // Refresh to show updated data
+            }, 1500);
+        } else {
+            generatingAlert.className = 'alert alert-danger';
+            generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${data.message || 'Failed to save caption'}`;
+            approveBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        generatingAlert.className = 'alert alert-danger';
+        generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${error.message}`;
+        approveBtn.disabled = false;
     }
 }
-
-function showGeneratingError(message) {
-    const generatingAlert = document.getElementById('generatingAlert');
-    generatingAlert.className = 'alert alert-danger d-none';
-    generatingAlert.innerHTML = `<i class="fas fa-exclamation-circle"></i> <strong>Error:</strong> ${message}`;
-    document.getElementById('generateBtn').disabled = false;
-}
-
-function approveCaption() {
-    // Update the submission status and show success
-    const modal = bootstrap.Modal.getInstance(document.getElementById('generateModal'));
     
     // Show a success toast/alert
     const successAlert = document.createElement('div');

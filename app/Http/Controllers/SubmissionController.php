@@ -129,6 +129,13 @@ class SubmissionController extends Controller
             $systemPrompt .= "Enhance the following caption to be {$tone}, engaging, professional, and grammatically correct. ";
             $systemPrompt .= "Return only the enhanced caption without any additional text.";
 
+            Log::info("Enhancing caption", [
+                'submission_id' => $id,
+                'provider' => $provider,
+                'tone' => $tone,
+                'caption_length' => strlen($submission->original_caption)
+            ]);
+
             $enhancedText = null;
 
             // Try the selected LLM provider
@@ -145,10 +152,22 @@ class SubmissionController extends Controller
             }
 
             if (!$enhancedText) {
+                Log::error("LLM enhancement failed - null response", [
+                    'submission_id' => $id,
+                    'provider' => $provider
+                ]);
+                
+                // Return a response indicating manual fallback is needed
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to enhance caption with LLM provider'
-                ], 500);
+                    'fallback' => true,
+                    'message' => "Failed to generate via {$provider}. Please manually enhance the caption below.",
+                    'original_caption' => $submission->original_caption,
+                    'data' => [
+                        'submission_id' => $id,
+                        'provider' => $provider
+                    ]
+                ], 202); // 202 Accepted - operation acknowledged but not completed
             }
 
             $submission->update(['enhanced_caption' => $enhancedText]);
@@ -201,6 +220,43 @@ class SubmissionController extends Controller
                 'message' => 'Failed to approve submission',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Save manual caption (fallback when LLM fails)
+     * POST /api/submissions/{id}/save-manual-caption
+     */
+    public function saveManualCaption(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'manual_caption' => 'required|string|min:10',
+            ]);
+
+            $submission = Submission::findOrFail($id);
+            $submission->update(['enhanced_caption' => $request->manual_caption]);
+
+            Log::info('Manual caption saved', [
+                'submission_id' => $id,
+                'caption_length' => strlen($request->manual_caption)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Manual caption saved successfully!',
+                'data' => [
+                    'submission_id' => $submission->id,
+                    'enhanced_caption' => $submission->enhanced_caption
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Manual caption save failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save manual caption',
+                'error' => $e->getMessage()
+            ], 422);
         }
     }
 
@@ -267,6 +323,8 @@ class SubmissionController extends Controller
                 return null;
             }
 
+            Log::info('Calling OpenAI API');
+
             $response = Http::withToken($apiKey)
                 ->timeout(30)
                 ->post('https://api.openai.com/v1/chat/completions', [
@@ -279,14 +337,29 @@ class SubmissionController extends Controller
                     'max_tokens' => 500
                 ]);
 
+            Log::info('OpenAI Response', [
+                'status' => $response->status(),
+                'success' => $response->successful(),
+                'failed' => $response->failed()
+            ]);
+
             if ($response->failed()) {
-                Log::error('OpenAI API error: ' . $response->body());
+                Log::error('OpenAI API error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'json' => $response->json()
+                ]);
                 return null;
             }
 
-            return $response->json('choices.0.message.content');
+            $content = $response->json('choices.0.message.content');
+            Log::info('OpenAI Success', ['content_length' => strlen($content)]);
+            return $content;
         } catch (\Exception $e) {
-            Log::error('OpenAI enhancement error: ' . $e->getMessage());
+            Log::error('OpenAI enhancement exception', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode()
+            ]);
             return null;
         }
     }
@@ -303,6 +376,8 @@ class SubmissionController extends Controller
                 return null;
             }
 
+            Log::info('Calling Gemini API');
+
             $response = Http::timeout(30)
                 ->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={$apiKey}", [
                     'contents' => [
@@ -314,14 +389,29 @@ class SubmissionController extends Controller
                     ]
                 ]);
 
+            Log::info('Gemini Response', [
+                'status' => $response->status(),
+                'success' => $response->successful(),
+                'failed' => $response->failed()
+            ]);
+
             if ($response->failed()) {
-                Log::error('Gemini API error: ' . $response->body());
+                Log::error('Gemini API error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'json' => $response->json()
+                ]);
                 return null;
             }
 
-            return $response->json('candidates.0.content.parts.0.text');
+            $content = $response->json('candidates.0.content.parts.0.text');
+            Log::info('Gemini Success', ['content_length' => strlen($content)]);
+            return $content;
         } catch (\Exception $e) {
-            Log::error('Gemini enhancement error: ' . $e->getMessage());
+            Log::error('Gemini enhancement exception', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode()
+            ]);
             return null;
         }
     }
@@ -338,6 +428,8 @@ class SubmissionController extends Controller
                 return null;
             }
 
+            Log::info('Calling Deepseek API');
+
             $response = Http::withToken($apiKey)
                 ->timeout(30)
                 ->post('https://api.deepseek.com/chat/completions', [
@@ -350,14 +442,29 @@ class SubmissionController extends Controller
                     'max_tokens' => 500
                 ]);
 
+            Log::info('Deepseek Response', [
+                'status' => $response->status(),
+                'success' => $response->successful(),
+                'failed' => $response->failed()
+            ]);
+
             if ($response->failed()) {
-                Log::error('Deepseek API error: ' . $response->body());
+                Log::error('Deepseek API error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'json' => $response->json()
+                ]);
                 return null;
             }
 
-            return $response->json('choices.0.message.content');
+            $content = $response->json('choices.0.message.content');
+            Log::info('Deepseek Success', ['content_length' => strlen($content)]);
+            return $content;
         } catch (\Exception $e) {
-            Log::error('Deepseek enhancement error: ' . $e->getMessage());
+            Log::error('Deepseek enhancement exception', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode()
+            ]);
             return null;
         }
     }
