@@ -23,6 +23,15 @@ class UserController extends Controller
 
         if (Auth::attempt($credentials)){
             $request->session()->regenerate();
+            
+            // Redirect based on user role
+            $user = auth()->user();
+            if ($user->role === 'pair' || $user->role === 'admin') {
+                return redirect()->intended(route('dashboard'));
+            } elseif ($user->role === 'org') {
+                return redirect()->intended(route('org.dashboard'));
+            }
+            
             return redirect()->intended(route('dashboard'));
         }
 

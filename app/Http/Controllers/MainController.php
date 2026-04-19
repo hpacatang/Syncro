@@ -86,4 +86,42 @@ class MainController extends Controller
             'feedback' => $submission->feedback()->with('user')->orderBy('created_at', 'desc')->get()
         ]);
     }
+
+    /**
+     * Display the organization dashboard
+     */
+    public function orgDashboard()
+    {
+        $userId = auth()->id();
+        
+        // Get user's submissions with statistics
+        $stats = [
+            'total' => Submission::where('user_id', $userId)->count(),
+            'pending' => Submission::where('user_id', $userId)->where('status', 'pending')->count(),
+            'under_review' => Submission::where('user_id', $userId)->where('status', 'under_review')->count(),
+            'approved' => Submission::where('user_id', $userId)->where('status', 'approved')->count(),
+        ];
+
+        // Get user's submissions
+        $submissions = Submission::where('user_id', $userId)
+            ->with('feedback.user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get feedback from PAIR
+        $feedback = Feedback::whereIn('submission_id', function($query) use ($userId) {
+            $query->select('id')->from('submissions')->where('user_id', $userId);
+        })
+        ->with('user')
+        ->orderBy('created_at', 'desc')
+        ->limit(10)
+        ->get();
+
+        return view('Submission.OrgDashboard', [
+            'stats' => $stats,
+            'submissions' => $submissions,
+            'feedback' => $feedback,
+            'user' => auth()->user()
+        ]);
+    }
 }

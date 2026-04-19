@@ -15,7 +15,17 @@ Route::post('store', [UserController::class, 'store'])->name('store');
 Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 
 Route::middleware('auth')->group(function(){
-    Route::get('/dashboard', [MainController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard/submissions', [MainController::class, 'submissions'])->name('dashboard.submissions');
-    Route::get('/dashboard/notifications', [MainController::class, 'notifications'])->name('dashboard.notifications');
+    // Admin & PAIR Dashboard
+    Route::middleware('role:admin,pair')->group(function(){
+        Route::get('/dashboard', [MainController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/submissions', [MainController::class, 'submissions'])->name('dashboard.submissions');
+        Route::get('/dashboard/notifications', [MainController::class, 'notifications'])->name('dashboard.notifications');
+    });
+
+    // Organization Dashboard
+    Route::middleware('role:org')->group(function(){
+        Route::get('/org/dashboard', [MainController::class, 'orgDashboard'])->name('org.dashboard');
+        Route::get('/org/submissions', [MainController::class, 'submissions'])->name('org.submissions');
+        Route::get('/org/notifications', [MainController::class, 'notifications'])->name('org.notifications');
+    });
 });
