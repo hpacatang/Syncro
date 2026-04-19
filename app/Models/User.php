@@ -18,6 +18,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'password',
+        'role',
     ];
 
     /**
@@ -37,6 +38,29 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        // keep casts minimal for new project
     ];
+
+    /**
+     * Check if user is an admin
+     */
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Check if user is from PAIR
+     */
+    public function isPair()
+    {
+        return $this->role === 'pair';
+    }
+
+    /**
+     * Check if user is from an organization
+     */
+    public function isOrg()
+    {
+        return $this->role === 'org';
+    }
 }

@@ -23,4 +23,12 @@ class Submission extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Get all feedback for this submission
+     */
+    public function feedback()
+    {
+        return $this->hasMany(Feedback::class);
+    }
 }
