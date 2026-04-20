@@ -12,7 +12,7 @@ class MainController extends Controller
     /**
      * Display the main dashboard with submission statistics
      */
-    public function index()
+    public function index(Request $request)
     {
         // For PAIR staff, show submissions pending their review or pending org approval
         $stats = [
@@ -23,19 +23,43 @@ class MainController extends Controller
             'approved' => Submission::where('workflow_status', 'approved')->count(),
         ];
 
-        // Show submissions that PAIR needs to work on (either fresh or sent back for revision)
-        $recentSubmissions = Submission::with('user')
-            ->where(function($query) {
-                $query->where('workflow_status', 'pending_submission')
+        // Get filter from request, default to showing pending work
+        $filter = $request->get('status', 'pending');
+
+        $query = Submission::with('user');
+
+        // Apply filter based on user selection
+        switch ($filter) {
+            case 'all':
+                // Show all submissions
+                break;
+            case 'pending':
+                // Default: show pending submission and pending pair review
+                $query->where(function($q) {
+                    $q->where('workflow_status', 'pending_submission')
                       ->orWhere('workflow_status', 'pending_pair_review');
-            })
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+                });
+                break;
+            case 'pending_submission':
+                $query->where('workflow_status', 'pending_submission');
+                break;
+            case 'pending_pair_review':
+                $query->where('workflow_status', 'pending_pair_review');
+                break;
+            case 'pending_org_approval':
+                $query->where('workflow_status', 'pending_org_approval');
+                break;
+            case 'approved':
+                $query->where('workflow_status', 'approved');
+                break;
+        }
+
+        $recentSubmissions = $query->orderBy('created_at', 'desc')->limit(10)->get();
 
         return view('main.dashboard', [
             'stats' => $stats,
-            'submissions' => $recentSubmissions
+            'submissions' => $recentSubmissions,
+            'currentFilter' => $filter
         ]);
     }
 

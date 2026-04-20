@@ -72,12 +72,13 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 fw-bold">Content Queue</h5>
                         <div>
-                            <select class="form-select form-select-sm d-inline-block w-auto">
-                                <option>All Status</option>
-                                <option>Submitted</option>
-                                <option>Under Review</option>
-                                <option>Caption Drafted</option>
-                                <option>Approved</option>
+                            <select class="form-select form-select-sm d-inline-block w-auto" id="statusFilter" onchange="applyFilter(this.value)">
+                                <option value="pending" {{ $currentFilter === 'pending' ? 'selected' : '' }}>Pending Review</option>
+                                <option value="all" {{ $currentFilter === 'all' ? 'selected' : '' }}>All Status</option>
+                                <option value="pending_submission" {{ $currentFilter === 'pending_submission' ? 'selected' : '' }}>Submitted</option>
+                                <option value="pending_pair_review" {{ $currentFilter === 'pending_pair_review' ? 'selected' : '' }}>Under Review</option>
+                                <option value="pending_org_approval" {{ $currentFilter === 'pending_org_approval' ? 'selected' : '' }}>Awaiting Org Approval</option>
+                                <option value="approved" {{ $currentFilter === 'approved' ? 'selected' : '' }}>Approved</option>
                             </select>
                         </div>
                     </div>
@@ -107,18 +108,20 @@
                                             <td class="ps-4">{{ $submission->user->name ?? 'Unknown' }}</td>
                                             <td>{{ Str::limit($submission->original_caption, 40) }}</td>
                                             <td>
-                                                @if($submission->status === 'pending')
-                                                    <span class="badge bg-secondary">Pending</span>
-                                                @elseif($submission->status === 'under_review')
+                                                @if($submission->workflow_status === 'pending_submission')
+                                                    <span class="badge bg-secondary">Submitted</span>
+                                                @elseif($submission->workflow_status === 'pending_pair_review')
                                                     <span class="badge bg-warning text-dark">Under Review</span>
-                                                @elseif($submission->status === 'approved')
+                                                @elseif($submission->workflow_status === 'pending_org_approval')
+                                                    <span class="badge bg-info">Awaiting Org Approval</span>
+                                                @elseif($submission->workflow_status === 'approved')
                                                     <span class="badge bg-success">Approved</span>
                                                 @endif
                                             </td>
                                             <td class="text-muted small">{{ $submission->created_at->format('M d, Y') }}</td>
                                             <td>
                                                 <button type="button" class="btn btn-sm btn-outline-primary generate-btn" title="Generate Caption" data-bs-toggle="modal" data-bs-target="#generateModal" data-submission-id="{{ $submission->id }}" data-caption="{{ htmlspecialchars($submission->original_caption, ENT_QUOTES) }}">
-                                                    <i class="fas fa-wand-magic-sparkles"></i> Generate
+                                                    <i class="fas fa-wand-magic-sparkles"></i> Evaluate
                                                 </button>
                                             </td>
                                         </tr>
@@ -512,6 +515,10 @@ async function approveFinalCaption() {
         generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${error.message}`;
         approveBtn.disabled = false;
     }
+}
+
+function applyFilter(status) {
+    window.location.href = '{{ route("dashboard") }}?status=' + status;
 }
 </script>
 
