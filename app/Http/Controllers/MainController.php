@@ -14,14 +14,21 @@ class MainController extends Controller
      */
     public function index()
     {
+        // For PAIR staff, show submissions pending their review or pending org approval
         $stats = [
             'total' => Submission::count(),
-            'pending' => Submission::where('status', 'pending')->count(),
-            'under_review' => Submission::where('status', 'under_review')->count(),
-            'approved' => Submission::where('status', 'approved')->count(),
+            'pending_submission' => Submission::where('workflow_status', 'pending_submission')->count(),
+            'pending_pair_review' => Submission::where('workflow_status', 'pending_pair_review')->count(),
+            'pending_org_approval' => Submission::where('workflow_status', 'pending_org_approval')->count(),
+            'approved' => Submission::where('workflow_status', 'approved')->count(),
         ];
 
+        // Show submissions that PAIR needs to work on (either fresh or sent back for revision)
         $recentSubmissions = Submission::with('user')
+            ->where(function($query) {
+                $query->where('workflow_status', 'pending_submission')
+                      ->orWhere('workflow_status', 'pending_pair_review');
+            })
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
@@ -94,19 +101,27 @@ class MainController extends Controller
     {
         $userId = auth()->id();
         
-        // Get user's submissions with statistics
+        // Get user's submissions with statistics based on workflow status
         $stats = [
             'total' => Submission::where('user_id', $userId)->count(),
-            'pending' => Submission::where('user_id', $userId)->where('status', 'pending')->count(),
-            'under_review' => Submission::where('user_id', $userId)->where('status', 'under_review')->count(),
-            'approved' => Submission::where('user_id', $userId)->where('status', 'approved')->count(),
+            'pending_submission' => Submission::where('user_id', $userId)->where('workflow_status', 'pending_submission')->count(),
+            'pending_pair_review' => Submission::where('user_id', $userId)->where('workflow_status', 'pending_pair_review')->count(),
+            'pending_org_approval' => Submission::where('user_id', $userId)->where('workflow_status', 'pending_org_approval')->count(),
+            'approved' => Submission::where('user_id', $userId)->where('workflow_status', 'approved')->count(),
         ];
 
         // Get user's submissions
         $submissions = Submission::where('user_id', $userId)
-            ->with('feedback.user')
+            ->with(['feedback.user', 'enhancer' => function($query) {
+                $query->select('id', 'name');
+            }])
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // Separate submissions into categories for the UI
+        $pendingReview = $submissions->whereIn('workflow_status', ['pending_submission', 'pending_pair_review']);
+        $awaitingApproval = $submissions->where('workflow_status', 'pending_org_approval');
+        $approved = $submissions->where('workflow_status', 'approved');
 
         // Get feedback from PAIR
         $feedback = Feedback::whereIn('submission_id', function($query) use ($userId) {
@@ -120,6 +135,9 @@ class MainController extends Controller
         return view('Submission.OrgDashboard', [
             'stats' => $stats,
             'submissions' => $submissions,
+            'pendingReview' => $pendingReview,
+            'awaitingApproval' => $awaitingApproval,
+            'approved' => $approved,
             'feedback' => $feedback,
             'user' => auth()->user()
         ]);

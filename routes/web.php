@@ -31,4 +31,20 @@ Route::middleware('auth')->group(function(){
         Route::get('/org/submissions', [MainController::class, 'submissions'])->name('org.submissions');
         Route::get('/org/notifications', [MainController::class, 'notifications'])->name('org.notifications');
     });
+
+    // API Routes for Submissions
+    Route::prefix('api')->group(function(){
+        // Submission endpoints
+        Route::post('/submissions', [\App\Http\Controllers\SubmissionController::class, 'store']); 
+        Route::get('/submissions', [\App\Http\Controllers\SubmissionController::class, 'index']);
+        Route::get('/submissions/{id}', [\App\Http\Controllers\SubmissionController::class, 'show']);
+        Route::post('/submissions/{id}/enhance', [\App\Http\Controllers\SubmissionController::class, 'enhance']); 
+        Route::post('/submissions/{id}/save-manual-caption', [\App\Http\Controllers\SubmissionController::class, 'saveManualCaption']); 
+        Route::put('/submissions/{id}/approve', [\App\Http\Controllers\SubmissionController::class, 'approve']); 
+        Route::post('/submissions/{id}/org-review/approve', [\App\Http\Controllers\SubmissionController::class, 'orgApproveEnhancement']);
+        Route::post('/submissions/{id}/org-review/reject', [\App\Http\Controllers\SubmissionController::class, 'orgRejectEnhancement']);
+        Route::put('/submissions/{id}', [\App\Http\Controllers\SubmissionController::class, 'update']);
+        Route::delete('/submissions/{id}', [\App\Http\Controllers\SubmissionController::class, 'destroy']);
+        Route::get('/submissions/pending', [\App\Http\Controllers\SubmissionController::class, 'index']);
+    });
 });

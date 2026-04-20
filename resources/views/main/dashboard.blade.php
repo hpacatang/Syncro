@@ -18,7 +18,7 @@
                             <p class="text-muted small mb-1">Total Submissions</p>
                             <h3 class="fw-bold">{{ $stats['total'] ?? 0 }}</h3>
                         </div>
-                        <span class="badge bg-primary">+3</span>
+                        <i class="fas fa-file-alt text-primary"></i>
                     </div>
                 </div>
             </div>
@@ -28,10 +28,10 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted small mb-1">Pending</p>
-                            <h3 class="fw-bold text-secondary">{{ $stats['pending'] ?? 0 }}</h3>
+                            <p class="text-muted small mb-1">To Review</p>
+                            <h3 class="fw-bold text-secondary">{{ ($stats['pending_submission'] ?? 0) + ($stats['pending_pair_review'] ?? 0) }}</h3>
                         </div>
-                        <i class="fas fa-file-alt text-secondary"></i>
+                        <i class="fas fa-inbox text-secondary"></i>
                     </div>
                 </div>
             </div>
@@ -41,8 +41,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted small mb-1">Under Review</p>
-                            <h3 class="fw-bold text-warning">{{ $stats['under_review'] ?? 0 }}</h3>
+                            <p class="text-muted small mb-1">Awaiting Org Approval</p>
+                            <h3 class="fw-bold text-warning">{{ $stats['pending_org_approval'] ?? 0 }}</h3>
                         </div>
                         <i class="fas fa-hourglass-half text-warning"></i>
                     </div>
@@ -279,91 +279,83 @@
                     <div class="mb-4">
                         <label class="form-label fw-bold">Original Caption</label>
                         <div class="alert alert-light border">
-                            <p id="originalCaption" class="mb-0" style="max-height: 150px; overflow-y: auto;"></p>
+                            <p id="originalCaption" class="mb-0" style="max-height: 100px; overflow-y: auto;"></p>
                         </div>
                     </div>
 
-                    <!-- LLM Provider Selection -->
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">
-                            <i class="fas fa-cube text-primary"></i> AI Provider
-                        </label>
-                        <div class="row g-2">
-                            <div class="col-md-4">
-                                <input type="radio" class="btn-check" name="llm_provider" value="openai" id="openai" checked>
-                                <label class="btn btn-outline-primary w-100" for="openai">
-                                    <i class="fas fa-brain"></i> OpenAI
-                                </label>
+                    <!-- Two-Column Layout: AI Option (Left) | Manual Option (Right) -->
+                    <div class="row g-4">
+                        <!-- LEFT: AI-Assisted Enhancement -->
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">
+                                <i class="fas fa-wand-magic-sparkles text-primary"></i> AI-Assisted
+                            </h6>
+                            
+                            <!-- AI Provider Selection -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">AI Provider</label>
+                                <div class="btn-group d-flex gap-1" role="group" style="width: 100%;">
+                                    <input type="radio" class="btn-check" name="llm_provider" value="openai" id="openai" checked>
+                                    <label class="btn btn-outline-primary btn-sm flex-grow-1" for="openai" style="font-size: 0.85rem;">
+                                        <i class="fas fa-brain"></i> OpenAI
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="llm_provider" value="gemini" id="gemini">
+                                    <label class="btn btn-outline-primary btn-sm flex-grow-1" for="gemini" style="font-size: 0.85rem;">
+                                        <i class="fas fa-sparkles"></i> Gemini
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="llm_provider" value="deepseek" id="deepseek">
+                                    <label class="btn btn-outline-primary btn-sm flex-grow-1" for="deepseek" style="font-size: 0.85rem;">
+                                        <i class="fas fa-zap"></i> Deepseek
+                                    </label>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <input type="radio" class="btn-check" name="llm_provider" value="gemini" id="gemini">
-                                <label class="btn btn-outline-primary w-100" for="gemini">
-                                    <i class="fas fa-sparkles"></i> Gemini
-                                </label>
+
+                            <!-- Tone Selection -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Tone</label>
+                                <select class="form-select form-select-sm" name="tone" id="toneSelect">
+                                    <option value="formal">📋 Formal</option>
+                                    <option value="friendly">😊 Friendly</option>
+                                    <option value="enthusiastic">🎉 Enthusiastic</option>
+                                    <option value="urgent">⚡ Urgent</option>
+                                    <option value="professional">💼 Academic</option>
+                                </select>
                             </div>
-                            <div class="col-md-4">
-                                <input type="radio" class="btn-check" name="llm_provider" value="deepseek" id="deepseek">
-                                <label class="btn btn-outline-primary w-100" for="deepseek">
-                                    <i class="fas fa-zap"></i> Deepseek
-                                </label>
+
+                            <!-- Generate Button -->
+                            <button type="button" class="btn btn-primary btn-sm w-100 mb-3" id="generateBtn" onclick="generateCaption()">
+                                <i class="fas fa-wand-magic-sparkles"></i> Generate with AI
+                            </button>
+
+                            <!-- Status Alert -->
+                            <div id="generatingAlert" class="alert alert-info d-none mb-0 py-2" role="alert" style="font-size: 0.85rem;">
+                                <div class="spinner-border spinner-border-sm me-2" role="status" style="width: 1rem; height: 1rem;">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <strong>Generating...</strong>
                             </div>
                         </div>
-                        <small class="text-muted d-block mt-2">
-                            <i class="fas fa-info-circle"></i> Choose your preferred AI model
-                        </small>
-                    </div>
 
-                    <!-- Tone Selection -->
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">
-                            <i class="fas fa-palette text-primary"></i> Tone
-                        </label>
-                        <select class="form-select" name="tone" id="toneSelect">
-                            <option value="formal">📋 Formal & Professional</option>
-                            <option value="friendly">😊 Friendly & Casual</option>
-                            <option value="enthusiastic">🎉 Enthusiastic & Energetic</option>
-                            <option value="urgent">⚡ Urgent & Action-Oriented</option>
-                            <option value="professional">💼 Professional & Academic</option>
-                        </select>
-                    </div>
-
-                    <!-- Loading State -->
-                    <div id="generatingAlert" class="alert alert-info d-none" role="alert">
-                        <div class="spinner-border spinner-border-sm me-2" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                        <!-- RIGHT: Manual Enhancement -->
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">
+                                <i class="fas fa-pen-fancy text-info"></i> Manual Input
+                            </h6>
+                            
+                            <label class="form-label fw-bold small">Enhanced Caption</label>
+                            <textarea 
+                                id="manualCaption" 
+                                class="form-control form-control-sm" 
+                                rows="8" 
+                                placeholder="Type your enhanced caption here. Make it engaging, professional, and grammatically correct."
+                                minlength="10">
+                            </textarea>
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle"></i> Minimum 10 characters
+                            </small>
                         </div>
-                        <strong>Generating enhanced caption...</strong> This may take a moment.
-                    </div>
-
-                    <!-- Enhanced Caption Display -->
-                    <div id="enhancedCaptionContainer" class="d-none">
-                        <label class="form-label fw-bold">
-                            <i class="fas fa-check-circle text-success"></i> Enhanced Caption
-                        </label>
-                        <div class="alert alert-success border-0 bg-light-success">
-                            <p id="enhancedCaption" class="mb-0" style="max-height: 150px; overflow-y: auto;"></p>
-                        </div>
-                    </div>
-
-                    <!-- Manual Caption Fallback (when AI fails) -->
-                    <div id="manualCaptionContainer" class="d-none">
-                        <div class="alert alert-warning border-2 border-warning mb-3">
-                            <i class="fas fa-lightbulb"></i> <strong>AI Generation Failed</strong>
-                            <p class="mb-2">The AI service is temporarily unavailable. No problem! You can manually enhance the caption below:</p>
-                        </div>
-                        <label class="form-label fw-bold">
-                            <i class="fas fa-pen-fancy text-info"></i> Enhanced Caption (Manual)
-                        </label>
-                        <textarea 
-                            id="manualCaption" 
-                            class="form-control form-control-lg" 
-                            rows="5" 
-                            placeholder="Type your enhanced caption here. Be engaging, professional, and grammatically correct."
-                            minlength="10">
-                        </textarea>
-                        <small class="text-muted d-block mt-2">
-                            <i class="fas fa-info-circle"></i> Minimum 10 characters required
-                        </small>
                     </div>
                 </form>
             </div>
@@ -371,9 +363,9 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 
                 <!-- AI Success Path -->
-                <button type="button" class="btn btn-primary" id="generateBtn" onclick="generateCaption()">
+                <!-- <button type="button" class="btn btn-primary" id="generateBtn" onclick="generateCaption()">
                     <i class="fas fa-wand-magic-sparkles"></i> Generate with AI
-                </button>
+                </button> -->
                 <button type="button" class="btn btn-success" id="approveBtn" onclick="approveFinalCaption()">
                     <i class="fas fa-check"></i> Approve & Update
                 </button>
@@ -520,24 +512,6 @@ async function approveFinalCaption() {
         generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${error.message}`;
         approveBtn.disabled = false;
     }
-}
-    
-    // Show a success toast/alert
-    const successAlert = document.createElement('div');
-    successAlert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
-    successAlert.style.zIndex = '9999';
-    successAlert.innerHTML = `
-        <i class="fas fa-check-circle"></i> <strong>Perfect!</strong> Caption has been enhanced and saved.
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(successAlert);
-    
-    // Close modal after 1 second
-    setTimeout(() => {
-        modal.hide();
-        // Reload page to show updated submission
-        setTimeout(() => location.reload(), 500);
-    }, 1500);
 }
 </script>
 

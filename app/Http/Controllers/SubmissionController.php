@@ -24,6 +24,13 @@ class SubmissionController extends Controller
                 'media.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
             ]);
 
+            // Log authentication info for debugging
+            Log::info('Submission store() called', [
+                'authenticated' => auth()->check(),
+                'user_id' => auth()->id(),
+                'user' => auth()->user()?->name ?? 'Not authenticated'
+            ]);
+
             $mediaPaths = [];
             if ($request->hasFile('media')) {
                 foreach ($request->file('media') as $file) {
@@ -32,12 +39,31 @@ class SubmissionController extends Controller
                 }
             }
 
+            $userId = auth()->id();
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated. Please log in first.',
+                    'debug' => [
+                        'authenticated' => auth()->check(),
+                        'user_id' => auth()->id()
+                    ]
+                ], 401);
+            }
+
             $submission = Submission::create([
-                'user_id' => auth()->id() ?? 1,
+                'user_id' => $userId,
                 'original_caption' => $request->original_caption,
                 'links' => $request->links ?? [],
                 'media_paths' => $mediaPaths,
-                'status' => 'pending'
+                'status' => 'pending',
+                'workflow_status' => 'pending_submission'
+            ]);
+
+            Log::info('Submission created', [
+                'submission_id' => $submission->id,
+                'user_id' => $userId,
+                'user_name' => auth()->user()?->name
             ]);
 
             return response()->json([
@@ -170,16 +196,22 @@ class SubmissionController extends Controller
                 ], 202); // 202 Accepted - operation acknowledged but not completed
             }
 
-            $submission->update(['enhanced_caption' => $enhancedText]);
+            $submission->update([
+                'enhanced_caption' => $enhancedText,
+                'enhanced_by' => auth()->id(),
+                'enhanced_at' => now(),
+                'workflow_status' => 'pending_org_approval'
+            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Caption enhanced successfully!',
+                'message' => 'Caption enhanced! Awaiting organization review.',
                 'data' => [
                     'submission_id' => $submission->id,
                     'original_caption' => $submission->original_caption,
                     'enhanced_caption' => $enhancedText,
-                    'provider_used' => $provider
+                    'provider_used' => $provider,
+                    'workflow_status' => 'pending_org_approval'
                 ]
             ]);
         } catch (\Exception $e) {
@@ -235,19 +267,26 @@ class SubmissionController extends Controller
             ]);
 
             $submission = Submission::findOrFail($id);
-            $submission->update(['enhanced_caption' => $request->manual_caption]);
+            $submission->update([
+                'enhanced_caption' => $request->manual_caption,
+                'enhanced_by' => auth()->id(),
+                'enhanced_at' => now(),
+                'workflow_status' => 'pending_org_approval'
+            ]);
 
             Log::info('Manual caption saved', [
                 'submission_id' => $id,
+                'enhanced_by' => auth()->id(),
                 'caption_length' => strlen($request->manual_caption)
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Manual caption saved successfully!',
+                'message' => 'Caption enhanced! Awaiting organization review.',
                 'data' => [
                     'submission_id' => $submission->id,
-                    'enhanced_caption' => $submission->enhanced_caption
+                    'enhanced_caption' => $submission->enhanced_caption,
+                    'workflow_status' => 'pending_org_approval'
                 ]
             ]);
         } catch (\Exception $e) {
@@ -306,6 +345,104 @@ class SubmissionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete submission',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Organization reviews and approves enhanced caption
+     * POST /api/submissions/{id}/org-review/approve
+     */
+    public function orgApproveEnhancement(Request $request, $id)
+    {
+        try {
+            $submission = Submission::findOrFail($id);
+            
+            // Verify the org user owns this submission
+            if ($submission->user_id !== auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized: You can only review your own submissions'
+                ], 403);
+            }
+
+            $submission->update([
+                'status' => 'approved',
+                'workflow_status' => 'approved',
+                'org_review_notes' => $request->notes ?? 'Approved by organization'
+            ]);
+
+            Log::info('Organization approved enhanced caption', [
+                'submission_id' => $id,
+                'org_user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Caption approved! Ready to be posted.',
+                'data' => [
+                    'submission_id' => $submission->id,
+                    'workflow_status' => 'approved'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Organization approval failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to approve caption',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Organization reviews and rejects enhanced caption (asks for further enhancement)
+     * POST /api/submissions/{id}/org-review/reject
+     */
+    public function orgRejectEnhancement(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'notes' => 'required|string|min:10'
+            ]);
+
+            $submission = Submission::findOrFail($id);
+            
+            // Verify the org user owns this submission
+            if ($submission->user_id !== auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized: You can only review your own submissions'
+                ], 403);
+            }
+
+            $submission->update([
+                'workflow_status' => 'pending_pair_review',
+                'org_review_notes' => $request->notes,
+                'status' => 'under_review'
+            ]);
+
+            Log::info('Organization rejected enhanced caption and requested revisions', [
+                'submission_id' => $id,
+                'org_user_id' => auth()->id(),
+                'reason' => $request->notes
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Feedback sent to PAIR for further enhancements.',
+                'data' => [
+                    'submission_id' => $submission->id,
+                    'workflow_status' => 'pending_pair_review',
+                    'feedback' => $request->notes
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Organization rejection failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to submit feedback',
                 'error' => $e->getMessage()
             ], 500);
         }

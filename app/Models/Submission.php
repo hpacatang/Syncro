@@ -10,18 +10,27 @@ class Submission extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'original_caption', 'enhanced_caption', 'links', 'media_paths', 'status'
+        'user_id', 'original_caption', 'enhanced_caption', 'links', 'media_paths', 'status',
+        'enhanced_by', 'enhanced_at', 'workflow_status', 'org_review_notes'
     ];
 
     // This ensures links and images are properly formatted as JSON arrays
     protected $casts = [
         'links' => 'array',
         'media_paths' => 'array',
+        'enhanced_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function enhancer()
+    {
+        return $this->belongsTo(User::class, 'enhanced_by');
     }
 
     /**

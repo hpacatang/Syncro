@@ -193,7 +193,10 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
     try {
         const response = await fetch('/api/submissions', {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="_token"]')?.value
+            }
         });
         
         const data = await response.json();
