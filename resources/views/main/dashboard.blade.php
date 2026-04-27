@@ -360,6 +360,27 @@
                             </small>
                         </div>
                     </div>
+
+                    <!-- PAIR Feedback Section -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="border-top pt-4">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-comments text-secondary"></i> Your Comments/Feedback
+                                </h6>
+                                <label class="form-label small text-muted">Optional: Add internal notes about this enhancement</label>
+                                <textarea 
+                                    id="pairFeedback" 
+                                    class="form-control form-control-sm" 
+                                    rows="3" 
+                                    placeholder="e.g., 'Adjusted tone to be more professional. Consider emphasizing the event date more.' - These notes will be visible to the organization during review.">
+                                </textarea>
+                                <small class="text-muted d-block mt-2">
+                                    <i class="fas fa-info-circle"></i> These comments will be shared with the organization during their review
+                                </small>
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer border-top">
@@ -455,6 +476,7 @@ async function generateCaption() {
 
 async function approveFinalCaption() {
     const finalCaption = document.getElementById('manualCaption').value.trim();
+    const pairFeedback = document.getElementById('pairFeedback').value.trim();
     
     if (!finalCaption) {
         alert('Please enter or generate a caption before approving.');
@@ -488,7 +510,8 @@ async function approveFinalCaption() {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
             },
             body: JSON.stringify({
-                manual_caption: finalCaption
+                manual_caption: finalCaption,
+                pair_feedback: pairFeedback
             })
         });
 

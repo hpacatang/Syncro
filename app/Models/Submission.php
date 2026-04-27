@@ -11,7 +11,7 @@ class Submission extends Model
 
     protected $fillable = [
         'user_id', 'original_caption', 'enhanced_caption', 'links', 'media_paths', 'status',
-        'enhanced_by', 'enhanced_at', 'workflow_status', 'org_review_notes'
+        'enhanced_by', 'enhanced_at', 'workflow_status', 'org_review_notes', 'pair_feedback'
     ];
 
     // This ensures links and images are properly formatted as JSON arrays

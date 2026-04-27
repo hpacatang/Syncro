@@ -250,6 +250,26 @@
                     </div>
                 </div>
 
+                <!-- PAIR Feedback Section -->
+                <div id="pairFeedbackSection" class="mb-4" style="display: none;">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-comments text-info"></i> PAIR Staff Comments
+                    </label>
+                    <div class="bg-info bg-opacity-10 border border-info border-opacity-25 p-3 rounded">
+                        <p class="mb-0 text-dark" id="pairFeedbackText"></p>
+                    </div>
+                </div>
+
+                <!-- Org Revision History -->
+                <div id="orgRevisionSection" class="mb-4" style="display: none;">
+                    <label class="form-label fw-bold text-warning">
+                        <i class="fas fa-history"></i> Your Previous Feedback
+                    </label>
+                    <div class="bg-warning bg-opacity-10 border border-warning border-opacity-25 p-3 rounded">
+                        <p class="mb-0 text-dark" id="orgRevisionText"></p>
+                    </div>
+                </div>
+
                 <!-- Decision Section -->
                 <div class="border-top pt-4">
                     <h6 class="fw-bold mb-3">Your Decision</h6>
@@ -296,10 +316,54 @@
 <script>
 let currentSubmissionId = null;
 
+async function fetchSubmissionDetails(submissionId) {
+    try {
+        const response = await fetch(`/api/submissions/${submissionId}`, {
+            method: 'GET',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+            }
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            const submission = data.data;
+            
+            // Display PAIR feedback if it exists
+            const pairFeedbackSection = document.getElementById('pairFeedbackSection');
+            const pairFeedbackText = document.getElementById('pairFeedbackText');
+            
+            if (submission.pair_feedback) {
+                pairFeedbackText.textContent = submission.pair_feedback;
+                pairFeedbackSection.style.display = 'block';
+            } else {
+                pairFeedbackSection.style.display = 'none';
+            }
+
+            // Display org revision history if it exists
+            const orgRevisionSection = document.getElementById('orgRevisionSection');
+            const orgRevisionText = document.getElementById('orgRevisionText');
+            
+            if (submission.org_review_notes) {
+                orgRevisionText.textContent = submission.org_review_notes;
+                orgRevisionSection.style.display = 'block';
+            } else {
+                orgRevisionSection.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching submission details:', error);
+    }
+}
+
 function loadReviewModal(submissionId, originalCaption, enhancedCaption) {
     currentSubmissionId = submissionId;
     document.getElementById('originalCaption').textContent = originalCaption;
     document.getElementById('enhancedCaption').textContent = enhancedCaption;
+    
+    // Fetch submission details to get feedback
+    fetchSubmissionDetails(submissionId);
     
     // Reset form
     document.getElementById('approveRadio').checked = true;
@@ -358,6 +422,7 @@ async function submitApproval() {
 
         const response = await fetch(`/api/submissions/${currentSubmissionId}/org-review/approve`, {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken
@@ -409,6 +474,7 @@ async function submitRejection() {
 
         const response = await fetch(`/api/submissions/${currentSubmissionId}/org-review/reject`, {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken

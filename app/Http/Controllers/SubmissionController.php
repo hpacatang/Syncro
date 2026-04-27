@@ -264,6 +264,7 @@ class SubmissionController extends Controller
         try {
             $request->validate([
                 'manual_caption' => 'required|string|min:10',
+                'pair_feedback' => 'nullable|string'
             ]);
 
             $submission = Submission::findOrFail($id);
@@ -271,6 +272,7 @@ class SubmissionController extends Controller
                 'enhanced_caption' => $request->manual_caption,
                 'enhanced_by' => auth()->id(),
                 'enhanced_at' => now(),
+                'pair_feedback' => $request->pair_feedback,
                 'workflow_status' => 'pending_org_approval'
             ]);
 
