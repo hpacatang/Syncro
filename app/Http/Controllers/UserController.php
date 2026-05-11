@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Services\AuditLogService;
 
 class UserController extends Controller
 {
@@ -23,6 +24,9 @@ class UserController extends Controller
 
         if (Auth::attempt($credentials)){
             $request->session()->regenerate();
+            
+            // Log the login action
+            AuditLogService::logLogin();
             
             // Redirect based on user role
             $user = auth()->user();
@@ -56,6 +60,7 @@ class UserController extends Controller
         User::create([
             'name'=> $request->name,
             'password' => Hash::make($request->password),
+            'role' => 'user', // Set default role for new registrations
         ]);
 
         return redirect()->route('login')->with('info', 'Registration successful. Please login.');
@@ -63,7 +68,13 @@ class UserController extends Controller
 
     public function logout(Request $request)
     {
+        $userId = Auth::id();
+        
         Auth::logout();
+        
+        // Log the logout action
+        AuditLogService::logLogout($userId);
+        
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('login');

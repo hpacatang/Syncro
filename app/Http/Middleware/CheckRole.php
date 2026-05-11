@@ -20,7 +20,8 @@ class CheckRole
             return redirect('login');
         }
 
-        $userRole = auth()->user()->role;
+        $user = auth()->user();
+        $userRole = $user->role ?? 'unknown';
 
         // Normalize the user's role and the allowed roles for robust comparison
         $userRoleNormalized = strtolower(trim((string) $userRole));
@@ -35,13 +36,26 @@ class CheckRole
 
         if (!in_array($userRoleNormalized, $allowed, true)) {
             // Log for debugging so we can inspect mismatches in runtime
-            \Log::warning('CheckRole: access denied', [
+            Log::warning('CheckRole: access denied', [
                 'user_id' => auth()->id(),
+                'user_name' => $user->name,
                 'user_role' => $userRole,
+                'user_role_normalized' => $userRoleNormalized,
                 'required_roles' => $allowed,
+                'path' => $request->path(),
             ]);
 
-            return response()->view('errors.unauthorized', [], 403);
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => 'You do not have permission to access this resource',
+                ], 403);
+            }
+
+            return response()->view('errors.unauthorized', [
+                'userRole' => $userRole,
+                'requiredRoles' => $allowed,
+            ], 403);
         }
 
         return $next($request);

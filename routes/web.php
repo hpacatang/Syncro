@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MainController;
 use App\Http\Controllers\SubmissionController;
+use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\UserManagementController;
 
 Route::get('/', function () {
     return redirect('login');
@@ -21,6 +23,13 @@ Route::middleware('auth')->group(function(){
         Route::get('/dashboard', [MainController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/submissions', [MainController::class, 'submissions'])->name('dashboard.submissions');
         Route::get('/dashboard/notifications', [MainController::class, 'notifications'])->name('dashboard.notifications');
+
+        // Audit Logs Routes
+        Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+        Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
+
+        // User Management Routes
+        Route::resource('users', UserManagementController::class);
     });
 
     // Organization Dashboard

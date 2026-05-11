@@ -105,18 +105,14 @@
                     <i class="bi bi-bell me-2"></i> Notifications
                 </a>
             @endauth
-            <a href="#" class="list-group-item list-group-item-action py-3">
+            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPair()))
+            <a href="{{ route('audit-logs.index') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('audit-logs.index') ? 'active' : '' }}">
                 <i class="bi bi-clipboard-data me-2"></i> Audit Logs
             </a>
-            <!-- add more feature links here -->
-             <a href="#" class="list-group-item list-group-item-action py-3">
-                <i class="bi bi-clipboard-data me-2"></i> Settings
-             </a>
-             {{-- @role('admin') --}}
-             <a href="#" class="list-group-item list-group-item-action py-3">
+            <a href="{{ route('users.index') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('users.*') ? 'active' : '' }}">
                 <i class="bi bi-people me-2"></i> User Management
-             </a>
-             {{-- @endrole --}}
+            </a>
+            @endif
         </div>
     </div>
 
