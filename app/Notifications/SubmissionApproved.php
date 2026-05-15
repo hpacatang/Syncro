@@ -51,8 +51,10 @@ class SubmissionApproved extends Notification
     public function toArray(object $notifiable): array
     {
         return [
+            'title' => 'Submission approved',
             'submission_id' => $this->submission->id,
-            'message' => 'Your submission has been approved and is ready to post.'
+            'message' => 'Your submission has been approved and is ready to post.',
+            'url' => route('org.dashboard'),
         ];
     }
 }

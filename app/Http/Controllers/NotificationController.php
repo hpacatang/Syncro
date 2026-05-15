@@ -2,64 +2,80 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\View\View;
 
 class NotificationController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request): View
     {
-        //
+        $notifications = $request->user()
+            ->notifications()
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        return view('main.notifications', [
+            'notifications' => $notifications,
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function unreadCount(Request $request)
     {
-        //
+        return response()->json([
+            'count' => $request->user()->unreadNotifications()->count(),
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function recent(Request $request)
     {
-        //
+        $items = $request->user()
+            ->notifications()
+            ->orderByDesc('created_at')
+            ->limit(8)
+            ->get()
+            ->map(function (DatabaseNotification $n) use ($request) {
+                $data = $n->data;
+
+                return [
+                    'id' => $n->id,
+                    'read' => $n->read_at !== null,
+                    'created_at' => $n->created_at?->toIso8601String(),
+                    'title' => $data['title'] ?? class_basename($n->type),
+                    'message' => $data['message'] ?? '',
+                    'url' => $data['url'] ?? (
+                        $request->user()->isOrg()
+                            ? route('org.notifications')
+                            : route('dashboard.notifications')
+                    ),
+                ];
+            });
+
+        return response()->json(['notifications' => $items]);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Notification $notification)
+    public function markAsRead(Request $request, string $id)
     {
-        //
+        $notification = $request->user()
+            ->notifications()
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $notification->markAsRead();
+
+        return response()->json([
+            'success' => true,
+            'unread_count' => $request->user()->unreadNotifications()->count(),
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Notification $notification)
+    public function markAllRead(Request $request)
     {
-        //
-    }
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Notification $notification)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Notification $notification)
-    {
-        //
+        return response()->json([
+            'success' => true,
+            'unread_count' => 0,
+        ]);
     }
 }

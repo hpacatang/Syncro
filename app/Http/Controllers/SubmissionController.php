@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
 use App\Models\Submission;
 use App\Models\User;
+use App\Notifications\EnhancementReadyForOrg;
 use App\Notifications\SubmissionApproved;
+use App\Notifications\SubmissionQueuedForReview;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rules\File;
 
 class SubmissionController extends Controller
 {
@@ -21,7 +25,12 @@ class SubmissionController extends Controller
             $request->validate([
                 'original_caption' => 'required|string',
                 'links' => 'nullable|array',
-                'media.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+                'media' => 'nullable|array',
+                'media.*' => [
+                    'file',
+                    File::types(['jpg', 'jpeg', 'png', 'webp', 'gif', 'doc', 'docx', 'pdf', 'txt'])
+                        ->max(5 * 1024),
+                ],
             ]);
 
             // Log authentication info for debugging
@@ -65,6 +74,12 @@ class SubmissionController extends Controller
                 'user_id' => $userId,
                 'user_name' => auth()->user()?->name
             ]);
+
+            User::query()
+                ->whereIn('role', ['admin', 'pair'])
+                ->each(function (User $staff) use ($submission) {
+                    $staff->notify(new SubmissionQueuedForReview($submission));
+                });
 
             return response()->json([
                 'success' => true,
@@ -149,7 +164,7 @@ class SubmissionController extends Controller
         try {
             $submission = Submission::findOrFail($id);
             $provider = $request->get('llm_provider', 'openai');
-            $tone = $request->get('tone', 'formal');
+            $tone = $request->get('tone', AppSetting::get('caption_tone', 'formal'));
 
             $systemPrompt = "You are a professional social media manager for a university. ";
             $systemPrompt .= "Enhance the following caption to be {$tone}, engaging, professional, and grammatically correct. ";
@@ -202,6 +217,8 @@ class SubmissionController extends Controller
                 'enhanced_at' => now(),
                 'workflow_status' => 'pending_org_approval'
             ]);
+
+            User::find($submission->user_id)?->notify(new EnhancementReadyForOrg($submission->fresh()));
 
             return response()->json([
                 'success' => true,
@@ -275,6 +292,8 @@ class SubmissionController extends Controller
                 'pair_feedback' => $request->pair_feedback,
                 'workflow_status' => 'pending_org_approval'
             ]);
+
+            User::find($submission->user_id)?->notify(new EnhancementReadyForOrg($submission->fresh()));
 
             Log::info('Manual caption saved', [
                 'submission_id' => $id,

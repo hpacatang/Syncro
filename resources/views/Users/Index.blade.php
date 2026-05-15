@@ -61,9 +61,7 @@
                             <td><small>{{ $user->created_at->format('M d, Y') }}</small></td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('users.show', $user) }}" class="btn btn-outline-primary" title="View">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
+                                    <x-view-action-link :href="route('users.show', $user)" :small="false" />
                                     <a href="{{ route('users.edit', $user) }}" class="btn btn-outline-primary" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>

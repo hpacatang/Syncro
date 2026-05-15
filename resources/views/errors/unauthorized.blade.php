@@ -26,7 +26,7 @@
                     @endif
                     
                     <div class="mt-3">
-                        <form method="POST" action="{{ route('logout') }}" style="display: inline;">
+                        <form method="POST" action="/logout" style="display: inline;">
                             @csrf
                             <button type="submit" class="btn btn-outline-secondary">
                                 <i class="fas fa-sign-out-alt"></i> Logout

@@ -272,7 +272,7 @@
             </div>
 
             <!-- Register Form -->
-            <form method="POST" action="{{ route('store') }}" class="auth-form">
+            <form method="POST" action="/store" class="auth-form">
                 @csrf
 
                 <!-- Username -->

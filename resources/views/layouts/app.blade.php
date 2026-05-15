@@ -9,6 +9,7 @@
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ asset('css/syncro.css') }}">
 
     <style>
         body { padding-top: 56px; } /* space for fixed navbar */
@@ -44,10 +45,8 @@
 
             <div class="collapse navbar-collapse justify-content-end">
                 <ul class="navbar-nav mb-2 mb-lg-0 align-items-center">
-                    <li class="nav-item me-2 d-none d-lg-block">
-                        <a class="nav-link text-light" href="#"><i class="bi bi-bell"></i></a>
-                    </li>
                     @auth
+                        <x-notifications />
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle text-light" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle"></i> {{ Auth::user()->name }}
@@ -57,7 +56,7 @@
                             <li><a class="dropdown-item" href="#">Settings</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <form method="POST" action="{{ route('logout') }}">
+                                <form method="POST" action="/logout">
                                     @csrf
                                     <button type="submit" class="dropdown-item">Logout</button>
                                 </form>
@@ -106,12 +105,12 @@
                 </a>
             @endauth
             @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPair()))
-            <a href="{{ route('audit-logs.index') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('audit-logs.index') ? 'active' : '' }}">
-                <i class="bi bi-clipboard-data me-2"></i> Audit Logs
-            </a>
-            <a href="{{ route('users.index') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                <i class="bi bi-people me-2"></i> User Management
-            </a>
+                <a href="{{ route('audit-logs.index') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('audit-logs.index') ? 'active' : '' }}">
+                    <i class="bi bi-clipboard-data me-2"></i> Audit Logs
+                </a>
+                <a href="{{ route('users.index') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('users.*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i> User Management
+                </a>
             @endif
         </div>
     </div>

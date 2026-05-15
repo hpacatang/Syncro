@@ -248,7 +248,7 @@
             </div>
 
             <!-- Login Form -->
-            <form method="POST" action="{{ route('authenticate') }}" class="auth-form">
+            <form method="POST" action="/authenticate" class="auth-form">
                 @csrf
 
                 <!-- Username -->

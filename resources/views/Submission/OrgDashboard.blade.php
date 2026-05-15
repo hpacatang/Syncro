@@ -102,13 +102,16 @@
                                     </td>
                                     <td class="text-muted small">{{ $submission->created_at->format('M d') }}</td>
                                     <td>
-                                        <button class="btn btn-sm btn-warning" 
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <a href="{{ route('org.submissions.review', $submission) }}" class="btn btn-sm btn-outline-primary">Review page</a>
+                                            <button class="btn btn-sm btn-warning" 
                                                 title="Review & Approve/Reject" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#reviewModal"
                                                 onclick="loadReviewModal({{ $submission->id }}, '{{ htmlspecialchars($submission->original_caption, ENT_QUOTES) }}', '{{ htmlspecialchars($submission->enhanced_caption, ENT_QUOTES) }}')">
-                                            <i class="fas fa-eye"></i> Review
-                                        </button>
+                                                <i class="fas fa-eye"></i> Quick review
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -167,9 +170,7 @@
                                             </td>
                                             <td class="text-muted small">{{ $submission->created_at->format('M d') }}</td>
                                             <td>
-                                                <button class="btn btn-sm btn-outline-primary" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
+                                                <x-view-action-link :href="route('org.submissions.review', $submission)" :title="__('View details')" />
                                             </td>
                                         </tr>
                                     @endforeach

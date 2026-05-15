@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Main;
+use App\Models\AppSetting;
 use App\Models\Submission;
 use App\Models\Feedback;
 
@@ -59,7 +59,8 @@ class MainController extends Controller
         return view('main.dashboard', [
             'stats' => $stats,
             'submissions' => $recentSubmissions,
-            'currentFilter' => $filter
+            'currentFilter' => $filter,
+            'defaultCaptionTone' => AppSetting::get('caption_tone', 'formal'),
         ]);
     }
 
@@ -70,7 +71,10 @@ class MainController extends Controller
     {
         $query = Submission::with('user');
 
-        // Filter by status if provided
+        if ($request->user()->isOrg()) {
+            $query->where('user_id', $request->user()->id);
+        }
+
         if ($request->has('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
@@ -85,22 +89,6 @@ class MainController extends Controller
         return view('Submission.SubmitForm', [
             'submissions' => $submissions,
             'currentFilter' => $request->get('status', 'all')
-        ]);
-    }
-
-    /**
-     * Display notifications for the authenticated user
-     */
-    public function notifications()
-    {
-        $notifications = [];
-        
-        if (auth()->check()) {
-            $notifications = auth()->user()->notifications()->paginate(20);
-        }
-
-        return view('main.notifications', [
-            'notifications' => $notifications
         ]);
     }
 

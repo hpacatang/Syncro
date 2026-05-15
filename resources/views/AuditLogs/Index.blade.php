@@ -89,9 +89,7 @@
                             </td>
                             <td><small>{{ $log->ip_address ?? '-' }}</small></td>
                             <td>
-                                <a href="{{ route('audit-logs.show', $log->id) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i> View
-                                </a>
+                                <x-view-action-link :href="route('audit-logs.show', $log->id)">View</x-view-action-link>
                             </td>
                         </tr>
                     @empty

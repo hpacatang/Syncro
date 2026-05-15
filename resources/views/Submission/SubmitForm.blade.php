@@ -17,7 +17,7 @@
                             <th>Original Caption</th>
                             <th>Status</th>
                             <th>Submitted At</th>
-                            <th class="pe-4 text-end">Action</th>
+                            <th class="pe-4 text-end">Review</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -40,7 +40,11 @@
                             </td>
                             <td>{{ $sub->created_at ? $sub->created_at->format('M d, Y h:i A') : 'N/A' }}</td>
                             <td class="pe-4 text-end">
-                                <button class="btn btn-sm btn-primary">Review Features</button>
+                                @if(auth()->user()->isOrg())
+                                    <a href="{{ route('org.submissions.review', $sub) }}" class="btn btn-sm btn-primary">Review</a>
+                                @else
+                                    <a href="{{ route('dashboard.submissions.review', $sub) }}" class="btn btn-sm btn-primary">Review</a>
+                                @endif
                             </td>
                         </tr>
                         @empty
@@ -56,5 +60,10 @@
             </div>
         </div>
     </div>
+    @if(isset($submissions) && $submissions instanceof \Illuminate\Contracts\Pagination\Paginator && $submissions->hasPages())
+        <div class="d-flex justify-content-center mt-3">
+            {{ $submissions->links() }}
+        </div>
+    @endif
 </div>
 @endsection

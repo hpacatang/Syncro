@@ -55,19 +55,19 @@
                         <!-- Media Upload (Optional) -->
                         <div class="mb-4">
                             <label for="media" class="form-label fw-bold">
-                                <i class="fas fa-image text-primary"></i> Upload Images (Optional)
+                                <i class="fas fa-paperclip text-primary"></i> Attach files (optional)
                             </label>
                             <div class="form-control p-3 text-center" style="border: 2px dashed #dee2e6; cursor: pointer;" id="dropZone">
                                 <i class="fas fa-cloud-upload-alt" style="font-size: 2rem;" class="text-muted"></i>
-                                <p class="text-muted mt-2 mb-0">Drag and drop images here or click to browse</p>
-                                <small class="text-muted">JPEG, PNG, GIF (Max 2MB each)</small>
+                                <p class="text-muted mt-2 mb-0">Drag and drop files here or click to browse</p>
+                                <small class="text-muted">JPG, PNG, WebP, GIF, DOC/DOCX, PDF, TXT — max 5&nbsp;MB each</small>
                                 <input 
                                     type="file" 
                                     id="media" 
                                     name="media[]" 
                                     class="form-control d-none" 
                                     multiple 
-                                    accept="image/*">
+                                    accept=".jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.pdf,.txt,image/jpeg,image/png,image/webp,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
                             </div>
                             <div id="mediaPreview" class="mt-3"></div>
                         </div>
@@ -133,11 +133,35 @@ dropZone.addEventListener('dragleave', () => {
 dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
     dropZone.style.borderColor = '#dee2e6';
-    mediaInput.files = e.dataTransfer.files;
+    const dt = new DataTransfer();
+    Array.from(e.dataTransfer.files).forEach((f) => dt.items.add(f));
+    mediaInput.files = dt.files;
     updateMediaPreview();
 });
 
 mediaInput.addEventListener('change', updateMediaPreview);
+
+const ALLOWED_MEDIA_EXT = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'doc', 'docx', 'pdf', 'txt']);
+const MAX_MEDIA_BYTES = 5 * 1024 * 1024;
+
+function fileExtension(name) {
+    const i = name.lastIndexOf('.');
+    return i === -1 ? '' : name.slice(i + 1).toLowerCase();
+}
+
+function formatBytes(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    return (n / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
 
 function updateMediaPreview() {
     mediaPreview.innerHTML = '';
@@ -148,22 +172,38 @@ function updateMediaPreview() {
     const preview = document.createElement('div');
     preview.className = 'row g-2';
     
+    const imageExts = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif']);
+
     Array.from(files).forEach((file, index) => {
         const col = document.createElement('div');
         col.className = 'col-md-3';
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            col.innerHTML = `
-                <div class="position-relative">
-                    <img src="${e.target.result}" class="img-fluid rounded" style="height: 120px; object-fit: cover; width: 100%;">
-                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" onclick="removeMedia(${index})">
-                        <i class="fas fa-times"></i>
-                    </button>
+        const ext = fileExtension(file.name);
+
+        const removeBtn = `
+            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" onclick="removeMedia(${index})">
+                <i class="fas fa-times"></i>
+            </button>`;
+
+        if (imageExts.has(ext)) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                col.innerHTML = `
+                <div class="position-relative border rounded overflow-hidden bg-light" style="height: 120px;">
+                    <img src="${e.target.result}" class="img-fluid w-100 h-100" style="object-fit: cover;">
+                    ${removeBtn}
                 </div>
-            `;
-        };
-        reader.readAsDataURL(file);
+                <small class="text-muted text-truncate d-block mt-1" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</small>`;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            col.innerHTML = `
+                <div class="position-relative border rounded p-2 bg-light d-flex flex-column justify-content-center" style="height: 120px;">
+                    <i class="fas fa-file-alt text-primary fs-3 text-center mb-1"></i>
+                    <small class="text-truncate text-center d-block" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</small>
+                    <small class="text-muted text-center">${ext.toUpperCase()} · ${formatBytes(file.size)}</small>
+                    ${removeBtn}
+                </div>`;
+        }
         preview.appendChild(col);
     });
     
@@ -185,6 +225,19 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
     
     const form = e.target;
     const formData = new FormData(form);
+
+    const mediaFiles = mediaInput.files ? Array.from(mediaInput.files) : [];
+    for (const f of mediaFiles) {
+        const ext = fileExtension(f.name);
+        if (!ALLOWED_MEDIA_EXT.has(ext)) {
+            alert('Each file must be one of: JPG, PNG, WebP, GIF, DOC, DOCX, PDF, TXT. Rejected: ' + f.name);
+            return;
+        }
+        if (f.size > MAX_MEDIA_BYTES) {
+            alert('Each file must be at most 5 MB. Too large: ' + f.name + ' (' + formatBytes(f.size) + ')');
+            return;
+        }
+    }
     
     const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.disabled = true;

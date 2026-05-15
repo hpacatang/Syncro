@@ -120,9 +120,12 @@
                                             </td>
                                             <td class="text-muted small">{{ $submission->created_at->format('M d, Y') }}</td>
                                             <td>
-                                                <button type="button" class="btn btn-sm btn-outline-primary generate-btn" title="Generate Caption" data-bs-toggle="modal" data-bs-target="#generateModal" data-submission-id="{{ $submission->id }}" data-caption="{{ htmlspecialchars($submission->original_caption, ENT_QUOTES) }}">
-                                                    <i class="fas fa-wand-magic-sparkles"></i> Evaluate
-                                                </button>
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    <a href="{{ route('dashboard.submissions.review', $submission) }}" class="btn btn-sm btn-outline-secondary">Review</a>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary generate-btn" title="Generate Caption" data-bs-toggle="modal" data-bs-target="#generateModal" data-submission-id="{{ $submission->id }}" data-caption="{{ htmlspecialchars($submission->original_caption, ENT_QUOTES) }}">
+                                                        <i class="fas fa-wand-magic-sparkles"></i> Evaluate
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     @empty
@@ -207,15 +210,15 @@
                     <h5 class="mb-0 fw-bold">Quick Actions</h5>
                 </div>
                 <div class="card-body">
-                    <button class="btn btn-primary w-100 mb-2">
-                        <i class="fas fa-magic"></i> Generate Caption
-                    </button>
-                    <button class="btn btn-outline-secondary w-100 mb-2">
-                        <i class="fas fa-images"></i> View Media Gallery
-                    </button>
-                    <button class="btn btn-outline-secondary w-100">
-                        <i class="fas fa-cogs"></i> Configure Tones
-                    </button>
+                    <a href="{{ route('staff.caption-assist') }}" class="btn btn-primary w-100 mb-2 text-decoration-none">
+                        <i class="fas fa-magic"></i> Generate captions
+                    </a>
+                    <a href="{{ route('staff.media-gallery') }}" class="btn btn-outline-secondary w-100 mb-2 text-decoration-none">
+                        <i class="fas fa-images"></i> View media gallery
+                    </a>
+                    <a href="{{ route('settings.tone') }}" class="btn btn-outline-secondary w-100 text-decoration-none">
+                        <i class="fas fa-cogs"></i> Configure tones
+                    </a>
                 </div>
             </div>
         </div>
@@ -319,12 +322,14 @@
                             <div class="mb-3">
                                 <label class="form-label fw-bold small">Tone</label>
                                 <select class="form-select form-select-sm" name="tone" id="toneSelect">
-                                    <option value="formal">📋 Formal</option>
-                                    <option value="friendly">😊 Friendly</option>
-                                    <option value="enthusiastic">🎉 Enthusiastic</option>
-                                    <option value="urgent">⚡ Urgent</option>
-                                    <option value="professional">💼 Academic</option>
+                                    @php $defTone = $defaultCaptionTone ?? 'formal'; @endphp
+                                    <option value="formal" {{ $defTone === 'formal' ? 'selected' : '' }}>📋 Formal</option>
+                                    <option value="friendly" {{ $defTone === 'friendly' ? 'selected' : '' }}>😊 Friendly</option>
+                                    <option value="enthusiastic" {{ $defTone === 'enthusiastic' ? 'selected' : '' }}>🎉 Enthusiastic</option>
+                                    <option value="urgent" {{ $defTone === 'urgent' ? 'selected' : '' }}>⚡ Urgent</option>
+                                    <option value="professional" {{ $defTone === 'professional' ? 'selected' : '' }}>💼 Academic</option>
                                 </select>
+                                <small class="text-muted d-block mt-1">Default from <a href="{{ route('settings.tone') }}">tone settings</a>.</small>
                             </div>
 
                             <!-- Generate Button -->
