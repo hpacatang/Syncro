@@ -20,6 +20,10 @@
         'approved' => 'Approved',
         'rejected' => 'Rejected',
         'posted' => 'Posted',
+        'submitted' => 'Submitted (new)',
+        'under_peer_review' => $isOrg ? 'PAIR reviewing (new)' : 'Under peer review (new)',
+        'awaiting_org_approval' => $isOrg ? 'Awaiting your approval (new)' : 'Awaiting org approval (new)',
+        'revised' => 'Revised',
     ];
     if ($isOrg) {
         unset($statusOptions['posted']);

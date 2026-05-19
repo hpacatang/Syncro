@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SubmissionLifecycleStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -39,5 +40,10 @@ class Submission extends Model
     public function feedback()
     {
         return $this->hasMany(Feedback::class);
+    }
+
+    public function lifecycle(): SubmissionLifecycleStatus
+    {
+        return SubmissionLifecycleStatus::fromLegacy($this->workflow_status);
     }
 }

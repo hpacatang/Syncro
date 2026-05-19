@@ -9,6 +9,7 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StaffToolsController;
+use App\Http\Controllers\SubmissionLifecycleController;
 
 Route::get('/', function () {
     return redirect('login');
@@ -72,5 +73,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/submissions/{id}', [SubmissionController::class, 'update']);
         Route::delete('/submissions/{id}', [SubmissionController::class, 'destroy']);
         Route::get('/submissions/pending', [SubmissionController::class, 'index']);
+        Route::get('/submissions/lifecycle-updates', [SubmissionLifecycleController::class, 'updates']);
+        Route::get('/submissions/{submission}/lifecycle', [SubmissionLifecycleController::class, 'show']);
+        Route::post('/submissions/{submission}/transition', [SubmissionLifecycleController::class, 'transition']);
     });
 });

@@ -59,6 +59,7 @@
             @endif
         </div>
         <div class="col-lg-5">
+            <x-submission-status-manager :submission="$submission" class="mb-3" />
             <x-submission-action :submission="$submission" />
         </div>
     </div>

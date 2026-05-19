@@ -2,7 +2,7 @@
 
 @php
     $isOwnerOrg = auth()->user()->isOrg() && (int) $submission->user_id === (int) auth()->id();
-    $canOrgReview = $isOwnerOrg && $submission->workflow_status === 'pending_org_approval';
+    $canOrgReview = $isOwnerOrg && in_array($submission->workflow_status, ['pending_org_approval', 'awaiting_org_approval'], true);
     $isStaff = auth()->user()->isAdmin() || auth()->user()->isPair();
 @endphp
 

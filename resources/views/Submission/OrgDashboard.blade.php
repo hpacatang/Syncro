@@ -164,7 +164,7 @@
                                 </thead>
                                 <tbody>
                                     @foreach($submissions as $submission)
-                                        <tr>
+                                        <tr data-submission-row="{{ $submission->id }}" data-workflow-status="{{ $submission->workflow_status }}">
                                             <td class="ps-4">{{ Str::limit($submission->original_caption, 50) }}</td>
                                             <td>
                                                 <x-submission-workflow-badge :submission="$submission" />
@@ -506,5 +506,7 @@ async function submitRejection() {
     }
 }
 </script>
+
+<x-submission-lifecycle-poll :submission-ids="$submissions->pluck('id')->implode(',')" />
 
 @endsection

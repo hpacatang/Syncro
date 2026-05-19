@@ -66,7 +66,7 @@ class SubmissionController extends Controller
                 'links' => $request->links ?? [],
                 'media_paths' => $mediaPaths,
                 'status' => 'pending',
-                'workflow_status' => 'pending_submission'
+                'workflow_status' => 'submitted'
             ]);
 
             Log::info('Submission created', [
@@ -215,7 +215,7 @@ class SubmissionController extends Controller
                 'enhanced_caption' => $enhancedText,
                 'enhanced_by' => auth()->id(),
                 'enhanced_at' => now(),
-                'workflow_status' => 'pending_org_approval'
+                'workflow_status' => 'awaiting_org_approval'
             ]);
 
             User::find($submission->user_id)?->notify(new EnhancementReadyForOrg($submission->fresh()));
@@ -228,7 +228,7 @@ class SubmissionController extends Controller
                     'original_caption' => $submission->original_caption,
                     'enhanced_caption' => $enhancedText,
                     'provider_used' => $provider,
-                    'workflow_status' => 'pending_org_approval'
+                    'workflow_status' => 'awaiting_org_approval'
                 ]
             ]);
         } catch (\Exception $e) {
@@ -290,7 +290,7 @@ class SubmissionController extends Controller
                 'enhanced_by' => auth()->id(),
                 'enhanced_at' => now(),
                 'pair_feedback' => $request->pair_feedback,
-                'workflow_status' => 'pending_org_approval'
+                'workflow_status' => 'awaiting_org_approval'
             ]);
 
             User::find($submission->user_id)?->notify(new EnhancementReadyForOrg($submission->fresh()));
@@ -307,7 +307,7 @@ class SubmissionController extends Controller
                 'data' => [
                     'submission_id' => $submission->id,
                     'enhanced_caption' => $submission->enhanced_caption,
-                    'workflow_status' => 'pending_org_approval'
+                    'workflow_status' => 'awaiting_org_approval'
                 ]
             ]);
         } catch (\Exception $e) {
@@ -439,7 +439,7 @@ class SubmissionController extends Controller
             }
 
             $submission->update([
-                'workflow_status' => 'pending_pair_review',
+                'workflow_status' => 'revised',
                 'org_review_notes' => $request->notes,
                 'status' => 'under_review'
             ]);
@@ -455,7 +455,7 @@ class SubmissionController extends Controller
                 'message' => 'Feedback sent to PAIR for further enhancements.',
                 'data' => [
                     'submission_id' => $submission->id,
-                    'workflow_status' => 'pending_pair_review',
+                    'workflow_status' => 'revised',
                     'feedback' => $request->notes
                 ]
             ]);

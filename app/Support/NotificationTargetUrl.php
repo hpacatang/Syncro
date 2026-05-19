@@ -26,7 +26,10 @@ class NotificationTargetUrl
 
                 $needsEnhance = ! empty($data['open_enhance'])
                     || ($data['type'] ?? '') === 'submission_queued'
-                    || in_array($submission->workflow_status, ['pending_submission', 'pending_pair_review'], true);
+                    || in_array($submission->workflow_status, [
+                        'pending_submission', 'pending_pair_review',
+                        'submitted', 'under_peer_review', 'revised',
+                    ], true);
 
                 if ($needsEnhance) {
                     return route('dashboard', ['enhance' => $submission->id]);

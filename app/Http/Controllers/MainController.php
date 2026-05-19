@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\AppSetting;
 use App\Models\Submission;
 use App\Models\Feedback;
+use App\Support\SubmissionWorkflowGroups;
 
 class MainController extends Controller
 {
@@ -14,6 +15,10 @@ class MainController extends Controller
         'pending_submission',
         'pending_pair_review',
         'pending_org_approval',
+        'submitted',
+        'under_peer_review',
+        'awaiting_org_approval',
+        'revised',
         'approved',
         'rejected',
         'posted',
@@ -30,13 +35,22 @@ class MainController extends Controller
             case 'all':
                 break;
             case 'pending':
-                $query->where(function ($q) {
-                    $q->where('workflow_status', 'pending_submission')
-                        ->orWhere('workflow_status', 'pending_pair_review');
-                });
+                $query->whereIn('workflow_status', SubmissionWorkflowGroups::PENDING_QUEUE);
                 break;
             default:
-                if (in_array($filter, self::WORKFLOW_FILTERS, true)) {
+                $group = match ($filter) {
+                    'pending_submission', 'submitted' => SubmissionWorkflowGroups::SUBMITTED,
+                    'pending_pair_review', 'under_peer_review' => SubmissionWorkflowGroups::IN_PEER_REVIEW,
+                    'pending_org_approval', 'awaiting_org_approval' => SubmissionWorkflowGroups::AWAITING_ORG,
+                    'revised' => SubmissionWorkflowGroups::REVISED,
+                    'approved' => SubmissionWorkflowGroups::APPROVED,
+                    'rejected' => SubmissionWorkflowGroups::REJECTED,
+                    'posted' => SubmissionWorkflowGroups::POSTED,
+                    default => null,
+                };
+                if ($group !== null) {
+                    $query->whereIn('workflow_status', $group);
+                } elseif (in_array($filter, self::WORKFLOW_FILTERS, true)) {
                     $query->where('workflow_status', $filter);
                 }
                 break;
@@ -75,9 +89,9 @@ class MainController extends Controller
         // For PAIR staff, show submissions pending their review or pending org approval
         $stats = [
             'total' => Submission::count(),
-            'pending_submission' => Submission::where('workflow_status', 'pending_submission')->count(),
-            'pending_pair_review' => Submission::where('workflow_status', 'pending_pair_review')->count(),
-            'pending_org_approval' => Submission::where('workflow_status', 'pending_org_approval')->count(),
+            'pending_submission' => Submission::whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
+            'pending_pair_review' => Submission::whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
+            'pending_org_approval' => Submission::whereIn('workflow_status', SubmissionWorkflowGroups::AWAITING_ORG)->count(),
             'approved' => Submission::where('workflow_status', 'approved')->count(),
         ];
 
@@ -140,9 +154,9 @@ class MainController extends Controller
 
         $stats = [
             'total' => Submission::where('user_id', $userId)->count(),
-            'pending_submission' => Submission::where('user_id', $userId)->where('workflow_status', 'pending_submission')->count(),
-            'pending_pair_review' => Submission::where('user_id', $userId)->where('workflow_status', 'pending_pair_review')->count(),
-            'pending_org_approval' => Submission::where('user_id', $userId)->where('workflow_status', 'pending_org_approval')->count(),
+            'pending_submission' => Submission::where('user_id', $userId)->whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
+            'pending_pair_review' => Submission::where('user_id', $userId)->whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
+            'pending_org_approval' => Submission::where('user_id', $userId)->whereIn('workflow_status', SubmissionWorkflowGroups::AWAITING_ORG)->count(),
             'approved' => Submission::where('user_id', $userId)->where('workflow_status', 'approved')->count(),
         ];
 
@@ -154,9 +168,9 @@ class MainController extends Controller
         $filter = $this->applySubmissionFilters($query, $request, 'all');
         $submissions = $query->get();
 
-        $showAwaitingSection = in_array($filter, ['all', 'pending_org_approval'], true);
+        $showAwaitingSection = in_array($filter, ['all', 'pending_org_approval', 'awaiting_org_approval'], true);
         $awaitingApproval = $showAwaitingSection
-            ? $submissions->where('workflow_status', 'pending_org_approval')->values()
+            ? $submissions->filter(fn ($s) => SubmissionWorkflowGroups::matches($s->workflow_status, SubmissionWorkflowGroups::AWAITING_ORG))->values()
             : collect();
 
         $feedback = Feedback::whereIn('submission_id', function ($query) use ($userId) {
