@@ -117,6 +117,13 @@
 
     <!-- Main content area -->
     <main id="main-content">
+        @auth
+            @if(\App\Support\BackNavigation::shouldShow())
+                <div class="syncro-back-bar border-bottom bg-white px-3 px-md-4 py-2">
+                    <x-back-button />
+                </div>
+            @endif
+        @endauth
         @yield('content')
     </main>
 

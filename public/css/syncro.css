@@ -12,6 +12,12 @@
     border: 0;
 }
 
+.syncro-back-bar {
+    position: sticky;
+    top: 56px;
+    z-index: 1020;
+}
+
 .syncro-notif-dropdown {
     min-width: 320px;
     max-height: 360px;

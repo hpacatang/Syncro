@@ -95,21 +95,26 @@
                     document.addEventListener('click', async function (e) {
                         const a = e.target.closest('a[data-notif-id]');
                         if (!a) return;
-                        const id = a.getAttribute('data-notif-id');
-                        const href = a.getAttribute('href') || '#';
-                        if (!id || !csrf) return;
+
+                        const href = a.getAttribute('href');
+                        if (!href || href === '#') return;
+
                         e.preventDefault();
-                        try {
-                            await fetch(readBase + '/' + encodeURIComponent(id) + '/read', {
-                                method: 'POST',
-                                credentials: 'same-origin',
-                                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
-                            });
-                            await refreshCount();
-                        } catch (err) { /* ignore */ }
-                        if (href && href !== '#') {
-                            window.location.href = href;
+                        e.stopPropagation();
+
+                        const id = a.getAttribute('data-notif-id');
+                        if (id && csrf) {
+                            try {
+                                await fetch(readBase + '/' + encodeURIComponent(id) + '/read', {
+                                    method: 'POST',
+                                    credentials: 'same-origin',
+                                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+                                });
+                                await refreshCount();
+                            } catch (err) { /* still navigate */ }
                         }
+
+                        window.location.assign(href);
                     });
 
                     if (markAll) {

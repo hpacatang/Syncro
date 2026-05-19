@@ -2,8 +2,27 @@
 
 @section('content')
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Submissions Overview</h2>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <h2 class="mb-0">Submissions Overview</h2>
+        @if(auth()->user()->isOrg())
+            <a href="{{ route('org.submit') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg"></i> New submission
+            </a>
+        @endif
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body py-3">
+            <x-submission-filters
+                :action="auth()->user()->isOrg() ? route('org.submissions') : route('dashboard.submissions')"
+                :current-filter="$currentFilter"
+                :current-search="$currentSearch ?? ''"
+                :current-sort="$currentSort ?? 'created_at'"
+                :current-order="$currentOrder ?? 'desc'"
+                :variant="auth()->user()->isOrg() ? 'org' : 'admin'"
+                :show-sort="true"
+            />
+        </div>
     </div>
 
     <div class="card shadow-sm">
@@ -27,16 +46,7 @@
                             <td>{{ $sub->user ? $sub->user->name : 'Unknown User' }}</td>
                             <td>{{ \Illuminate\Support\Str::limit($sub->original_caption, 50) }}</td>
                             <td>
-                                @php
-                                    $badgeColor = match($sub->status) {
-                                        'approved' => 'success',
-                                        'under_review' => 'warning',
-                                        default => 'secondary'
-                                    };
-                                @endphp
-                                <span class="badge bg-{{ $badgeColor }}">
-                                    {{ ucfirst(str_replace('_', ' ', $sub->status)) }}
-                                </span>
+                                <x-submission-workflow-badge :submission="$sub" />
                             </td>
                             <td>{{ $sub->created_at ? $sub->created_at->format('M d, Y h:i A') : 'N/A' }}</td>
                             <td class="pe-4 text-end">

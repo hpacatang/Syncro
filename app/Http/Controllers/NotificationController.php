@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\NotificationTargetUrl;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\View\View;
@@ -43,11 +44,7 @@ class NotificationController extends Controller
                     'created_at' => $n->created_at?->toIso8601String(),
                     'title' => $data['title'] ?? class_basename($n->type),
                     'message' => $data['message'] ?? '',
-                    'url' => $data['url'] ?? (
-                        $request->user()->isOrg()
-                            ? route('org.notifications')
-                            : route('dashboard.notifications')
-                    ),
+                    'url' => NotificationTargetUrl::resolve($data, $request->user()),
                 ];
             });
 

@@ -127,12 +127,19 @@
         <div class="col-lg-{{ count($awaitingApproval) > 0 ? '8' : '8' }}">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white border-bottom">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                         <h5 class="mb-0 fw-bold">Your Submissions</h5>
                         <a href="{{ route('org.submit') }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-plus"></i> New Submission
                         </a>
                     </div>
+                    <x-submission-filters
+                        :action="route('org.dashboard')"
+                        :current-filter="$currentFilter ?? 'all'"
+                        :current-search="$currentSearch ?? ''"
+                        variant="org"
+                        compact
+                    />
                 </div>
                 <div class="card-body p-0">
                     @if(count($submissions) === 0)
@@ -160,13 +167,7 @@
                                         <tr>
                                             <td class="ps-4">{{ Str::limit($submission->original_caption, 50) }}</td>
                                             <td>
-                                                @if($submission->status === 'pending')
-                                                    <span class="badge bg-secondary">Pending</span>
-                                                @elseif($submission->status === 'under_review')
-                                                    <span class="badge bg-warning text-dark">Under Review</span>
-                                                @elseif($submission->status === 'approved')
-                                                    <span class="badge bg-success">Approved</span>
-                                                @endif
+                                                <x-submission-workflow-badge :submission="$submission" />
                                             </td>
                                             <td class="text-muted small">{{ $submission->created_at->format('M d') }}</td>
                                             <td>

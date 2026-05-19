@@ -28,8 +28,11 @@
         @elseif($isOwnerOrg)
             <p class="text-muted mb-0">No actions for this status. Current step: <strong>{{ str_replace('_', ' ', $submission->workflow_status) }}</strong>.</p>
         @elseif($isStaff)
-            <p class="text-muted small mb-3">Use <strong>Evaluate</strong> on the dashboard to generate captions, or caption assist for new uploads.</p>
-            <a href="{{ route('dashboard') }}" class="btn btn-primary btn-sm me-2">Back to queue</a>
+            <p class="text-muted small mb-3">Open the Enhance Caption workspace for this submission, or return to the queue.</p>
+            <a href="{{ route('dashboard', ['enhance' => $submission->id]) }}" class="btn btn-primary btn-sm me-2">
+                <i class="bi bi-magic me-1"></i> Enhance caption
+            </a>
+            <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary btn-sm me-2">Back to queue</a>
             <a href="{{ route('staff.caption-assist') }}" class="btn btn-outline-secondary btn-sm">AI caption from media</a>
         @endif
     </div>
