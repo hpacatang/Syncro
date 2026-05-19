@@ -16,7 +16,6 @@ class SubmissionLifecycleService
      * @var array<string, list<string>>
      */
     private const TRANSITIONS = [
-        'pending' => ['submitted'],
         'submitted' => ['under_peer_review', 'rejected'],
         'under_peer_review' => ['approved', 'rejected', 'revised'],
         'revised' => ['under_peer_review', 'rejected'],
@@ -33,7 +32,7 @@ class SubmissionLifecycleService
     private const ROLE_TARGETS = [
         'admin' => ['under_peer_review', 'approved', 'rejected', 'revised', 'posted'],
         'pair' => ['under_peer_review', 'approved', 'rejected', 'revised', 'posted'],
-        'org' => ['approved', 'revised'],
+        'org' => [],
     ];
 
     public function current(Submission $submission): SubmissionLifecycleStatus

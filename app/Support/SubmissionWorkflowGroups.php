@@ -7,7 +7,7 @@ namespace App\Support;
  */
 class SubmissionWorkflowGroups
 {
-    public const SUBMITTED = ['pending_submission', 'submitted', 'pending'];
+    public const SUBMITTED = ['pending_submission', 'submitted'];
 
     public const IN_PEER_REVIEW = ['pending_pair_review', 'under_peer_review'];
 
@@ -24,7 +24,7 @@ class SubmissionWorkflowGroups
 
     public const POSTED = ['posted'];
 
-    public const PENDING_QUEUE = ['pending_submission', 'pending_pair_review', 'submitted', 'under_peer_review', 'revised', 'pending'];
+    public const PENDING_QUEUE = ['pending_submission', 'pending_pair_review', 'submitted', 'under_peer_review', 'revised'];
 
     public static function matches(string $workflowStatus, array $group): bool
     {

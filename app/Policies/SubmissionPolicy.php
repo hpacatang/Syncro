@@ -60,7 +60,6 @@ class SubmissionPolicy
      */
     public function reviewAsOrg(User $user, Submission $submission): bool
     {
-        return $user->isOrg()
-            && (int) $submission->user_id === (int) $user->id;
+        return false;
     }
 }

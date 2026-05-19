@@ -4,7 +4,6 @@ namespace App\Submission\Enums;
 
 enum SubmissionLifecycleStatus: string
 {
-    case Pending = 'pending';
     case Submitted = 'submitted';
     case UnderPeerReview = 'under_peer_review';
     case Approved = 'approved';
@@ -15,7 +14,6 @@ enum SubmissionLifecycleStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Pending => 'Pending',
             self::Submitted => 'Submitted',
             self::UnderPeerReview => 'Under PAIR Review',
             self::Approved => 'Approved',
@@ -28,7 +26,6 @@ enum SubmissionLifecycleStatus: string
     public function badgeClass(): string
     {
         return match ($this) {
-            self::Pending => 'secondary',
             self::Submitted => 'info',
             self::UnderPeerReview => 'warning',
             self::Approved => 'success',
@@ -46,7 +43,6 @@ enum SubmissionLifecycleStatus: string
     public function progressColor(): string
     {
         return match ($this) {
-            self::Pending => '#6c757d',
             self::Submitted => '#0aa2c0',
             self::UnderPeerReview => '#fd7e14',
             self::Approved => '#198754',
@@ -59,7 +55,6 @@ enum SubmissionLifecycleStatus: string
     public static function progressSteps(): array
     {
         return [
-            self::Pending,
             self::Submitted,
             self::UnderPeerReview,
             self::Approved,
@@ -92,12 +87,12 @@ enum SubmissionLifecycleStatus: string
             'approved' => self::Approved,
             'rejected' => self::Rejected,
             'posted' => self::Posted,
-            'pending' => self::Pending,
+            'pending' => self::Submitted,
             'submitted' => self::Submitted,
             'under_peer_review' => self::UnderPeerReview,
             'awaiting_org_approval' => self::UnderPeerReview,
             'revised' => self::Revised,
-            default => self::Pending,
+            default => self::Submitted,
         };
     }
 

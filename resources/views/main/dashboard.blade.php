@@ -211,9 +211,6 @@
                     <a href="{{ route('staff.media-gallery') }}" class="btn btn-outline-secondary w-100 mb-2 text-decoration-none">
                         <i class="fas fa-images"></i> View media gallery
                     </a>
-                    <a href="{{ route('settings.tone') }}" class="btn btn-outline-secondary w-100 text-decoration-none">
-                        <i class="fas fa-cogs"></i> Configure tones
-                    </a>
                 </div>
             </div>
         </div>
@@ -324,7 +321,6 @@
                                     <option value="urgent" {{ $defTone === 'urgent' ? 'selected' : '' }}>⚡ Urgent</option>
                                     <option value="professional" {{ $defTone === 'professional' ? 'selected' : '' }}>💼 Academic</option>
                                 </select>
-                                <small class="text-muted d-block mt-1">Default from <a href="{{ route('settings.tone') }}">tone settings</a>.</small>
                             </div>
 
                             <!-- Generate Button -->

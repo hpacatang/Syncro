@@ -60,16 +60,12 @@ Route::middleware('auth')->group(function () {
     Route::middleware('isAdmin')->group(function () {
         Route::get('/dashboard/media-gallery', [StaffToolsController::class, 'mediaGallery'])->name('staff.media-gallery');
         Route::get('/dashboard/caption-assist', [StaffToolsController::class, 'captionAssist'])->name('staff.caption-assist');
-        Route::get('/settings/tone', [StaffToolsController::class, 'toneEdit'])->name('settings.tone');
-        Route::post('/settings/tone', [StaffToolsController::class, 'toneUpdate'])->name('settings.tone.update');
         Route::post('/api/pair/caption-from-media', [StaffToolsController::class, 'captionFromMedia'])->name('api.pair.caption-from-media');
     });
 
     Route::prefix('api')->group(function () {
         Route::middleware('role:org')->group(function () {
             Route::post('/submissions', [SubmissionController::class, 'store']);
-            Route::post('/submissions/{id}/org-review/approve', [SubmissionController::class, 'orgApproveEnhancement']);
-            Route::post('/submissions/{id}/org-review/reject', [SubmissionController::class, 'orgRejectEnhancement']);
         });
 
         Route::middleware('role:super_admin,admin,pair')->group(function () {

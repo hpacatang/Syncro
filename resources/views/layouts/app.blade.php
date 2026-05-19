@@ -52,9 +52,6 @@
                             <i class="bi bi-person-circle"></i> {{ Auth::user()->name }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-                            <li><a class="dropdown-item" href="#">Account</a></li>
-                            <li><a class="dropdown-item" href="#">Settings</a></li>
-                            <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" action="/logout">
                                     @csrf
