@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\SubmissionLifecycleStatus;
-use App\Exceptions\InvalidLifecycleTransitionException;
+use App\Submission\Enums\SubmissionLifecycleStatus;
+use App\Submission\Exceptions\InvalidLifecycleTransitionException;
 use App\Models\Submission;
 use App\Services\SubmissionLifecycleService;
 use Illuminate\Http\Request;
@@ -20,6 +20,8 @@ class SubmissionLifecycleController extends Controller
      */
     public function transition(Request $request, Submission $submission)
     {
+        $this->authorize('transition', $submission);
+
         $request->validate([
             'status' => 'required|string',
             'notes' => 'nullable|string|max:5000',
@@ -75,9 +77,7 @@ class SubmissionLifecycleController extends Controller
      */
     public function show(Request $request, Submission $submission)
     {
-        if (! $this->canView($request, $submission)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
-        }
+        $this->authorize('view', $submission);
 
         $allowed = $this->lifecycle->allowedTransitions($submission, $request->user());
 
@@ -97,6 +97,8 @@ class SubmissionLifecycleController extends Controller
      */
     public function updates(Request $request)
     {
+        $this->authorize('viewAny', Submission::class);
+
         $request->validate([
             'since' => 'nullable|date',
             'ids' => 'nullable|string',
@@ -130,17 +132,6 @@ class SubmissionLifecycleController extends Controller
         ]);
     }
 
-    private function canView(Request $request, Submission $submission): bool
-    {
-        $user = $request->user();
-
-        if ($user->isAdmin() || $user->isPair()) {
-            return true;
-        }
-
-        return $user->isOrg() && (int) $submission->user_id === (int) $user->id;
-    }
-
     /**
      * @return array<string, mixed>
      */
@@ -154,6 +145,7 @@ class SubmissionLifecycleController extends Controller
             'lifecycle_status' => $lifecycle->value,
             'lifecycle_label' => $lifecycle->label(),
             'badge_class' => $lifecycle->badgeClass(),
+            'progress_color' => $lifecycle->progressColor(),
             'progress_index' => $lifecycle->progressIndex(),
             'status' => $submission->status,
             'updated_at' => $submission->updated_at?->toIso8601String(),

@@ -14,10 +14,8 @@ class MainController extends Controller
     private const WORKFLOW_FILTERS = [
         'pending_submission',
         'pending_pair_review',
-        'pending_org_approval',
         'submitted',
         'under_peer_review',
-        'awaiting_org_approval',
         'revised',
         'approved',
         'rejected',
@@ -41,7 +39,7 @@ class MainController extends Controller
                 $group = match ($filter) {
                     'pending_submission', 'submitted' => SubmissionWorkflowGroups::SUBMITTED,
                     'pending_pair_review', 'under_peer_review' => SubmissionWorkflowGroups::IN_PEER_REVIEW,
-                    'pending_org_approval', 'awaiting_org_approval' => SubmissionWorkflowGroups::AWAITING_ORG,
+                    'ready_for_review' => SubmissionWorkflowGroups::READY_FOR_ORG_REVIEW,
                     'revised' => SubmissionWorkflowGroups::REVISED,
                     'approved' => SubmissionWorkflowGroups::APPROVED,
                     'rejected' => SubmissionWorkflowGroups::REJECTED,
@@ -91,7 +89,6 @@ class MainController extends Controller
             'total' => Submission::count(),
             'pending_submission' => Submission::whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
             'pending_pair_review' => Submission::whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
-            'pending_org_approval' => Submission::whereIn('workflow_status', SubmissionWorkflowGroups::AWAITING_ORG)->count(),
             'approved' => Submission::where('workflow_status', 'approved')->count(),
         ];
 
@@ -156,7 +153,10 @@ class MainController extends Controller
             'total' => Submission::where('user_id', $userId)->count(),
             'pending_submission' => Submission::where('user_id', $userId)->whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
             'pending_pair_review' => Submission::where('user_id', $userId)->whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
-            'pending_org_approval' => Submission::where('user_id', $userId)->whereIn('workflow_status', SubmissionWorkflowGroups::AWAITING_ORG)->count(),
+            'ready_for_review' => Submission::where('user_id', $userId)
+                ->whereIn('workflow_status', SubmissionWorkflowGroups::READY_FOR_ORG_REVIEW)
+                ->whereNotNull('enhanced_caption')
+                ->count(),
             'approved' => Submission::where('user_id', $userId)->where('workflow_status', 'approved')->count(),
         ];
 
@@ -168,9 +168,10 @@ class MainController extends Controller
         $filter = $this->applySubmissionFilters($query, $request, 'all');
         $submissions = $query->get();
 
-        $showAwaitingSection = in_array($filter, ['all', 'pending_org_approval', 'awaiting_org_approval'], true);
+        $showAwaitingSection = in_array($filter, ['all', 'ready_for_review', 'under_peer_review'], true);
         $awaitingApproval = $showAwaitingSection
-            ? $submissions->filter(fn ($s) => SubmissionWorkflowGroups::matches($s->workflow_status, SubmissionWorkflowGroups::AWAITING_ORG))->values()
+            ? $submissions->filter(fn ($s) => $s->enhanced_caption
+                && SubmissionWorkflowGroups::matches($s->workflow_status, SubmissionWorkflowGroups::READY_FOR_ORG_REVIEW))->values()
             : collect();
 
         $feedback = Feedback::whereIn('submission_id', function ($query) use ($userId) {

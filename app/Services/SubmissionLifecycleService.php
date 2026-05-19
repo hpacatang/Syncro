@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Enums\SubmissionLifecycleStatus;
-use App\Exceptions\InvalidLifecycleTransitionException;
+use App\Submission\Enums\SubmissionLifecycleStatus;
+use App\Submission\Exceptions\InvalidLifecycleTransitionException;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -18,9 +18,8 @@ class SubmissionLifecycleService
     private const TRANSITIONS = [
         'pending' => ['submitted'],
         'submitted' => ['under_peer_review', 'rejected'],
-        'under_peer_review' => ['awaiting_org_approval', 'rejected', 'revised'],
-        'awaiting_org_approval' => ['approved', 'revised', 'rejected'],
-        'revised' => ['under_peer_review', 'awaiting_org_approval', 'rejected'],
+        'under_peer_review' => ['approved', 'rejected', 'revised'],
+        'revised' => ['under_peer_review', 'rejected'],
         'approved' => ['posted', 'revised'],
         'rejected' => ['under_peer_review', 'revised'],
         'posted' => [],
@@ -32,8 +31,8 @@ class SubmissionLifecycleService
      * @var array<string, list<string>>
      */
     private const ROLE_TARGETS = [
-        'admin' => ['under_peer_review', 'awaiting_org_approval', 'approved', 'rejected', 'revised', 'posted'],
-        'pair' => ['under_peer_review', 'awaiting_org_approval', 'approved', 'rejected', 'revised', 'posted'],
+        'admin' => ['under_peer_review', 'approved', 'rejected', 'revised', 'posted'],
+        'pair' => ['under_peer_review', 'approved', 'rejected', 'revised', 'posted'],
         'org' => ['approved', 'revised'],
     ];
 
@@ -165,8 +164,10 @@ class SubmissionLifecycleService
                 return false;
             }
 
+            $current = $this->current($submission);
+
             return in_array($target->value, self::ROLE_TARGETS['org'], true)
-                && $this->current($submission) === SubmissionLifecycleStatus::AwaitingOrgApproval;
+                && $current === SubmissionLifecycleStatus::UnderPeerReview;
         }
 
         return false;

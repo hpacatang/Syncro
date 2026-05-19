@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use App\Enums\SubmissionLifecycleStatus;
-use App\Exceptions\InvalidLifecycleTransitionException;
+use App\Submission\Enums\SubmissionLifecycleStatus;
+use App\Submission\Exceptions\InvalidLifecycleTransitionException;
 use App\Models\Submission;
 use App\Models\User;
 use App\Services\SubmissionLifecycleService;
@@ -29,7 +29,7 @@ class SubmissionLifecycleServiceTest extends TestCase
         $this->assertSame(SubmissionLifecycleStatus::UnderPeerReview->value, $updated->workflow_status);
     }
 
-    public function test_org_cannot_approve_unless_awaiting_org_approval(): void
+    public function test_org_cannot_approve_unless_under_peer_review(): void
     {
         $org = User::factory()->create(['role' => 'org']);
         $submission = Submission::factory()->submitted()->create(['user_id' => $org->id]);
@@ -38,5 +38,16 @@ class SubmissionLifecycleServiceTest extends TestCase
 
         $this->expectException(InvalidLifecycleTransitionException::class);
         $service->transition($submission, SubmissionLifecycleStatus::Approved, $org);
+    }
+
+    public function test_org_can_approve_when_under_peer_review(): void
+    {
+        $org = User::factory()->create(['role' => 'org']);
+        $submission = Submission::factory()->awaitingOrgApproval()->create(['user_id' => $org->id]);
+
+        $service = app(SubmissionLifecycleService::class);
+        $updated = $service->transition($submission, SubmissionLifecycleStatus::Approved, $org);
+
+        $this->assertSame(SubmissionLifecycleStatus::Approved->value, $updated->workflow_status);
     }
 }

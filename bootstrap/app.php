@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(prepend: [
             \App\Http\Middleware\UseRequestOriginForUrls::class,
         ]);
+        $middleware->validateCsrfTokens(except: [
+            'logout',
+            'authenticate',
+            'store',
+        ]);
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'api.role' => \App\Http\Middleware\CheckApiRole::class,

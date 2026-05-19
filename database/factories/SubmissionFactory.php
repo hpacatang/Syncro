@@ -79,8 +79,9 @@ class SubmissionFactory extends Factory
     public function awaitingOrgApproval(): static
     {
         return $this->state(fn (array $attributes) => [
-            'workflow_status' => 'awaiting_org_approval',
+            'workflow_status' => 'under_peer_review',
             'status' => 'under_review',
+            'enhanced_caption' => $this->faker->paragraphs(2, true),
         ]);
     }
 }

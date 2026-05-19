@@ -2,7 +2,8 @@
 
 namespace App\Models;
 
-use App\Enums\SubmissionLifecycleStatus;
+use App\Submission\Enums\SubmissionLifecycleStatus;
+use App\Models\Scopes\OrgOwnedSubmissionScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,6 +24,11 @@ class Submission extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new OrgOwnedSubmissionScope);
+    }
 
     public function user()
     {

@@ -8,6 +8,10 @@
         <p class="text-muted">Content Queue & Submission Management</p>
     </div>
 
+    @if(count($submissions ?? []) > 0)
+        <x-submission-lifecycle-tracker-card :submission="$submissions->first()" title="Submission progress (latest in queue)" />
+    @endif
+
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
@@ -41,8 +45,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted small mb-1">Awaiting Org Approval</p>
-                            <h3 class="fw-bold text-warning">{{ $stats['pending_org_approval'] ?? 0 }}</h3>
+                            <p class="text-muted small mb-1">In Review</p>
+                            <h3 class="fw-bold text-warning">{{ $stats['pending_pair_review'] ?? 0 }}</h3>
                         </div>
                         <i class="fas fa-hourglass-half text-warning"></i>
                     </div>
@@ -94,6 +98,7 @@
                                         <th>Title/Caption</th>
                                         <th>Status</th>
                                         <th>Date</th>
+                                        <th>Manage</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -102,10 +107,13 @@
                                         <tr>
                                             <td class="ps-4">{{ $submission->user->name ?? 'Unknown' }}</td>
                                             <td>{{ Str::limit($submission->original_caption, 40) }}</td>
-                                            <td>
-                                                <x-submission-workflow-badge :submission="$submission" />
+                                            <td style="min-width: 12rem;">
+                                                <x-submission-lifecycle-progress :submission="$submission" :compact="true" />
                                             </td>
                                             <td class="text-muted small">{{ $submission->created_at->format('M d, Y') }}</td>
+                                            <td>
+                                                <x-submission-status-manager-inline :submission="$submission" />
+                                            </td>
                                             <td>
                                                 <div class="d-flex flex-wrap gap-1">
                                                     <a href="{{ route('dashboard.submissions.review', $submission) }}" class="btn btn-sm btn-outline-secondary">Review</a>
@@ -117,7 +125,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="5" class="text-center text-muted py-4">
+                                            <td colspan="6" class="text-center text-muted py-4">
                                                 No submissions found
                                             </td>
                                         </tr>
@@ -572,5 +580,9 @@ async function approveFinalCaption() {
 }
 
 </script>
+
+@if(count($submissions ?? []) > 0)
+<x-submission-lifecycle-poll :submission-ids="collect($submissions)->pluck('id')->implode(',')" />
+@endif
 
 @endsection

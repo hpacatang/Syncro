@@ -1,7 +1,7 @@
 @props(['submission'])
 
 @php
-    use App\Enums\SubmissionLifecycleStatus;
+    use App\Submission\Enums\SubmissionLifecycleStatus;
     use App\Services\SubmissionLifecycleService;
 
     $isStaff = auth()->user()->isAdmin() || auth()->user()->isPair();

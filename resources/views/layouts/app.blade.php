@@ -104,7 +104,7 @@
                     <i class="bi bi-bell me-2"></i> Notifications
                 </a>
             @endauth
-            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPair()))
+            @if(auth()->check() && auth()->user()->role === 'super_admin')
                 <a href="{{ route('audit-logs.index') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('audit-logs.index') ? 'active' : '' }}">
                     <i class="bi bi-clipboard-data me-2"></i> Audit Logs
                 </a>

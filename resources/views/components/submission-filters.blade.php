@@ -13,17 +13,11 @@
     $isOrg = $variant === 'org';
     $statusOptions = [
         'all' => 'All statuses',
-        'pending' => $isOrg ? 'With PAIR (in review)' : 'Pending review',
-        'pending_submission' => 'Submitted',
-        'pending_pair_review' => $isOrg ? 'PAIR reviewing' : 'Under PAIR review',
-        'pending_org_approval' => $isOrg ? 'Awaiting your approval' : 'Awaiting org approval',
+        'pending' => 'Pending review',
+        'submitted' => 'Submitted',
+        'under_peer_review' => 'Under PAIR review',
         'approved' => 'Approved',
-        'rejected' => 'Rejected',
         'posted' => 'Posted',
-        'submitted' => 'Submitted (new)',
-        'under_peer_review' => $isOrg ? 'PAIR reviewing (new)' : 'Under peer review (new)',
-        'awaiting_org_approval' => $isOrg ? 'Awaiting your approval (new)' : 'Awaiting org approval (new)',
-        'revised' => 'Revised',
     ];
     if ($isOrg) {
         unset($statusOptions['posted']);

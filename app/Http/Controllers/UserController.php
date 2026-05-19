@@ -51,16 +51,18 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string',
+        $validated = $request->validate([
+            'name' => 'required|string|min:3|max:100',
+            'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:6',
             'password2' => 'required|string|same:password',
         ]);
 
         User::create([
-            'name'=> $request->name,
-            'password' => Hash::make($request->password),
-            'role' => 'user', // Set default role for new registrations
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => 'user',
         ]);
 
         return redirect()->route('login')->with('info', 'Registration successful. Please login.');

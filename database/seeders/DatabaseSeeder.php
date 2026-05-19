@@ -20,24 +20,35 @@ class DatabaseSeeder extends Seeder
     {
         // ===== Create Default Test Users =====
         
+        // Super Admin user
+        User::create([
+            'name' => 'Super Admin User',
+            'email' => 'super@syncro.local',
+            'password' => Hash::make('super123'),
+            'role' => 'super_admin',
+        ]);
+
         // Admin user
         User::create([
             'name' => 'Admin User',
+            'email' => 'admin@syncro.local',
             'password' => Hash::make('admin123'),
             'role' => 'admin',
         ]);
 
         // PAIR staff - test user
         User::create([
-            'name' => 'qweqwe1',
-            'password' => Hash::make('qweqwe123'),
+            'name' => 'Reviewer Admin (PAIR)',
+            'email' => 'pair@syncro.local',
+            'password' => Hash::make('pair123'),
             'role' => 'pair',
         ]);
 
         // Organization - test user
         User::create([
-            'name' => 'sampleorg',
-            'password' => Hash::make('sample123'),
+            'name' => 'Department/Organization',
+            'email' => 'org@syncro.local',
+            'password' => Hash::make('org123'),
             'role' => 'org',
         ]);
 
@@ -56,7 +67,7 @@ class DatabaseSeeder extends Seeder
         $orgUsers[3]->update(['name' => 'Arts Department']);
 
         // Get test org user
-        $testOrgUser = User::where('name', 'sampleorg')->first();
+        $testOrgUser = User::where('email', 'org@syncro.local')->first();
         $allOrgUsers = User::where('role', 'org')->get();
 
         // Create submissions with various statuses

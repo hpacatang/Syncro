@@ -4,12 +4,12 @@
 <div class="container-fluid p-4">
     <div class="mb-4">
         <h1 class="h3 fw-bold mb-1">Review submission #{{ $submission->id }}</h1>
-        <p class="text-muted mb-0">
-            <span class="badge bg-secondary">{{ $submission->workflow_status }}</span>
-            @if($submission->user)
-                <span class="ms-2">{{ $submission->user->name }}</span>
-            @endif
-        </p>
+        @if($submission->user)
+            <p class="text-muted mb-3">{{ $submission->user->name }}</p>
+        @endif
+        <x-submission-lifecycle-tracker-card :submission="$submission" class="mb-0" />
+
+        <x-submission-lifecycle-poll :submission-ids="(string) $submission->id" />
     </div>
 
     <div class="row g-4">

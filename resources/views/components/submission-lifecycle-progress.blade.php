@@ -1,51 +1,58 @@
-@props(['submission'])
+@props(['submission', 'compact' => false])
 
 @php
-    use App\Enums\SubmissionLifecycleStatus;
+    use App\Submission\Enums\SubmissionLifecycleStatus;
 
     $current = $submission->lifecycle();
     $steps = SubmissionLifecycleStatus::progressSteps();
     $currentIndex = $current->progressIndex();
     $isRejected = $current === SubmissionLifecycleStatus::Rejected;
     $isRevised = $current === SubmissionLifecycleStatus::Revised;
+    $activeTheme = $isRejected ? 'rejected' : ($isRevised ? 'revised' : $current->progressTheme());
 @endphp
 
-<div class="submission-lifecycle-progress" data-lifecycle-progress data-submission-id="{{ $submission->id }}">
-    @if($isRejected)
+<div
+    class="submission-lifecycle-progress {{ $compact ? 'submission-lifecycle-progress--compact' : '' }}"
+    data-lifecycle-progress
+    data-submission-id="{{ $submission->id }}"
+    data-workflow-status="{{ $current->value }}"
+    data-progress-index="{{ $currentIndex }}"
+    data-active-theme="{{ $activeTheme }}"
+>
+    @if($isRejected && ! $compact)
         <div class="alert alert-danger py-2 mb-2 small">
             <strong>Rejected</strong> — this submission will not proceed unless staff reopens it.
         </div>
-    @elseif($isRevised)
+    @elseif($isRevised && ! $compact)
         <div class="alert alert-warning py-2 mb-2 small">
             <strong>Revisions requested</strong> — PAIR is updating the caption based on your feedback.
         </div>
     @endif
 
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-2">
+    <div class="lifecycle-progress__track">
         @foreach($steps as $index => $step)
             @php
-                $done = $currentIndex > $index;
-                $active = $currentIndex === $index;
-                $dotClass = $done ? 'bg-success' : ($active ? 'bg-primary' : 'bg-light border');
-                $labelClass = $active ? 'fw-bold text-primary' : ($done ? 'text-success' : 'text-muted');
+                $theme = $step->progressTheme();
+                $done = ! $isRejected && $currentIndex > $index;
+                $active = ! $isRejected && (
+                    ($isRevised && $theme === 'under_peer_review')
+                    || ($currentIndex === $index && ! $isRevised)
+                );
+                $stateClass = $active ? 'is-active' : ($done ? 'is-done' : 'is-upcoming');
             @endphp
-            <div class="text-center flex-fill" style="min-width: 4.5rem;">
-                <div
-                    class="rounded-circle mx-auto mb-1 {{ $dotClass }}"
-                    style="width: 12px; height: 12px;"
-                    data-step="{{ $step->value }}"
-                ></div>
-                <small class="{{ $labelClass }}" style="font-size: 0.65rem; line-height: 1.1;">
-                    {{ $step->label() }}
-                </small>
+            <div class="lifecycle-step lifecycle-step--{{ $theme }} {{ $stateClass }}" data-step="{{ $step->value }}">
+                <div class="lifecycle-step__dot" style="--step-color: {{ $step->progressColor() }}"></div>
+                <small class="lifecycle-step__label">{{ $step->label() }}</small>
             </div>
-            @if(!$loop->last)
-                <div class="flex-grow-0 text-muted opacity-25 d-none d-md-block">›</div>
+            @if(! $loop->last)
+                <span class="lifecycle-progress__connector d-none d-md-inline" aria-hidden="true">›</span>
             @endif
         @endforeach
     </div>
 
-    <div class="text-center">
-        <x-submission-workflow-badge :submission="$submission" size="lg" />
-    </div>
+    @if(! $compact)
+        <div class="lifecycle-progress__badge-wrap">
+            <x-submission-workflow-badge :submission="$submission" size="lg" />
+        </div>
+    @endif
 </div>

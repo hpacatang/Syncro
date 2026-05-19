@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Enums;
+namespace App\Submission\Enums;
 
 enum SubmissionLifecycleStatus: string
 {
     case Pending = 'pending';
     case Submitted = 'submitted';
     case UnderPeerReview = 'under_peer_review';
-    case AwaitingOrgApproval = 'awaiting_org_approval';
     case Approved = 'approved';
     case Rejected = 'rejected';
     case Revised = 'revised';
@@ -18,8 +17,7 @@ enum SubmissionLifecycleStatus: string
         return match ($this) {
             self::Pending => 'Pending',
             self::Submitted => 'Submitted',
-            self::UnderPeerReview => 'Under Peer Review',
-            self::AwaitingOrgApproval => 'Awaiting Org Approval',
+            self::UnderPeerReview => 'Under PAIR Review',
             self::Approved => 'Approved',
             self::Rejected => 'Rejected',
             self::Revised => 'Revised',
@@ -33,7 +31,6 @@ enum SubmissionLifecycleStatus: string
             self::Pending => 'secondary',
             self::Submitted => 'info',
             self::UnderPeerReview => 'warning',
-            self::AwaitingOrgApproval => 'primary',
             self::Approved => 'success',
             self::Rejected => 'danger',
             self::Revised => 'warning',
@@ -41,18 +38,30 @@ enum SubmissionLifecycleStatus: string
         };
     }
 
-    /**
-     * Ordered steps for progress UI (excludes terminal rejected from main path).
-     *
-     * @return list<self>
-     */
+    public function progressTheme(): string
+    {
+        return $this->value;
+    }
+
+    public function progressColor(): string
+    {
+        return match ($this) {
+            self::Pending => '#6c757d',
+            self::Submitted => '#0aa2c0',
+            self::UnderPeerReview => '#fd7e14',
+            self::Approved => '#198754',
+            self::Rejected => '#dc3545',
+            self::Revised => '#ffc107',
+            self::Posted => '#212529',
+        };
+    }
+
     public static function progressSteps(): array
     {
         return [
             self::Pending,
             self::Submitted,
             self::UnderPeerReview,
-            self::AwaitingOrgApproval,
             self::Approved,
             self::Posted,
         ];
@@ -74,22 +83,19 @@ enum SubmissionLifecycleStatus: string
         };
     }
 
-    /**
-     * Map legacy workflow_status values from the database.
-     */
     public static function fromLegacy(?string $value): self
     {
         return match ($value) {
             'pending_submission' => self::Submitted,
             'pending_pair_review' => self::UnderPeerReview,
-            'pending_org_approval' => self::AwaitingOrgApproval,
+            'pending_org_approval' => self::UnderPeerReview,
             'approved' => self::Approved,
             'rejected' => self::Rejected,
             'posted' => self::Posted,
             'pending' => self::Pending,
             'submitted' => self::Submitted,
             'under_peer_review' => self::UnderPeerReview,
-            'awaiting_org_approval' => self::AwaitingOrgApproval,
+            'awaiting_org_approval' => self::UnderPeerReview,
             'revised' => self::Revised,
             default => self::Pending,
         };

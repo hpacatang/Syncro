@@ -45,8 +45,8 @@
                             <td class="ps-4">#{{ $sub->id }}</td>
                             <td>{{ $sub->user ? $sub->user->name : 'Unknown User' }}</td>
                             <td>{{ \Illuminate\Support\Str::limit($sub->original_caption, 50) }}</td>
-                            <td>
-                                <x-submission-workflow-badge :submission="$sub" />
+                            <td style="min-width: 14rem;">
+                                <x-submission-lifecycle-progress :submission="$sub" :compact="true" />
                             </td>
                             <td>{{ $sub->created_at ? $sub->created_at->format('M d, Y h:i A') : 'N/A' }}</td>
                             <td class="pe-4 text-end">
@@ -74,6 +74,10 @@
         <div class="d-flex justify-content-center mt-3">
             {{ $submissions->links() }}
         </div>
+    @endif
+
+    @if(isset($submissions) && $submissions->count() > 0)
+        <x-submission-lifecycle-poll :submission-ids="collect($submissions->items())->pluck('id')->implode(',')" />
     @endif
 </div>
 @endsection
