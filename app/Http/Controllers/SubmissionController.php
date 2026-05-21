@@ -43,7 +43,7 @@ class SubmissionController extends Controller
             $mediaPaths = [];
             if ($request->hasFile('media')) {
                 foreach ($request->file('media') as $file) {
-                    $path = $file->store('submissions/media', 'public');
+                    $path = $file->store('submissions/media', 'supabase');
                     $mediaPaths[] = $path;
                 }
             }

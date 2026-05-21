@@ -59,7 +59,7 @@
                         <ul class="list-unstyled mb-0">
                             @foreach($submission->media_paths as $path)
                                 <li class="mb-2">
-                                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($path) }}" target="_blank" rel="noopener">{{ basename($path) }}</a>
+                                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('s3')->url($path) }}" target="_blank" rel="noopener">{{ basename($path) }}</a>
                                 </li>
                             @endforeach
                         </ul>
