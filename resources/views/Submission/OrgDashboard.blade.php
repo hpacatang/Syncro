@@ -8,6 +8,16 @@
         <p class="text-muted">Manage your content submissions and track approval status</p>
     </div>
 
+    @if($submissions->isNotEmpty())
+        @php $trackerSubmission = $awaitingApproval->first() ?? $submissions->sortByDesc('updated_at')->first(); @endphp
+        <div class="card shadow-sm border-0 mb-4 submission-lifecycle-tracker-card">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small mb-3 fw-semibold">Submission progress</h6>
+                <x-submission-lifecycle-progress :submission="$trackerSubmission" />
+            </div>
+        </div>
+    @endif
+
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
@@ -28,8 +38,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted small mb-1">Awaiting Your Review</p>
-                            <h3 class="fw-bold text-warning">{{ $stats['pending_org_approval'] ?? 0 }}</h3>
+                            <p class="text-muted small mb-1">Ready for Review</p>
+                            <h3 class="fw-bold text-warning">{{ $stats['ready_for_review'] ?? 0 }}</h3>
                         </div>
                         <i class="fas fa-hourglass-half text-warning"></i>
                     </div>
@@ -66,7 +76,7 @@
 
     <!-- Main Content -->
     <div class="row mb-4">
-        <!-- Awaiting Your Approval Section (NEW) -->
+        <!-- Ready for review -->
         @if(count($awaitingApproval) > 0)
         <div class="col-lg-8 mb-4">
             <div class="card shadow-sm border-0 border-warning border-top border-5">
@@ -74,9 +84,9 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="mb-1 fw-bold">
-                                <i class="fas fa-hourglass-half text-warning"></i> Awaiting Your Approval
+                                <i class="fas fa-hourglass-half text-warning"></i> Ready for Review
                             </h5>
-                            <small class="text-muted">PAIR has enhanced these captions. Please review and approve or request revisions.</small>
+                            <small class="text-muted">PAIR has enhanced these captions. Review and approve or request revisions.</small>
                         </div>
                         <span class="badge bg-warning text-dark fs-6">{{ count($awaitingApproval) }}</span>
                     </div>
@@ -127,12 +137,19 @@
         <div class="col-lg-{{ count($awaitingApproval) > 0 ? '8' : '8' }}">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white border-bottom">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                         <h5 class="mb-0 fw-bold">Your Submissions</h5>
                         <a href="{{ route('org.submit') }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-plus"></i> New Submission
                         </a>
                     </div>
+                    <x-submission-filters
+                        :action="route('org.dashboard')"
+                        :current-filter="$currentFilter ?? 'all'"
+                        :current-search="$currentSearch ?? ''"
+                        variant="org"
+                        compact
+                    />
                 </div>
                 <div class="card-body p-0">
                     @if(count($submissions) === 0)
@@ -157,16 +174,10 @@
                                 </thead>
                                 <tbody>
                                     @foreach($submissions as $submission)
-                                        <tr>
+                                        <tr data-submission-row="{{ $submission->id }}" data-workflow-status="{{ $submission->workflow_status }}">
                                             <td class="ps-4">{{ Str::limit($submission->original_caption, 50) }}</td>
-                                            <td>
-                                                @if($submission->status === 'pending')
-                                                    <span class="badge bg-secondary">Pending</span>
-                                                @elseif($submission->status === 'under_review')
-                                                    <span class="badge bg-warning text-dark">Under Review</span>
-                                                @elseif($submission->status === 'approved')
-                                                    <span class="badge bg-success">Approved</span>
-                                                @endif
+                                            <td style="min-width: 14rem;">
+                                                <x-submission-lifecycle-progress :submission="$submission" :compact="true" />
                                             </td>
                                             <td class="text-muted small">{{ $submission->created_at->format('M d') }}</td>
                                             <td>
@@ -505,5 +516,7 @@ async function submitRejection() {
     }
 }
 </script>
+
+<x-submission-lifecycle-poll :submission-ids="$submissions->pluck('id')->implode(',')" />
 
 @endsection

@@ -21,6 +21,8 @@ class SubmissionController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('create', Submission::class);
+
         try {
             $request->validate([
                 'original_caption' => 'required|string',
@@ -66,7 +68,7 @@ class SubmissionController extends Controller
                 'links' => $request->links ?? [],
                 'media_paths' => $mediaPaths,
                 'status' => 'pending',
-                'workflow_status' => 'pending_submission'
+                'workflow_status' => 'submitted'
             ]);
 
             Log::info('Submission created', [
@@ -103,6 +105,8 @@ class SubmissionController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Submission::class);
+
         try {
             $query = Submission::with('user');
 
@@ -141,6 +145,7 @@ class SubmissionController extends Controller
     {
         try {
             $submission = Submission::with('user')->findOrFail($id);
+            $this->authorize('view', $submission);
             return response()->json([
                 'success' => true,
                 'data' => $submission
@@ -163,6 +168,7 @@ class SubmissionController extends Controller
     {
         try {
             $submission = Submission::findOrFail($id);
+            $this->authorize('reviewAsStaff', $submission);
             $provider = $request->get('llm_provider', 'openai');
             $tone = $request->get('tone', AppSetting::get('caption_tone', 'formal'));
 
@@ -215,20 +221,20 @@ class SubmissionController extends Controller
                 'enhanced_caption' => $enhancedText,
                 'enhanced_by' => auth()->id(),
                 'enhanced_at' => now(),
-                'workflow_status' => 'pending_org_approval'
+                'workflow_status' => 'under_peer_review'
             ]);
 
             User::find($submission->user_id)?->notify(new EnhancementReadyForOrg($submission->fresh()));
 
             return response()->json([
                 'success' => true,
-                'message' => 'Caption enhanced! Awaiting organization review.',
+                'message' => 'Caption enhanced! Ready for organization review.',
                 'data' => [
                     'submission_id' => $submission->id,
                     'original_caption' => $submission->original_caption,
                     'enhanced_caption' => $enhancedText,
                     'provider_used' => $provider,
-                    'workflow_status' => 'pending_org_approval'
+                    'workflow_status' => 'under_peer_review'
                 ]
             ]);
         } catch (\Exception $e) {
@@ -249,6 +255,7 @@ class SubmissionController extends Controller
     {
         try {
             $submission = Submission::findOrFail($id);
+            $this->authorize('reviewAsStaff', $submission);
             $submission->update(['status' => 'approved']);
 
             // Notify the organization
@@ -279,18 +286,20 @@ class SubmissionController extends Controller
     public function saveManualCaption(Request $request, $id)
     {
         try {
+            $submission = Submission::findOrFail($id);
+            $this->authorize('reviewAsStaff', $submission);
+
             $request->validate([
                 'manual_caption' => 'required|string|min:10',
                 'pair_feedback' => 'nullable|string'
             ]);
 
-            $submission = Submission::findOrFail($id);
             $submission->update([
                 'enhanced_caption' => $request->manual_caption,
                 'enhanced_by' => auth()->id(),
                 'enhanced_at' => now(),
                 'pair_feedback' => $request->pair_feedback,
-                'workflow_status' => 'pending_org_approval'
+                'workflow_status' => 'under_peer_review'
             ]);
 
             User::find($submission->user_id)?->notify(new EnhancementReadyForOrg($submission->fresh()));
@@ -303,11 +312,11 @@ class SubmissionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Caption enhanced! Awaiting organization review.',
+                'message' => 'Caption enhanced! Ready for organization review.',
                 'data' => [
                     'submission_id' => $submission->id,
                     'enhanced_caption' => $submission->enhanced_caption,
-                    'workflow_status' => 'pending_org_approval'
+                    'workflow_status' => 'under_peer_review'
                 ]
             ]);
         } catch (\Exception $e) {
@@ -327,11 +336,12 @@ class SubmissionController extends Controller
     public function update(Request $request, $id)
     {
         try {
+            $submission = Submission::findOrFail($id);
+            $this->authorize('update', $submission);
+
             $request->validate([
                 'status' => 'in:pending,under_review,approved'
             ]);
-
-            $submission = Submission::findOrFail($id);
             $submission->update($request->only('status'));
 
             return response()->json([
@@ -356,6 +366,7 @@ class SubmissionController extends Controller
     {
         try {
             $submission = Submission::findOrFail($id);
+            $this->authorize('delete', $submission);
             $submission->delete();
 
             return response()->json([
@@ -379,7 +390,8 @@ class SubmissionController extends Controller
     {
         try {
             $submission = Submission::findOrFail($id);
-            
+            $this->authorize('reviewAsOrg', $submission);
+
             // Verify the org user owns this submission
             if ($submission->user_id !== auth()->id()) {
                 return response()->json([
@@ -429,7 +441,8 @@ class SubmissionController extends Controller
             ]);
 
             $submission = Submission::findOrFail($id);
-            
+            $this->authorize('reviewAsOrg', $submission);
+
             // Verify the org user owns this submission
             if ($submission->user_id !== auth()->id()) {
                 return response()->json([
@@ -439,7 +452,7 @@ class SubmissionController extends Controller
             }
 
             $submission->update([
-                'workflow_status' => 'pending_pair_review',
+                'workflow_status' => 'revised',
                 'org_review_notes' => $request->notes,
                 'status' => 'under_review'
             ]);
@@ -455,7 +468,7 @@ class SubmissionController extends Controller
                 'message' => 'Feedback sent to PAIR for further enhancements.',
                 'data' => [
                     'submission_id' => $submission->id,
-                    'workflow_status' => 'pending_pair_review',
+                    'workflow_status' => 'revised',
                     'feedback' => $request->notes
                 ]
             ]);

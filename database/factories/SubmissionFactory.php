@@ -67,4 +67,21 @@ class SubmissionFactory extends Factory
             'enhanced_caption' => $this->faker->paragraphs(2, true),
         ]);
     }
+
+    public function submitted(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'workflow_status' => 'submitted',
+            'status' => 'pending',
+        ]);
+    }
+
+    public function awaitingOrgApproval(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'workflow_status' => 'under_peer_review',
+            'status' => 'under_review',
+            'enhanced_caption' => $this->faker->paragraphs(2, true),
+        ]);
+    }
 }

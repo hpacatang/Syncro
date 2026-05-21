@@ -25,7 +25,9 @@ class SubmissionQueuedForReview extends Notification
             'title' => 'New submission to review',
             'message' => "{$org} submitted content for PAIR (submission #{$this->submission->id}).",
             'submission_id' => $this->submission->id,
-            'url' => route('dashboard', ['status' => 'pending']),
+            'type' => 'submission_queued',
+            'open_enhance' => true,
+            'url' => route('dashboard', ['enhance' => $this->submission->id]),
         ];
     }
 }

@@ -296,6 +296,26 @@
                     @enderror
                 </div>
 
+                <!-- Email -->
+                <div class="form-group">
+                    <label for="email" class="form-label">
+                        <i class="fas fa-envelope"></i> Email
+                    </label>
+                    <input
+                        id="email"
+                        type="email"
+                        class="form-control @error('email') is-invalid @enderror"
+                        name="email"
+                        value="{{ old('email') }}"
+                        placeholder="you@example.com"
+                        required>
+                    @error('email')
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                        </div>
+                    @enderror
+                </div>
+
                 <!-- Password -->
                 <div class="form-group">
                     <label for="password" class="form-label">

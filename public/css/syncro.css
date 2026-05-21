@@ -12,6 +12,12 @@
     border: 0;
 }
 
+.syncro-back-bar {
+    position: sticky;
+    top: 56px;
+    z-index: 1020;
+}
+
 .syncro-notif-dropdown {
     min-width: 320px;
     max-height: 360px;
@@ -34,4 +40,116 @@
     width: 100%;
     height: 200px;
     object-fit: cover;
+}
+
+/* Submission lifecycle progress — per-step colors */
+.submission-lifecycle-progress {
+    --lifecycle-upcoming: #ced4da;
+}
+
+.submission-lifecycle-progress--compact .lifecycle-step__label {
+    font-size: 0.55rem !important;
+}
+
+.submission-lifecycle-progress--compact .lifecycle-step__dot {
+    width: 10px !important;
+    height: 10px !important;
+}
+
+.lifecycle-progress__track {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.lifecycle-step {
+    flex: 1 1 4.5rem;
+    text-align: center;
+    min-width: 4rem;
+}
+
+.lifecycle-step__dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    margin: 0 auto 0.35rem;
+    border: 2px solid var(--lifecycle-upcoming);
+    background: #fff;
+    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.lifecycle-step__label {
+    display: block;
+    font-size: 0.65rem;
+    line-height: 1.15;
+    color: #adb5bd;
+    transition: color 0.25s ease, font-weight 0.25s ease;
+}
+
+.lifecycle-step.is-done .lifecycle-step__dot {
+    border-color: transparent;
+}
+
+.lifecycle-step.is-done .lifecycle-step__label {
+    font-weight: 500;
+}
+
+.lifecycle-step.is-active .lifecycle-step__dot {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.2);
+}
+
+.lifecycle-step.is-active .lifecycle-step__label {
+    font-weight: 700;
+}
+
+.lifecycle-step--pending.is-done .lifecycle-step__dot,
+.lifecycle-step--pending.is-active .lifecycle-step__dot { background: #6c757d; border-color: #6c757d; }
+.lifecycle-step--pending.is-done .lifecycle-step__label,
+.lifecycle-step--pending.is-active .lifecycle-step__label { color: #6c757d; }
+
+.lifecycle-step--submitted.is-done .lifecycle-step__dot,
+.lifecycle-step--submitted.is-active .lifecycle-step__dot { background: #0aa2c0; border-color: #0aa2c0; }
+.lifecycle-step--submitted.is-done .lifecycle-step__label,
+.lifecycle-step--submitted.is-active .lifecycle-step__label { color: #0aa2c0; }
+
+.lifecycle-step--under_peer_review.is-done .lifecycle-step__dot,
+.lifecycle-step--under_peer_review.is-active .lifecycle-step__dot { background: #fd7e14; border-color: #fd7e14; }
+.lifecycle-step--under_peer_review.is-done .lifecycle-step__label,
+.lifecycle-step--under_peer_review.is-active .lifecycle-step__label { color: #e8590c; }
+
+.lifecycle-step--approved.is-done .lifecycle-step__dot,
+.lifecycle-step--approved.is-active .lifecycle-step__dot { background: #198754; border-color: #198754; }
+.lifecycle-step--approved.is-done .lifecycle-step__label,
+.lifecycle-step--approved.is-active .lifecycle-step__label { color: #198754; }
+
+.lifecycle-step--posted.is-done .lifecycle-step__dot,
+.lifecycle-step--posted.is-active .lifecycle-step__dot { background: #212529; border-color: #212529; }
+.lifecycle-step--posted.is-done .lifecycle-step__label,
+.lifecycle-step--posted.is-active .lifecycle-step__label { color: #212529; }
+
+.lifecycle-step--rejected.is-active .lifecycle-step__dot { background: #dc3545; border-color: #dc3545; box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25); }
+.lifecycle-step--rejected.is-active .lifecycle-step__label { color: #dc3545; }
+
+.lifecycle-step--revised.is-active .lifecycle-step__dot { background: #ffc107; border-color: #ffc107; box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.35); }
+.lifecycle-step--revised.is-active .lifecycle-step__label { color: #cc9a06; }
+
+.lifecycle-progress__connector {
+    flex: 0 0 auto;
+    align-self: center;
+    color: #dee2e6;
+    font-size: 0.75rem;
+    padding: 0 0.1rem;
+    margin-top: -1.25rem;
+}
+
+.lifecycle-progress__badge-wrap {
+    margin-top: 0.75rem;
+    text-align: center;
+}
+
+.submission-lifecycle-tracker-card {
+    border-top: 4px solid #0d6efd !important;
 }

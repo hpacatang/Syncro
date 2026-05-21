@@ -44,7 +44,7 @@ class UserManagementController extends Controller
     public function create()
     {
         return view('Users.Create', [
-            'roles' => ['admin', 'pair', 'org', 'user'],
+            'roles' => ['super_admin', 'admin', 'pair', 'org', 'user'],
         ]);
     }
 
@@ -57,7 +57,7 @@ class UserManagementController extends Controller
             'name' => 'required|string|min:3|max:100',
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:admin,pair,org,user',
+            'role' => 'required|in:super_admin,admin,pair,org,user',
         ]);
 
         $user = User::create([
@@ -100,7 +100,7 @@ class UserManagementController extends Controller
     {
         return view('Users.Edit', [
             'user' => $user,
-            'roles' => ['admin', 'pair', 'org', 'user'],
+            'roles' => ['super_admin', 'admin', 'pair', 'org', 'user'],
         ]);
     }
 
@@ -117,7 +117,7 @@ class UserManagementController extends Controller
                 Rule::unique('users')->ignore($user->id),
             ],
             'password' => 'nullable|string|min:8|confirmed',
-            'role' => 'required|in:admin,pair,org,user',
+            'role' => 'required|in:super_admin,admin,pair,org,user',
         ]);
 
         $changes = [];
@@ -135,6 +135,8 @@ class UserManagementController extends Controller
         if ($request->filled('password')) {
             $changes['password'] = ['old' => '****', 'new' => '****'];
             $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
         }
 
         $user->update($validated);
@@ -180,5 +182,35 @@ class UserManagementController extends Controller
         }
 
         return redirect()->route('users.index')->with('success', 'User deleted successfully');
+    }
+
+    public function accept(User $user)
+    {
+        if ($user->role !== 'user') {
+            return back()->with('error', 'Only pending users can be accepted.');
+        }
+
+        $user->update(['role' => 'org']);
+        AuditLogService::logUserUpdated($user->id, ['role' => ['old' => 'user', 'new' => 'org']]);
+
+        return back()->with('success', 'User accepted and assigned Org role.');
+    }
+
+    public function reject(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'You cannot reject your own account');
+        }
+
+        $userData = [
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+        ];
+
+        $user->delete();
+        AuditLogService::logUserDeleted($user->id, $userData);
+
+        return back()->with('success', 'User rejected and removed.');
     }
 }

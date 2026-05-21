@@ -47,25 +47,6 @@ class StaffToolsController extends Controller
         return view('main.media-gallery', ['assets' => $assets]);
     }
 
-    public function toneEdit(): View
-    {
-        return view('Settings.ToneSettings', [
-            'tone' => AppSetting::get('caption_tone', 'formal'),
-        ]);
-    }
-
-    public function toneUpdate(Request $request)
-    {
-        $validated = $request->validate([
-            'tone' => 'required|string|in:formal,friendly,enthusiastic,urgent,professional',
-        ]);
-
-        AppSetting::set('caption_tone', $validated['tone']);
-
-        return redirect()
-            ->route('settings.tone')
-            ->with('status', 'Default caption tone saved.');
-    }
 
     public function captionAssist(): View
     {

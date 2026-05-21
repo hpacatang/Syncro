@@ -8,6 +8,10 @@
         <p class="text-muted">Content Queue & Submission Management</p>
     </div>
 
+    @if(count($submissions ?? []) > 0)
+        <x-submission-lifecycle-tracker-card :submission="$submissions->first()" title="Submission progress (latest in queue)" />
+    @endif
+
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
@@ -41,8 +45,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted small mb-1">Awaiting Org Approval</p>
-                            <h3 class="fw-bold text-warning">{{ $stats['pending_org_approval'] ?? 0 }}</h3>
+                            <p class="text-muted small mb-1">In Review</p>
+                            <h3 class="fw-bold text-warning">{{ $stats['pending_pair_review'] ?? 0 }}</h3>
                         </div>
                         <i class="fas fa-hourglass-half text-warning"></i>
                     </div>
@@ -69,19 +73,14 @@
         <div class="col-lg-8">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white border-bottom">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 fw-bold">Content Queue</h5>
-                        <div>
-                            <select class="form-select form-select-sm d-inline-block w-auto" id="statusFilter" onchange="applyFilter(this.value)">
-                                <option value="pending" {{ $currentFilter === 'pending' ? 'selected' : '' }}>Pending Review</option>
-                                <option value="all" {{ $currentFilter === 'all' ? 'selected' : '' }}>All Status</option>
-                                <option value="pending_submission" {{ $currentFilter === 'pending_submission' ? 'selected' : '' }}>Submitted</option>
-                                <option value="pending_pair_review" {{ $currentFilter === 'pending_pair_review' ? 'selected' : '' }}>Under Review</option>
-                                <option value="pending_org_approval" {{ $currentFilter === 'pending_org_approval' ? 'selected' : '' }}>Awaiting Org Approval</option>
-                                <option value="approved" {{ $currentFilter === 'approved' ? 'selected' : '' }}>Approved</option>
-                            </select>
-                        </div>
-                    </div>
+                    <h5 class="mb-3 fw-bold">Content Queue</h5>
+                    <x-submission-filters
+                        :action="route('dashboard')"
+                        :current-filter="$currentFilter"
+                        :current-search="$currentSearch ?? ''"
+                        variant="admin"
+                        compact
+                    />
                 </div>
                 <div class="card-body p-0">
                     @if(count($submissions) === 0)
@@ -99,6 +98,7 @@
                                         <th>Title/Caption</th>
                                         <th>Status</th>
                                         <th>Date</th>
+                                        <th>Manage</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -107,18 +107,13 @@
                                         <tr>
                                             <td class="ps-4">{{ $submission->user->name ?? 'Unknown' }}</td>
                                             <td>{{ Str::limit($submission->original_caption, 40) }}</td>
-                                            <td>
-                                                @if($submission->workflow_status === 'pending_submission')
-                                                    <span class="badge bg-secondary">Submitted</span>
-                                                @elseif($submission->workflow_status === 'pending_pair_review')
-                                                    <span class="badge bg-warning text-dark">Under Review</span>
-                                                @elseif($submission->workflow_status === 'pending_org_approval')
-                                                    <span class="badge bg-info">Awaiting Org Approval</span>
-                                                @elseif($submission->workflow_status === 'approved')
-                                                    <span class="badge bg-success">Approved</span>
-                                                @endif
+                                            <td style="min-width: 12rem;">
+                                                <x-submission-lifecycle-progress :submission="$submission" :compact="true" />
                                             </td>
                                             <td class="text-muted small">{{ $submission->created_at->format('M d, Y') }}</td>
+                                            <td>
+                                                <x-submission-status-manager-inline :submission="$submission" />
+                                            </td>
                                             <td>
                                                 <div class="d-flex flex-wrap gap-1">
                                                     <a href="{{ route('dashboard.submissions.review', $submission) }}" class="btn btn-sm btn-outline-secondary">Review</a>
@@ -130,7 +125,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="5" class="text-center text-muted py-4">
+                                            <td colspan="6" class="text-center text-muted py-4">
                                                 No submissions found
                                             </td>
                                         </tr>
@@ -215,9 +210,6 @@
                     </a>
                     <a href="{{ route('staff.media-gallery') }}" class="btn btn-outline-secondary w-100 mb-2 text-decoration-none">
                         <i class="fas fa-images"></i> View media gallery
-                    </a>
-                    <a href="{{ route('settings.tone') }}" class="btn btn-outline-secondary w-100 text-decoration-none">
-                        <i class="fas fa-cogs"></i> Configure tones
                     </a>
                 </div>
             </div>
@@ -329,7 +321,6 @@
                                     <option value="urgent" {{ $defTone === 'urgent' ? 'selected' : '' }}>⚡ Urgent</option>
                                     <option value="professional" {{ $defTone === 'professional' ? 'selected' : '' }}>💼 Academic</option>
                                 </select>
-                                <small class="text-muted d-block mt-1">Default from <a href="{{ route('settings.tone') }}">tone settings</a>.</small>
                             </div>
 
                             <!-- Generate Button -->
@@ -405,22 +396,60 @@
 
 <script>
 let currentSubmissionId = null;
+const dashboardUrl = @json(route('dashboard'));
 
-// Handle modal show event to capture button data
+function setupEnhanceModal(submissionId, caption, enhancedCaption) {
+    currentSubmissionId = submissionId;
+    document.getElementById('originalCaption').textContent = caption || 'No caption provided';
+    document.getElementById('manualCaption').value = enhancedCaption || '';
+    document.getElementById('pairFeedback').value = '';
+    document.getElementById('generateBtn').disabled = false;
+    document.getElementById('approveBtn').disabled = false;
+    document.getElementById('generatingAlert').classList.add('d-none');
+}
+
+function openEnhanceModal(submissionId, caption, enhancedCaption) {
+    setupEnhanceModal(submissionId, caption, enhancedCaption);
+    const el = document.getElementById('generateModal');
+    bootstrap.Modal.getOrCreateInstance(el).show();
+}
+
 document.getElementById('generateModal').addEventListener('show.bs.modal', function(event) {
     const button = event.relatedTarget;
     if (button && button.classList.contains('generate-btn')) {
-        currentSubmissionId = button.getAttribute('data-submission-id');
-        const caption = button.getAttribute('data-caption');
-        
-        document.getElementById('originalCaption').textContent = caption || 'No caption provided';
-        document.getElementById('manualCaption').value = '';
-        document.getElementById('generateBtn').disabled = false;
-        document.getElementById('approveBtn').disabled = false;
-        document.getElementById('generatingAlert').classList.add('d-none');
-        
-        console.log('Modal setup - Submission ID:', currentSubmissionId, 'Caption:', caption);
+        setupEnhanceModal(
+            button.getAttribute('data-submission-id'),
+            button.getAttribute('data-caption'),
+            ''
+        );
     }
+});
+
+document.addEventListener('DOMContentLoaded', async function () {
+    const params = new URLSearchParams(window.location.search);
+    const enhanceId = params.get('enhance');
+    if (!enhanceId) return;
+
+    try {
+        const response = await fetch('/api/submissions/' + encodeURIComponent(enhanceId), {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' }
+        });
+        const data = await response.json();
+        if (data.success && data.data) {
+            openEnhanceModal(
+                enhanceId,
+                data.data.original_caption,
+                data.data.enhanced_caption || ''
+            );
+        }
+    } catch (err) {
+        console.error('Could not load submission for enhance:', err);
+    }
+
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete('enhance');
+    window.history.replaceState({}, '', cleanUrl);
 });
 
 async function generateCaption() {
@@ -524,14 +553,15 @@ async function approveFinalCaption() {
 
         if (data.success) {
             generatingAlert.className = 'alert alert-success';
-            generatingAlert.innerHTML = '<i class=\"fas fa-check-circle\"></i> <strong>Success!</strong> Caption approved and updated.';
+            generatingAlert.innerHTML = '<i class=\"fas fa-check-circle\"></i> <strong>Success!</strong> Caption saved. Returning to Enhance Caption…';
             
-            // Close modal after brief delay
             setTimeout(() => {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('generateModal'));
                 if (modal) modal.hide();
-                location.reload(); // Refresh to show updated data
-            }, 1500);
+                window.location.assign(
+                    dashboardUrl + '?enhance=' + encodeURIComponent(currentSubmissionId)
+                );
+            }, 800);
         } else {
             generatingAlert.className = 'alert alert-danger';
             generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${data.message || 'Failed to save caption'}`;
@@ -545,9 +575,10 @@ async function approveFinalCaption() {
     }
 }
 
-function applyFilter(status) {
-    window.location.href = '{{ route("dashboard") }}?status=' + status;
-}
 </script>
+
+@if(count($submissions ?? []) > 0)
+<x-submission-lifecycle-poll :submission-ids="collect($submissions)->pluck('id')->implode(',')" />
+@endif
 
 @endsection

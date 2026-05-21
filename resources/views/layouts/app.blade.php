@@ -52,9 +52,6 @@
                             <i class="bi bi-person-circle"></i> {{ Auth::user()->name }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-                            <li><a class="dropdown-item" href="#">Account</a></li>
-                            <li><a class="dropdown-item" href="#">Settings</a></li>
-                            <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" action="/logout">
                                     @csrf
@@ -104,7 +101,7 @@
                     <i class="bi bi-bell me-2"></i> Notifications
                 </a>
             @endauth
-            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPair()))
+            @if(auth()->check() && auth()->user()->role === 'super_admin')
                 <a href="{{ route('audit-logs.index') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('audit-logs.index') ? 'active' : '' }}">
                     <i class="bi bi-clipboard-data me-2"></i> Audit Logs
                 </a>
@@ -117,6 +114,13 @@
 
     <!-- Main content area -->
     <main id="main-content">
+        @auth
+            @if(\App\Support\BackNavigation::shouldShow())
+                <div class="syncro-back-bar border-bottom bg-white px-3 px-md-4 py-2">
+                    <x-back-button />
+                </div>
+            @endif
+        @endauth
         @yield('content')
     </main>
 

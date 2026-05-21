@@ -9,6 +9,7 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StaffToolsController;
+use App\Http\Controllers\SubmissionLifecycleController;
 
 Route::get('/', function () {
     return redirect('login');
@@ -28,17 +29,21 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
-    Route::middleware('role:admin,pair')->group(function () {
+    Route::middleware('role:super_admin,admin,pair')->group(function () {
         Route::get('/dashboard', [MainController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/submissions', [MainController::class, 'submissions'])->name('dashboard.submissions');
         Route::get('/dashboard/submissions/{submission}/review', [SubmissionReviewController::class, 'show'])
             ->name('dashboard.submissions.review');
         Route::get('/dashboard/notifications', [NotificationController::class, 'index'])->name('dashboard.notifications');
+    });
 
+    Route::middleware('role:super_admin')->group(function () {
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
         Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
 
         Route::resource('users', UserManagementController::class);
+        Route::post('/users/{user}/accept', [UserManagementController::class, 'accept'])->name('users.accept');
+        Route::post('/users/{user}/reject', [UserManagementController::class, 'reject'])->name('users.reject');
     });
 
     Route::middleware('role:org')->group(function () {
@@ -55,22 +60,27 @@ Route::middleware('auth')->group(function () {
     Route::middleware('isAdmin')->group(function () {
         Route::get('/dashboard/media-gallery', [StaffToolsController::class, 'mediaGallery'])->name('staff.media-gallery');
         Route::get('/dashboard/caption-assist', [StaffToolsController::class, 'captionAssist'])->name('staff.caption-assist');
-        Route::get('/settings/tone', [StaffToolsController::class, 'toneEdit'])->name('settings.tone');
-        Route::post('/settings/tone', [StaffToolsController::class, 'toneUpdate'])->name('settings.tone.update');
         Route::post('/api/pair/caption-from-media', [StaffToolsController::class, 'captionFromMedia'])->name('api.pair.caption-from-media');
     });
 
     Route::prefix('api')->group(function () {
-        Route::post('/submissions', [SubmissionController::class, 'store']);
+        Route::middleware('role:org')->group(function () {
+            Route::post('/submissions', [SubmissionController::class, 'store']);
+        });
+
+        Route::middleware('role:super_admin,admin,pair')->group(function () {
+            Route::post('/submissions/{id}/enhance', [SubmissionController::class, 'enhance']);
+            Route::post('/submissions/{id}/save-manual-caption', [SubmissionController::class, 'saveManualCaption']);
+            Route::put('/submissions/{id}/approve', [SubmissionController::class, 'approve']);
+            Route::post('/submissions/{submission}/transition', [SubmissionLifecycleController::class, 'transition']);
+        });
+
         Route::get('/submissions', [SubmissionController::class, 'index']);
+        Route::get('/submissions/pending', [SubmissionController::class, 'index']);
         Route::get('/submissions/{id}', [SubmissionController::class, 'show']);
-        Route::post('/submissions/{id}/enhance', [SubmissionController::class, 'enhance']);
-        Route::post('/submissions/{id}/save-manual-caption', [SubmissionController::class, 'saveManualCaption']);
-        Route::put('/submissions/{id}/approve', [SubmissionController::class, 'approve']);
-        Route::post('/submissions/{id}/org-review/approve', [SubmissionController::class, 'orgApproveEnhancement']);
-        Route::post('/submissions/{id}/org-review/reject', [SubmissionController::class, 'orgRejectEnhancement']);
         Route::put('/submissions/{id}', [SubmissionController::class, 'update']);
         Route::delete('/submissions/{id}', [SubmissionController::class, 'destroy']);
-        Route::get('/submissions/pending', [SubmissionController::class, 'index']);
+        Route::get('/submissions/lifecycle-updates', [SubmissionLifecycleController::class, 'updates']);
+        Route::get('/submissions/{submission}/lifecycle', [SubmissionLifecycleController::class, 'show']);
     });
 });

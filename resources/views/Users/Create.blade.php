@@ -2,11 +2,8 @@
 
 @section('content')
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-person-plus me-2"></i> Create New User</h2>
-        <a href="{{ route('users.index') }}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left me-2"></i> Back to Users
-        </a>
+    <div class="mb-4">
+        <h2 class="mb-0"><i class="bi bi-person-plus me-2"></i> Create New User</h2>
     </div>
 
     <div class="card">

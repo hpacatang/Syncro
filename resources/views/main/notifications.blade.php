@@ -16,7 +16,7 @@
                     $data = $notification->data;
                     $title = $data['title'] ?? class_basename($notification->type);
                     $message = $data['message'] ?? 'You have a new notification.';
-                    $targetUrl = $data['url'] ?? (auth()->user()->isOrg() ? route('org.notifications') : route('dashboard.notifications'));
+                    $targetUrl = \App\Support\NotificationTargetUrl::resolve($data, auth()->user());
                     $isUnread = $notification->read_at === null;
                 @endphp
                 <div class="card mb-3 syncro-card-elevated border-start border-4 {{ $isUnread ? 'border-primary syncro-notif-item--unread' : 'border-secondary' }}">
@@ -91,12 +91,17 @@
 
     document.querySelectorAll('.notif-open-link').forEach(function (a) {
         a.addEventListener('click', async function (e) {
-            const id = a.getAttribute('data-notif-id');
-            if (!id || !csrf) return;
-            e.preventDefault();
             const href = a.getAttribute('href');
-            try { await markRead(id); } catch (err) {}
-            window.location.href = href;
+            if (!href || href === '#') return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const id = a.getAttribute('data-notif-id');
+            if (id && csrf) {
+                try { await markRead(id); } catch (err) { /* still navigate */ }
+            }
+            window.location.assign(href);
         });
     });
 })();

@@ -4,9 +4,6 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-people me-2"></i> User Management</h2>
-        <a href="{{ route('users.create') }}" class="btn btn-primary">
-            <i class="bi bi-person-plus me-2"></i> Add New User
-        </a>
     </div>
 
     <!-- Search and Filter -->
@@ -21,6 +18,7 @@
                     <label for="role" class="form-label">Role</label>
                     <select name="role" id="role" class="form-select">
                         <option value="">-- All Roles --</option>
+                        <option value="super_admin" {{ request('role') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
                         <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>Admin</option>
                         <option value="pair" {{ request('role') === 'pair' ? 'selected' : '' }}>PAIR</option>
                         <option value="org" {{ request('role') === 'org' ? 'selected' : '' }}>Organization</option>
@@ -61,22 +59,20 @@
                             <td><small>{{ $user->created_at->format('M d, Y') }}</small></td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <x-view-action-link :href="route('users.show', $user)" :small="false" />
-                                    <a href="{{ route('users.edit', $user) }}" class="btn btn-outline-primary" title="Edit">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    @if($user->id !== auth()->id())
-                                    <form method="POST" action="{{ route('users.destroy', $user) }}" style="display: inline;">
+                                    @if($user->role === 'user')
+                                    <form method="POST" action="{{ route('users.accept', $user) }}" style="display: inline-block;">
                                         @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger" title="Delete" onclick="return confirm('Are you sure?')">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Accept this user as an organization?')">Accept</button>
+                                    </form>
+                                    @endif
+                                    
+                                    @if($user->id !== auth()->id())
+                                    <form method="POST" action="{{ route('users.reject', $user) }}" style="display: inline-block; margin-left: 0.25rem;">
+                                        @csrf
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Reject and remove this user?')">Reject</button>
                                     </form>
                                     @else
-                                    <button class="btn btn-outline-secondary disabled" title="Cannot delete yourself">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <button class="btn btn-secondary btn-sm disabled" style="margin-left: 0.25rem;">Reject</button>
                                     @endif
                                 </div>
                             </td>
