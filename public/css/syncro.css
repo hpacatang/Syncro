@@ -407,10 +407,21 @@ body.syncro-nav-open {
     border: 1px solid var(--syncro-border);
 }
 
-.syncro-media-tile img {
+.syncro-media-tile__img {
     width: 100%;
     height: 200px;
     object-fit: cover;
+    display: block;
+    background: var(--syncro-surface);
+}
+
+.syncro-media-tile__file {
+    min-height: 200px;
+    background: var(--syncro-surface);
+}
+
+.syncro-media-tile__caption {
+    background: #fff;
 }
 
 /* Submission lifecycle progress — per-step colors */

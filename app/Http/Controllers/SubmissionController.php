@@ -33,9 +33,13 @@ class SubmissionController extends Controller
             ]);
 
             $mediaPaths = [];
+            $mediaDisk = config('filesystems.disks.supabase.key')
+                ? 'supabase'
+                : 'public';
+
             if ($request->hasFile('media')) {
                 foreach ($request->file('media') as $file) {
-                    $path = $file->store('submissions/media', 'supabase');
+                    $path = $file->store('submissions/media', $mediaDisk);
                     $mediaPaths[] = $path;
                 }
             }

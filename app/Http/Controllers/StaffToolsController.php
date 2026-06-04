@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
 use App\Models\Submission;
+use App\Support\SubmissionMedia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Illuminate\Validation\Rules\File;
 
@@ -29,16 +29,16 @@ class StaffToolsController extends Controller
                 continue;
             }
             foreach ($paths as $path) {
-                if (! $path || ! Storage::disk('public')->exists($path)) {
+                if (! $path || SubmissionMedia::resolve($path) === null) {
                     continue;
                 }
                 $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
                 $assets[] = [
-                    'url' => Storage::disk('public')->url($path),
+                    'url' => SubmissionMedia::url($path),
                     'name' => basename($path),
                     'ext' => $ext,
                     'submission_id' => $submission->id,
-                    'org' => $submission->user?->name,
+                    'org' => $submission->user?->displayName(),
                     'created_at' => $submission->created_at,
                 ];
             }

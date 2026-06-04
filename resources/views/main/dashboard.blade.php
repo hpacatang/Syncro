@@ -213,27 +213,33 @@
                     <p class="text-muted small">Media from submissions will appear here</p>
                 </div>
             @else
+                @php $mediaShown = 0; @endphp
                 <div class="row g-3">
-                    @foreach($submissions->whereNotNull('media_paths')->take(4) as $submission)
-                        @if(is_array($submission->media_paths) && count($submission->media_paths) > 0)
+                    @foreach($submissions->whereNotNull('media_paths') as $submission)
+                        @if($mediaShown >= 8)
+                            @break
+                        @endif
+                        @if(is_array($submission->media_paths))
                             @foreach($submission->media_paths as $media)
+                                @if($mediaShown >= 8)
+                                    @break
+                                @endif
                                 <div class="col-md-3">
-                                    <div class="syncro-media-tile">
-                                        <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
-                                            <div class="text-center">
-                                                <i class="fas fa-image text-muted fa-3x mb-2"></i>
-                                                <p class="text-muted small">{{ basename($media) }}</p>
-                                            </div>
-                                        </div>
-                                        <div class="p-2 border-top">
-                                            <small class="text-muted">{{ $submission->user?->displayName() ?? 'Unknown' }}</small>
-                                        </div>
-                                    </div>
+                                    <x-submission-media-tile
+                                        :path="$media"
+                                        :caption="$submission->user?->displayName() ?? 'Unknown'"
+                                    />
                                 </div>
+                                @php $mediaShown++; @endphp
                             @endforeach
                         @endif
                     @endforeach
                 </div>
+                @if($mediaShown === 0)
+                    <div class="text-center py-4 text-muted small">
+                        Media filenames are recorded but files were not found in storage. Re-upload attachments or check Supabase / storage configuration.
+                    </div>
+                @endif
             @endif
         </div>
     </div>

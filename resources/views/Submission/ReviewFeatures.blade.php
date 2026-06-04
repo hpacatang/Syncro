@@ -57,20 +57,13 @@
                         <h5 class="mb-0 fw-bold">Attachments</h5>
                     </div>
                     <div class="card-body">
-                        <ul class="list-unstyled mb-0">
+                        <div class="row g-3">
                             @foreach($submission->media_paths as $path)
-                                @php
-                                    try {
-                                        $mediaUrl = \Illuminate\Support\Facades\Storage::url($path);
-                                    } catch (\Throwable $e) {
-                                        $mediaUrl = '#';
-                                    }
-                                @endphp
-                                <li class="mb-2">
-                                    <a href="{{ $mediaUrl }}" target="_blank" rel="noopener">{{ basename($path) }}</a>
-                                </li>
+                                <div class="col-sm-6 col-lg-4">
+                                    <x-submission-media-tile :path="$path" />
+                                </div>
                             @endforeach
-                        </ul>
+                        </div>
                     </div>
                 </div>
             @endif

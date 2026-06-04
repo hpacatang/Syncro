@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Submission;
 use App\Models\User;
+use App\Support\SubmissionMedia;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class DashboardPagesTest extends TestCase
@@ -61,6 +63,18 @@ class DashboardPagesTest extends TestCase
 
         $this->actingAs($pair)
             ->get(route('dashboard.submissions'))
+            ->assertOk();
+    }
+
+    public function test_submission_media_route_serves_uploaded_file(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('submissions/media/photo.jpg', 'binary-image');
+
+        $pair = User::factory()->create(['role' => 'pair']);
+
+        $this->actingAs($pair)
+            ->get(SubmissionMedia::url('submissions/media/photo.jpg'))
             ->assertOk();
     }
 }

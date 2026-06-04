@@ -10,6 +10,7 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StaffToolsController;
 use App\Http\Controllers\SubmissionLifecycleController;
+use App\Http\Controllers\SubmissionMediaController;
 
 Route::get('/', function () {
     return redirect('login');
@@ -24,6 +25,10 @@ Route::post('store', [UserController::class, 'store'])->name('store');
 Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/submission-media/{path}', [SubmissionMediaController::class, 'show'])
+        ->where('path', '.*')
+        ->name('submission.media');
+
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
     Route::get('/notifications/recent', [NotificationController::class, 'recent'])->name('notifications.recent');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
