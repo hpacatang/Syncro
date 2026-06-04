@@ -1,12 +1,10 @@
 @extends('layouts.app')
 
+@section('page-title', auth()->user()->displayName())
+@section('page-subtitle', 'Organization submissions')
+
 @section('content')
-<div class="container-fluid p-4">
-    <!-- Header -->
-    <div class="mb-4">
-        <h1 class="h3 fw-bold">{{ auth()->user()->name }} - Submission Dashboard</h1>
-        <p class="text-muted">Manage your content submissions and track approval status</p>
-    </div>
+<div class="container-fluid px-0">
 
     @if($submissions->isNotEmpty())
         @php $trackerSubmission = $awaitingApproval->first() ?? $submissions->sortByDesc('updated_at')->first(); @endphp
@@ -209,7 +207,7 @@
                         @foreach($feedback as $comment)
                             <div class="mb-3 pb-3 border-bottom">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <strong class="text-sm">{{ $comment->user->name }}</strong>
+                                    <strong class="text-sm">{{ $comment->user->displayName() }}</strong>
                                     <small class="text-muted">{{ $comment->created_at->diffForHumans() }}</small>
                                 </div>
                                 <p class="text-sm mb-0">{{ $comment->message }}</p>
@@ -265,11 +263,9 @@
                 <!-- PAIR Feedback Section -->
                 <div id="pairFeedbackSection" class="mb-4" style="display: none;">
                     <label class="form-label fw-bold">
-                        <i class="fas fa-comments text-info"></i> PAIR Staff Comments
+                        <i class="fas fa-comments text-info"></i> PAIR updates
                     </label>
-                    <div class="bg-info bg-opacity-10 border border-info border-opacity-25 p-3 rounded">
-                        <p class="mb-0 text-dark" id="pairFeedbackText"></p>
-                    </div>
+                    <div class="bg-info bg-opacity-10 border border-info border-opacity-25 p-3 rounded pair-updates" id="pairFeedbackText"></div>
                 </div>
 
                 <!-- Org Revision History -->
@@ -322,10 +318,25 @@
     </div>
 </div>
 
-<!-- Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 <script>
+function formatPairUpdates(text) {
+    return text.split(/\n\s*\n/).map(function (block) {
+        const lines = block.trim().split(/\r?\n/).filter(Boolean);
+        if (!lines.length) return '';
+        const header = lines[0].startsWith('[PAIR') ? '<div class="fw-bold syncro-pair-header mb-1">' + escapeHtml(lines[0]) + '</div>' : '<div class="mb-1">' + escapeHtml(lines[0]) + '</div>';
+        const bullets = lines.slice(1).map(function (line) {
+            return '<li>' + escapeHtml(line.replace(/^•\s*/, '')) + '</li>';
+        }).join('');
+        return '<div class="pair-update-block mb-3">' + header + (bullets ? '<ul class="mb-0 ps-3">' + bullets + '</ul>' : '') + '</div>';
+    }).join('');
+}
+
+function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
 let currentSubmissionId = null;
 
 async function fetchSubmissionDetails(submissionId) {
@@ -347,7 +358,7 @@ async function fetchSubmissionDetails(submissionId) {
             const pairFeedbackText = document.getElementById('pairFeedbackText');
             
             if (submission.pair_feedback) {
-                pairFeedbackText.textContent = submission.pair_feedback;
+                pairFeedbackText.innerHTML = formatPairUpdates(submission.pair_feedback);
                 pairFeedbackSection.style.display = 'block';
             } else {
                 pairFeedbackSection.style.display = 'none';
@@ -442,10 +453,8 @@ async function submitApproval() {
             body: JSON.stringify({})
         });
 
-        console.log('Response status:', response.status);
         const data = await response.json();
-        console.log('Response data:', data);
-        
+
         if (data.success) {
             alert('Caption approved! Ready to be posted.');
             location.reload();
@@ -496,10 +505,8 @@ async function submitRejection() {
             })
         });
 
-        console.log('Response status:', response.status);
         const data = await response.json();
-        console.log('Response data:', data);
-        
+
         if (data.success) {
             alert('Feedback sent to PAIR for further enhancements.');
             location.reload();

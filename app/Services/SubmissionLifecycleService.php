@@ -178,7 +178,6 @@ class SubmissionLifecycleService
             SubmissionLifecycleStatus::Approved,
             SubmissionLifecycleStatus::Posted => 'approved',
             SubmissionLifecycleStatus::UnderPeerReview,
-            SubmissionLifecycleStatus::AwaitingOrgApproval,
             SubmissionLifecycleStatus::Revised => 'under_review',
             default => 'pending',
         };

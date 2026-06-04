@@ -42,11 +42,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
 
         Route::resource('users', UserManagementController::class);
-        Route::post('/users/{user}/accept', [UserManagementController::class, 'accept'])->name('users.accept');
-        Route::post('/users/{user}/reject', [UserManagementController::class, 'reject'])->name('users.reject');
     });
 
-    Route::middleware('role:org')->group(function () {
+    Route::middleware('role:org,department')->group(function () {
         Route::get('/org/dashboard', [MainController::class, 'orgDashboard'])->name('org.dashboard');
         Route::get('/org/submit', function () {
             return view('Submission.OrgSubmit');
@@ -64,8 +62,10 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('api')->group(function () {
-        Route::middleware('role:org')->group(function () {
+        Route::middleware('role:org,department')->group(function () {
             Route::post('/submissions', [SubmissionController::class, 'store']);
+            Route::post('/submissions/{id}/org-review/approve', [SubmissionController::class, 'orgApproveEnhancement']);
+            Route::post('/submissions/{id}/org-review/reject', [SubmissionController::class, 'orgRejectEnhancement']);
         });
 
         Route::middleware('role:super_admin,admin,pair')->group(function () {

@@ -121,7 +121,7 @@ dropZone.addEventListener('click', () => mediaInput.click());
 
 dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
-    dropZone.style.borderColor = '#0d6efd';
+    dropZone.style.borderColor = '#2d7a4a';
     dropZone.style.backgroundColor = '#f8f9fa';
 });
 

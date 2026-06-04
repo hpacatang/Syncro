@@ -4,137 +4,142 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Syncro</title>
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <title>@yield('title', 'Syncro')</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ asset('css/syncro.css') }}">
-
-    <style>
-        body { padding-top: 56px; } /* space for fixed navbar */
-        #sidebar {
-            width: 220px;
-            top: 56px; /* align under navbar */
-            left: 0;
-            height: calc(100vh - 56px);
-            overflow-y: auto;
-            transition: transform .2s ease;
-        }
-        #main-content {
-            margin-left: 220px;
-            padding: 1.25rem;
-        }
-        @media (max-width: 767.98px) {
-            #sidebar { transform: translateX(-100%); position: fixed; z-index: 1040; }
-            #sidebar.show { transform: translateX(0); }
-            #main-content { margin-left: 0; }
-        }
-        .navbar.bg-primary { background-color: #0f391d !important; }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-    <!-- Top navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
-        <div class="container-fluid">
-            <button class="btn btn-outline-light d-lg-none me-2" id="sidebarToggle" aria-label="Toggle sidebar">
-                <i class="bi bi-list"></i>
-            </button>
+<body class="syncro-app">
+@auth
+    @php
+        $isSubmitter = auth()->user()->canSubmitPosts();
+        $dashRoute = $isSubmitter ? 'org.dashboard' : 'dashboard';
+        $subRoute = $isSubmitter ? 'org.submit' : 'dashboard.submissions';
+        $notifRoute = $isSubmitter ? 'org.notifications' : 'dashboard.notifications';
+        $navItems = [
+            ['route' => $dashRoute, 'match' => [$dashRoute], 'icon' => 'bi-grid-1x2-fill', 'label' => 'Dashboard'],
+            ['route' => $subRoute, 'match' => [$subRoute, 'dashboard.submissions', 'org.submissions', 'org.submit'], 'icon' => 'bi-folder2-open', 'label' => 'Submissions'],
+            ['route' => $notifRoute, 'match' => [$notifRoute], 'icon' => 'bi-bell', 'label' => 'Notifications'],
+        ];
+        if (auth()->user()->role === 'super_admin') {
+            $navItems[] = ['route' => 'audit-logs.index', 'match' => ['audit-logs.*'], 'icon' => 'bi-journal-text', 'label' => 'Audit logs'];
+            $navItems[] = ['route' => 'users.index', 'match' => ['users.*'], 'icon' => 'bi-people', 'label' => 'Users'];
+        }
+    @endphp
 
-            <a class="navbar-brand" href="{{ url('/') }}">Syncro</a>
+    <div class="syncro-shell">
+        <aside id="sidebar" class="syncro-rail" aria-label="Main navigation">
+            <nav class="syncro-rail__nav">
+                @foreach($navItems as $item)
+                    @php
+                        $active = false;
+                        foreach ($item['match'] as $pattern) {
+                            if (request()->routeIs($pattern)) {
+                                $active = true;
+                                break;
+                            }
+                        }
+                    @endphp
+                    <a
+                        href="{{ route($item['route']) }}"
+                        class="syncro-rail__link {{ $active ? 'is-active' : '' }}"
+                        title="{{ $item['label'] }}"
+                        @if($active) aria-current="page" @endif
+                    >
+                        <span class="syncro-rail__link-bg" aria-hidden="true"></span>
+                        <i class="bi {{ $item['icon'] }} syncro-rail__icon"></i>
+                        <span class="visually-hidden">{{ $item['label'] }}</span>
+                    </a>
+                @endforeach
+            </nav>
 
-            <div class="collapse navbar-collapse justify-content-end">
-                <ul class="navbar-nav mb-2 mb-lg-0 align-items-center">
-                    @auth
-                        <x-notifications />
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle text-light" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle"></i> {{ Auth::user()->name }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+            <div class="syncro-rail__footer">
+                <a href="{{ route($dashRoute) }}" class="syncro-rail__avatar" title="{{ Auth::user()->displayName() }}">
+                    {{ strtoupper(substr(Auth::user()->displayName(), 0, 1)) }}
+                </a>
+            </div>
+        </aside>
+
+        <div class="syncro-stage">
+            <header class="syncro-topbar">
+                <button type="button" class="btn syncro-topbar__menu d-lg-none" id="sidebarToggle" aria-label="Open menu">
+                    <i class="bi bi-list"></i>
+                </button>
+                <div class="syncro-topbar__title">
+                    <h1 class="syncro-topbar__heading mb-0">@yield('page-title', 'Syncro')</h1>
+                    @hasSection('page-subtitle')
+                        <p class="syncro-topbar__subtitle mb-0">@yield('page-subtitle')</p>
+                    @endif
+                </div>
+                <div class="syncro-topbar__actions">
+                    <x-notifications />
+                    <div class="dropdown">
+                        <button class="btn syncro-topbar__user dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="syncro-topbar__user-name">{{ Auth::user()->displayName() }}</span>
+                            <span class="syncro-topbar__user-role">{{ Auth::user()->roleLabel() }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li class="px-3 py-2 border-bottom">
+                                <div class="fw-semibold">{{ Auth::user()->displayName() }}</div>
+                                <div class="small text-muted">{{ Auth::user()->roleLabel() }}</div>
+                            </li>
                             <li>
-                                <form method="POST" action="/logout">
+                                <form method="POST" action="{{ route('logout') }}">
                                     @csrf
-                                    <button type="submit" class="dropdown-item">Logout</button>
+                                    <button type="submit" class="dropdown-item">Sign out</button>
                                 </form>
                             </li>
                         </ul>
-                    </li>
-                    @else
-                    <li class="nav-item"><a class="nav-link text-light" href="{{ route('login') }}">Login</a></li>
-                    @endauth
-                </ul>
-            </div>
-        </div>
-    </nav>
+                    </div>
+                </div>
+            </header>
 
-    <!-- Sidebar -->
-    <div id="sidebar" class="bg-light border-end position-fixed d-lg-block">
-        <div class="list-group list-group-flush">
-            @auth
-                @php
-                    $role = auth()->user()->role ?? null;
-                    $dashRoute = $role === 'org' ? 'org.dashboard' : 'dashboard';
-                    $subRoute = $role === 'org' ? 'org.submit' : 'dashboard.submissions';
-                    $notifRoute = $role === 'org' ? 'org.notifications' : 'dashboard.notifications';
-                @endphp
-
-                <a href="{{ route($dashRoute) }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs($dashRoute) ? 'active' : '' }}">
-                    <i class="bi bi-speedometer2 me-2"></i> Dashboard
-                </a>
-
-                <a href="{{ route($subRoute) }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs($subRoute) ? 'active' : '' }}">
-                    <i class="bi bi-file-earmark-text me-2"></i> Submission
-                </a>
-
-                <a href="{{ route($notifRoute) }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs($notifRoute) ? 'active' : '' }}">
-                    <i class="bi bi-bell me-2"></i> Notifications
-                </a>
-            @else
-                <a href="{{ route('dashboard') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <i class="bi bi-speedometer2 me-2"></i> Dashboard
-                </a>
-                <a href="{{ route('dashboard.submissions') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('dashboard.submissions') ? 'active' : '' }}">
-                    <i class="bi bi-file-earmark-text me-2"></i> Submission
-                </a>
-                <a href="{{ route('dashboard.notifications') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('dashboard.notifications') ? 'active' : '' }}">
-                    <i class="bi bi-bell me-2"></i> Notifications
-                </a>
-            @endauth
-            @if(auth()->check() && auth()->user()->role === 'super_admin')
-                <a href="{{ route('audit-logs.index') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('audit-logs.index') ? 'active' : '' }}">
-                    <i class="bi bi-clipboard-data me-2"></i> Audit Logs
-                </a>
-                <a href="{{ route('users.index') }}" class="list-group-item list-group-item-action py-3 {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                    <i class="bi bi-people me-2"></i> User Management
-                </a>
-            @endif
+            <main class="syncro-main" id="main-content">
+                @if(\App\Support\BackNavigation::shouldShow())
+                    <div class="syncro-back-bar">
+                        <x-back-button />
+                    </div>
+                @endif
+                @yield('content')
+            </main>
         </div>
     </div>
 
-    <!-- Main content area -->
-    <main id="main-content">
-        @auth
-            @if(\App\Support\BackNavigation::shouldShow())
-                <div class="syncro-back-bar border-bottom bg-white px-3 px-md-4 py-2">
-                    <x-back-button />
-                </div>
-            @endif
-        @endauth
+    <div class="syncro-rail-backdrop d-lg-none" id="sidebarBackdrop" hidden></div>
+@else
+    <main class="syncro-main syncro-main--guest" id="main-content">
         @yield('content')
     </main>
+@endauth
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        (function () {
-            var toggle = document.getElementById('sidebarToggle');
-            var sidebar = document.getElementById('sidebar');
-            if (!toggle || !sidebar) return;
-            toggle.addEventListener('click', function () {
-                sidebar.classList.toggle('show');
-            });
-        })();
-    </script>
-    @stack('scripts')
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+    var toggle = document.getElementById('sidebarToggle');
+    var sidebar = document.getElementById('sidebar');
+    var backdrop = document.getElementById('sidebarBackdrop');
+    if (!toggle || !sidebar) return;
+
+    function closeSidebar() {
+        sidebar.classList.remove('is-open');
+        if (backdrop) backdrop.hidden = true;
+        document.body.classList.remove('syncro-nav-open');
+    }
+
+    function openSidebar() {
+        sidebar.classList.add('is-open');
+        if (backdrop) backdrop.hidden = false;
+        document.body.classList.add('syncro-nav-open');
+    }
+
+    toggle.addEventListener('click', function () {
+        sidebar.classList.contains('is-open') ? closeSidebar() : openSidebar();
+    });
+
+    backdrop?.addEventListener('click', closeSidebar);
+})();
+</script>
+@stack('scripts')
 </body>
 </html>

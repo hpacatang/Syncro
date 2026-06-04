@@ -1,7 +1,7 @@
 @props(['submission'])
 
 @php
-    $isOwnerOrg = auth()->user()->isOrg() && (int) $submission->user_id === (int) auth()->id();
+    $isOwnerOrg = auth()->user()->canSubmitPosts() && (int) $submission->user_id === (int) auth()->id();
     $isStaff = auth()->user()->isAdmin() || auth()->user()->isPair();
 @endphp
 

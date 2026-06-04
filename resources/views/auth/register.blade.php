@@ -268,17 +268,38 @@
             <!-- Brand Header -->
             <div class="brand-header">
                 <h1><i class="fas fa-sync"></i> Syncro</h1>
-                <p class="subtitle">Create your account</p>
+                <p class="subtitle">Organization registration</p>
+                <p class="text-muted small">PAIR and department accounts are created by the super admin.</p>
             </div>
 
             <!-- Register Form -->
             <form method="POST" action="/store" class="auth-form">
                 @csrf
 
+                <!-- Display name -->
+                <div class="form-group">
+                    <label for="profile_name" class="form-label">
+                        <i class="fas fa-id-badge"></i> Organization name
+                    </label>
+                    <input
+                        id="profile_name"
+                        type="text"
+                        class="form-control @error('profile_name') is-invalid @enderror"
+                        name="profile_name"
+                        value="{{ old('profile_name') }}"
+                        placeholder="e.g. Student Council"
+                        required>
+                    @error('profile_name')
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                        </div>
+                    @enderror
+                </div>
+
                 <!-- Username -->
                 <div class="form-group">
                     <label for="name" class="form-label">
-                        <i class="fas fa-user"></i> Username
+                        <i class="fas fa-user"></i> Login username
                     </label>
                     <input 
                         id="name" 
@@ -294,6 +315,33 @@
                             <i class="fas fa-exclamation-circle"></i> {{ $message }}
                         </div>
                     @enderror
+                </div>
+
+                <!-- Department -->
+                <div class="form-group">
+                    <label for="department_id" class="form-label">
+                        <i class="fas fa-building"></i> Department
+                    </label>
+                    <select
+                        id="department_id"
+                        name="department_id"
+                        class="form-control @error('department_id') is-invalid @enderror"
+                        required>
+                        <option value="">— Select your department —</option>
+                        @foreach($departments as $department)
+                            <option value="{{ $department->id }}" {{ (string) old('department_id') === (string) $department->id ? 'selected' : '' }}>
+                                {{ $department->displayName() }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('department_id')
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                        </div>
+                    @enderror
+                    @if($departments->isEmpty())
+                        <p class="text-danger small mt-2 mb-0">No departments are available yet. Ask the super admin to add department accounts first.</p>
+                    @endif
                 </div>
 
                 <!-- Email -->
@@ -360,8 +408,8 @@
                 </div>
 
                 <!-- Submit Button -->
-                <button type="submit" class="btn btn-register w-100">
-                    <i class="fas fa-user-plus"></i> Create Account
+                <button type="submit" class="btn btn-register w-100" @if($departments->isEmpty()) disabled @endif>
+                    <i class="fas fa-user-plus"></i> Register organization
                 </button>
             </form>
 

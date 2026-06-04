@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Submission\Enums\SubmissionLifecycleStatus;
-use App\Submission\Exceptions\InvalidLifecycleTransitionException;
 use App\Models\Submission;
 use App\Services\SubmissionLifecycleService;
+use App\Submission\Enums\SubmissionLifecycleStatus;
+use App\Submission\Exceptions\InvalidLifecycleTransitionException;
+use App\Support\PairUpdateFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -15,9 +16,6 @@ class SubmissionLifecycleController extends Controller
         private readonly SubmissionLifecycleService $lifecycle
     ) {}
 
-    /**
-     * POST /api/submissions/{submission}/transition
-     */
     public function transition(Request $request, Submission $submission)
     {
         $this->authorize('transition', $submission);
@@ -44,6 +42,13 @@ class SubmissionLifecycleController extends Controller
             if ($request->filled('notes')) {
                 $context['org_review_notes'] = $request->input('notes');
             }
+
+            $step = PairUpdateFormatter::step(
+                $request->user(),
+                $target->actionLabel(),
+                $request->input('notes')
+            );
+            $context['pair_feedback'] = PairUpdateFormatter::append($submission->pair_feedback, $step);
 
             $updated = $this->lifecycle->transition(
                 $submission,
@@ -72,9 +77,6 @@ class SubmissionLifecycleController extends Controller
         }
     }
 
-    /**
-     * GET /api/submissions/{submission}/lifecycle
-     */
     public function show(Request $request, Submission $submission)
     {
         $this->authorize('view', $submission);
@@ -87,14 +89,12 @@ class SubmissionLifecycleController extends Controller
                 'allowed_transitions' => array_map(fn (SubmissionLifecycleStatus $s) => [
                     'value' => $s->value,
                     'label' => $s->label(),
+                    'action_label' => $s->actionLabel(),
                 ], $allowed),
             ]),
         ]);
     }
 
-    /**
-     * GET /api/submissions/lifecycle-updates?since=ISO8601&ids=1,2,3
-     */
     public function updates(Request $request)
     {
         $this->authorize('viewAny', Submission::class);
@@ -108,7 +108,7 @@ class SubmissionLifecycleController extends Controller
             'id', 'workflow_status', 'status', 'updated_at', 'user_id',
         ]);
 
-        if ($request->user()->isOrg()) {
+        if ($request->user()->canSubmitPosts()) {
             $query->where('user_id', $request->user()->id);
         }
 
@@ -132,9 +132,6 @@ class SubmissionLifecycleController extends Controller
         ]);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     private function formatSubmission(Submission $submission): array
     {
         $lifecycle = $submission->lifecycle();

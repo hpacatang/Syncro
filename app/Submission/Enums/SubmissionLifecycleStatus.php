@@ -23,6 +23,19 @@ enum SubmissionLifecycleStatus: string
         };
     }
 
+    /** Action label for PAIR step buttons (one click per finished step). */
+    public function actionLabel(): string
+    {
+        return match ($this) {
+            self::UnderPeerReview => 'Start PAIR review',
+            self::Approved => 'Approve post',
+            self::Rejected => 'Reject post',
+            self::Revised => 'Send back for revision',
+            self::Posted => 'Mark as posted',
+            default => $this->label(),
+        };
+    }
+
     public function badgeClass(): string
     {
         return match ($this) {
@@ -43,7 +56,7 @@ enum SubmissionLifecycleStatus: string
     public function progressColor(): string
     {
         return match ($this) {
-            self::Submitted => '#0aa2c0',
+            self::Submitted => '#3d9b5c',
             self::UnderPeerReview => '#fd7e14',
             self::Approved => '#198754',
             self::Rejected => '#dc3545',

@@ -4,7 +4,7 @@
 <div class="container mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <h2 class="mb-0">Submissions Overview</h2>
-        @if(auth()->user()->isOrg())
+        @if(auth()->user()->canSubmitPosts())
             <a href="{{ route('org.submit') }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-lg"></i> New submission
             </a>
@@ -14,12 +14,12 @@
     <div class="card shadow-sm mb-3">
         <div class="card-body py-3">
             <x-submission-filters
-                :action="auth()->user()->isOrg() ? route('org.submissions') : route('dashboard.submissions')"
+                :action="auth()->user()->canSubmitPosts() ? route('org.submissions') : route('dashboard.submissions')"
                 :current-filter="$currentFilter"
                 :current-search="$currentSearch ?? ''"
                 :current-sort="$currentSort ?? 'created_at'"
                 :current-order="$currentOrder ?? 'desc'"
-                :variant="auth()->user()->isOrg() ? 'org' : 'admin'"
+                :variant="auth()->user()->canSubmitPosts() ? 'org' : 'admin'"
                 :show-sort="true"
             />
         </div>
@@ -43,14 +43,14 @@
                         @forelse($submissions as $sub)
                         <tr>
                             <td class="ps-4">#{{ $sub->id }}</td>
-                            <td>{{ $sub->user ? $sub->user->name : 'Unknown User' }}</td>
+                            <td>{{ $sub->user ? $sub->user->displayName() : 'Unknown' }}</td>
                             <td>{{ \Illuminate\Support\Str::limit($sub->original_caption, 50) }}</td>
                             <td style="min-width: 14rem;">
                                 <x-submission-lifecycle-progress :submission="$sub" :compact="true" />
                             </td>
                             <td>{{ $sub->created_at ? $sub->created_at->format('M d, Y h:i A') : 'N/A' }}</td>
                             <td class="pe-4 text-end">
-                                @if(auth()->user()->isOrg())
+                                @if(auth()->user()->canSubmitPosts())
                                     <a href="{{ route('org.submissions.review', $sub) }}" class="btn btn-sm btn-primary">Review</a>
                                 @else
                                     <a href="{{ route('dashboard.submissions.review', $sub) }}" class="btn btn-sm btn-primary">Review</a>

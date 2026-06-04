@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AppSetting;
 use App\Models\Submission;
 use App\Models\User;
+use App\Support\PairUpdateFormatter;
 use App\Notifications\EnhancementReadyForOrg;
 use App\Notifications\SubmissionApproved;
 use App\Notifications\SubmissionQueuedForReview;
@@ -15,10 +16,6 @@ use Illuminate\Validation\Rules\File;
 
 class SubmissionController extends Controller
 {
-    /**
-     * Store a new submission (Org/Department)
-     * POST /api/submissions
-     */
     public function store(Request $request)
     {
         $this->authorize('create', Submission::class);
@@ -35,13 +32,6 @@ class SubmissionController extends Controller
                 ],
             ]);
 
-            // Log authentication info for debugging
-            Log::info('Submission store() called', [
-                'authenticated' => auth()->check(),
-                'user_id' => auth()->id(),
-                'user' => auth()->user()?->name ?? 'Not authenticated'
-            ]);
-
             $mediaPaths = [];
             if ($request->hasFile('media')) {
                 foreach ($request->file('media') as $file) {
@@ -51,14 +41,10 @@ class SubmissionController extends Controller
             }
 
             $userId = auth()->id();
-            if (!$userId) {
+            if (! $userId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User not authenticated. Please log in first.',
-                    'debug' => [
-                        'authenticated' => auth()->check(),
-                        'user_id' => auth()->id()
-                    ]
                 ], 401);
             }
 
@@ -69,12 +55,6 @@ class SubmissionController extends Controller
                 'media_paths' => $mediaPaths,
                 'status' => 'pending',
                 'workflow_status' => 'submitted'
-            ]);
-
-            Log::info('Submission created', [
-                'submission_id' => $submission->id,
-                'user_id' => $userId,
-                'user_name' => auth()->user()?->name
             ]);
 
             User::query()
@@ -98,11 +78,6 @@ class SubmissionController extends Controller
         }
     }
 
-    /**
-     * Get all submissions with optional filtering (PAIR/Dashboard)
-     * GET /api/submissions/pending
-     * GET /api/submissions?status=pending&sort=created_at
-     */
     public function index(Request $request)
     {
         $this->authorize('viewAny', Submission::class);
@@ -110,12 +85,10 @@ class SubmissionController extends Controller
         try {
             $query = Submission::with('user');
 
-            // Filter by status
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
 
-            // Sort
             $sortBy = $request->get('sort', 'created_at');
             $sortOrder = $request->get('order', 'desc');
             $query->orderBy($sortBy, $sortOrder);
@@ -137,10 +110,6 @@ class SubmissionController extends Controller
         }
     }
 
-    /**
-     * Get a specific submission
-     * GET /api/submissions/{id}
-     */
     public function show($id)
     {
         try {
@@ -159,11 +128,6 @@ class SubmissionController extends Controller
         }
     }
 
-    /**
-     * Enhance caption via LLM (OpenAI, Gemini, or Deepseek)
-     * POST /api/submissions/{id}/enhance
-     * Body: { "llm_provider": "openai" } (optional, defaults to openai)
-     */
     public function enhance(Request $request, $id)
     {
         try {
@@ -176,16 +140,8 @@ class SubmissionController extends Controller
             $systemPrompt .= "Enhance the following caption to be {$tone}, engaging, professional, and grammatically correct. ";
             $systemPrompt .= "Return only the enhanced caption without any additional text.";
 
-            Log::info("Enhancing caption", [
-                'submission_id' => $id,
-                'provider' => $provider,
-                'tone' => $tone,
-                'caption_length' => strlen($submission->original_caption)
-            ]);
-
             $enhancedText = null;
 
-            // Try the selected LLM provider
             switch ($provider) {
                 case 'gemini':
                     $enhancedText = $this->enhanceWithGemini($submission->original_caption, $systemPrompt);
@@ -204,7 +160,6 @@ class SubmissionController extends Controller
                     'provider' => $provider
                 ]);
                 
-                // Return a response indicating manual fallback is needed
                 return response()->json([
                     'success' => false,
                     'fallback' => true,
@@ -214,14 +169,19 @@ class SubmissionController extends Controller
                         'submission_id' => $id,
                         'provider' => $provider
                     ]
-                ], 202); // 202 Accepted - operation acknowledged but not completed
+                ], 202);
             }
 
+            $actor = auth()->user();
             $submission->update([
                 'enhanced_caption' => $enhancedText,
                 'enhanced_by' => auth()->id(),
                 'enhanced_at' => now(),
-                'workflow_status' => 'under_peer_review'
+                'workflow_status' => 'under_peer_review',
+                'pair_feedback' => PairUpdateFormatter::append(
+                    $submission->pair_feedback,
+                    PairUpdateFormatter::step($actor, 'Caption enhanced — ready for your review')
+                ),
             ]);
 
             User::find($submission->user_id)?->notify(new EnhancementReadyForOrg($submission->fresh()));
@@ -247,10 +207,6 @@ class SubmissionController extends Controller
         }
     }
 
-    /**
-     * Approve a submission and notify the organization
-     * PUT /api/submissions/{id}/approve
-     */
     public function approve(Request $request, $id)
     {
         try {
@@ -258,7 +214,6 @@ class SubmissionController extends Controller
             $this->authorize('reviewAsStaff', $submission);
             $submission->update(['status' => 'approved']);
 
-            // Notify the organization
             $user = User::find($submission->user_id);
             if ($user) {
                 $user->notify(new SubmissionApproved($submission));
@@ -279,10 +234,6 @@ class SubmissionController extends Controller
         }
     }
 
-    /**
-     * Save manual caption (fallback when LLM fails)
-     * POST /api/submissions/{id}/save-manual-caption
-     */
     public function saveManualCaption(Request $request, $id)
     {
         try {
@@ -294,21 +245,26 @@ class SubmissionController extends Controller
                 'pair_feedback' => 'nullable|string'
             ]);
 
+            $actor = auth()->user();
+            $feedback = $request->pair_feedback
+                ? PairUpdateFormatter::append(
+                    $submission->pair_feedback,
+                    PairUpdateFormatter::step($actor, 'Manual caption saved', $request->pair_feedback)
+                )
+                : PairUpdateFormatter::append(
+                    $submission->pair_feedback,
+                    PairUpdateFormatter::step($actor, 'Manual caption saved — ready for your review')
+                );
+
             $submission->update([
                 'enhanced_caption' => $request->manual_caption,
                 'enhanced_by' => auth()->id(),
                 'enhanced_at' => now(),
-                'pair_feedback' => $request->pair_feedback,
-                'workflow_status' => 'under_peer_review'
+                'pair_feedback' => $feedback,
+                'workflow_status' => 'under_peer_review',
             ]);
 
             User::find($submission->user_id)?->notify(new EnhancementReadyForOrg($submission->fresh()));
-
-            Log::info('Manual caption saved', [
-                'submission_id' => $id,
-                'enhanced_by' => auth()->id(),
-                'caption_length' => strlen($request->manual_caption)
-            ]);
 
             return response()->json([
                 'success' => true,
@@ -329,10 +285,6 @@ class SubmissionController extends Controller
         }
     }
 
-    /**
-     * Update submission status
-     * PUT /api/submissions/{id}
-     */
     public function update(Request $request, $id)
     {
         try {
@@ -358,10 +310,6 @@ class SubmissionController extends Controller
         }
     }
 
-    /**
-     * Delete a submission
-     * DELETE /api/submissions/{id}
-     */
     public function destroy($id)
     {
         try {
@@ -382,23 +330,11 @@ class SubmissionController extends Controller
         }
     }
 
-    /**
-     * Organization reviews and approves enhanced caption
-     * POST /api/submissions/{id}/org-review/approve
-     */
     public function orgApproveEnhancement(Request $request, $id)
     {
         try {
             $submission = Submission::findOrFail($id);
             $this->authorize('reviewAsOrg', $submission);
-
-            // Verify the org user owns this submission
-            if ($submission->user_id !== auth()->id()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized: You can only review your own submissions'
-                ], 403);
-            }
 
             $submission->update([
                 'status' => 'approved',
@@ -406,18 +342,13 @@ class SubmissionController extends Controller
                 'org_review_notes' => $request->notes ?? 'Approved by organization'
             ]);
 
-            Log::info('Organization approved enhanced caption', [
-                'submission_id' => $id,
-                'org_user_id' => auth()->id()
-            ]);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Caption approved! Ready to be posted.',
                 'data' => [
                     'submission_id' => $submission->id,
-                    'workflow_status' => 'approved'
-                ]
+                    'workflow_status' => 'approved',
+                ],
             ]);
         } catch (\Exception $e) {
             Log::error('Organization approval failed: ' . $e->getMessage());
@@ -429,38 +360,20 @@ class SubmissionController extends Controller
         }
     }
 
-    /**
-     * Organization reviews and rejects enhanced caption (asks for further enhancement)
-     * POST /api/submissions/{id}/org-review/reject
-     */
     public function orgRejectEnhancement(Request $request, $id)
     {
         try {
             $request->validate([
-                'notes' => 'required|string|min:10'
+                'notes' => 'required|string|min:10',
             ]);
 
             $submission = Submission::findOrFail($id);
             $this->authorize('reviewAsOrg', $submission);
 
-            // Verify the org user owns this submission
-            if ($submission->user_id !== auth()->id()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized: You can only review your own submissions'
-                ], 403);
-            }
-
             $submission->update([
                 'workflow_status' => 'revised',
                 'org_review_notes' => $request->notes,
                 'status' => 'under_review'
-            ]);
-
-            Log::info('Organization rejected enhanced caption and requested revisions', [
-                'submission_id' => $id,
-                'org_user_id' => auth()->id(),
-                'reason' => $request->notes
             ]);
 
             return response()->json([
@@ -482,160 +395,77 @@ class SubmissionController extends Controller
         }
     }
 
-    /**
-     * Enhance caption using OpenAI API
-     */
     private function enhanceWithOpenAI($caption, $systemPrompt)
     {
-        try {
-            $apiKey = env('OPEN_AI_KEY');
-            if (!$apiKey) {
-                Log::warning('OpenAI API key not configured');
-                return null;
-            }
-
-            Log::info('Calling OpenAI API');
-
-            $response = Http::withToken($apiKey)
-                ->timeout(30)
-                ->post('https://api.openai.com/v1/chat/completions', [
-                    'model' => 'gpt-3.5-turbo',
-                    'messages' => [
-                        ['role' => 'system', 'content' => $systemPrompt],
-                        ['role' => 'user', 'content' => $caption]
-                    ],
-                    'temperature' => 0.7,
-                    'max_tokens' => 500
-                ]);
-
-            Log::info('OpenAI Response', [
-                'status' => $response->status(),
-                'success' => $response->successful(),
-                'failed' => $response->failed()
-            ]);
-
-            if ($response->failed()) {
-                Log::error('OpenAI API error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'json' => $response->json()
-                ]);
-                return null;
-            }
-
-            $content = $response->json('choices.0.message.content');
-            Log::info('OpenAI Success', ['content_length' => strlen($content)]);
-            return $content;
-        } catch (\Exception $e) {
-            Log::error('OpenAI enhancement exception', [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode()
-            ]);
-            return null;
-        }
+        return $this->callLlm(
+            env('OPEN_AI_KEY'),
+            fn ($key) => Http::withToken($key)->timeout(30)->post('https://api.openai.com/v1/chat/completions', [
+                'model' => 'gpt-3.5-turbo',
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user', 'content' => $caption],
+                ],
+                'temperature' => 0.7,
+                'max_tokens' => 500,
+            ]),
+            fn ($response) => $response->json('choices.0.message.content'),
+            'OpenAI'
+        );
     }
 
-    /**
-     * Enhance caption using Google Gemini API
-     */
     private function enhanceWithGemini($caption, $systemPrompt)
     {
-        try {
-            $apiKey = env('GEMINI_KEY');
-            if (!$apiKey) {
-                Log::warning('Gemini API key not configured');
-                return null;
-            }
-
-            Log::info('Calling Gemini API');
-
-            $response = Http::timeout(30)
-                ->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={$apiKey}", [
-                    'contents' => [
-                        [
-                            'parts' => [
-                                ['text' => $systemPrompt . "\n\nCaption: " . $caption]
-                            ]
-                        ]
-                    ]
-                ]);
-
-            Log::info('Gemini Response', [
-                'status' => $response->status(),
-                'success' => $response->successful(),
-                'failed' => $response->failed()
-            ]);
-
-            if ($response->failed()) {
-                Log::error('Gemini API error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'json' => $response->json()
-                ]);
-                return null;
-            }
-
-            $content = $response->json('candidates.0.content.parts.0.text');
-            Log::info('Gemini Success', ['content_length' => strlen($content)]);
-            return $content;
-        } catch (\Exception $e) {
-            Log::error('Gemini enhancement exception', [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode()
-            ]);
-            return null;
-        }
+        return $this->callLlm(
+            env('GEMINI_KEY'),
+            fn ($key) => Http::timeout(30)->post(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={$key}",
+                [
+                    'contents' => [[
+                        'parts' => [['text' => $systemPrompt."\n\nCaption: ".$caption]],
+                    ]],
+                ]
+            ),
+            fn ($response) => $response->json('candidates.0.content.parts.0.text'),
+            'Gemini'
+        );
     }
 
-    /**
-     * Enhance caption using Deepseek API
-     */
     private function enhanceWithDeepseek($caption, $systemPrompt)
     {
+        return $this->callLlm(
+            env('DEEPSEEK_KEY'),
+            fn ($key) => Http::withToken($key)->timeout(30)->post('https://api.deepseek.com/chat/completions', [
+                'model' => 'deepseek-chat',
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user', 'content' => $caption],
+                ],
+                'temperature' => 0.7,
+                'max_tokens' => 500,
+            ]),
+            fn ($response) => $response->json('choices.0.message.content'),
+            'Deepseek'
+        );
+    }
+
+    private function callLlm(?string $apiKey, callable $request, callable $parse, string $provider): ?string
+    {
+        if (! $apiKey) {
+            return null;
+        }
+
         try {
-            $apiKey = env('DEEPSEEK_KEY');
-            if (!$apiKey) {
-                Log::warning('Deepseek API key not configured');
-                return null;
-            }
-
-            Log::info('Calling Deepseek API');
-
-            $response = Http::withToken($apiKey)
-                ->timeout(30)
-                ->post('https://api.deepseek.com/chat/completions', [
-                    'model' => 'deepseek-chat',
-                    'messages' => [
-                        ['role' => 'system', 'content' => $systemPrompt],
-                        ['role' => 'user', 'content' => $caption]
-                    ],
-                    'temperature' => 0.7,
-                    'max_tokens' => 500
-                ]);
-
-            Log::info('Deepseek Response', [
-                'status' => $response->status(),
-                'success' => $response->successful(),
-                'failed' => $response->failed()
-            ]);
-
+            $response = $request($apiKey);
             if ($response->failed()) {
-                Log::error('Deepseek API error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'json' => $response->json()
-                ]);
+                Log::error("{$provider} API error", ['status' => $response->status()]);
+
                 return null;
             }
 
-            $content = $response->json('choices.0.message.content');
-            Log::info('Deepseek Success', ['content_length' => strlen($content)]);
-            return $content;
+            return $parse($response);
         } catch (\Exception $e) {
-            Log::error('Deepseek enhancement exception', [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode()
-            ]);
+            Log::error("{$provider} enhancement failed", ['message' => $e->getMessage()]);
+
             return null;
         }
     }

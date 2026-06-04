@@ -12,11 +12,11 @@ class SubmissionReviewController extends Controller
     {
         $user = $request->user();
 
-        if ($user->isOrg() && (int) $submission->user_id !== (int) $user->id) {
+        if ($user->canSubmitPosts() && (int) $submission->user_id !== (int) $user->id) {
             abort(403);
         }
 
-        if (! $user->isOrg() && ! $user->isAdmin() && ! $user->isPair()) {
+        if (! $user->canSubmitPosts() && ! $user->isStaffReviewer()) {
             abort(403);
         }
 

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -10,66 +12,91 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int,string>
-     */
     protected $fillable = [
         'name',
+        'profile_name',
         'email',
         'password',
         'role',
+        'department_id',
     ];
 
-    /**
-     * The attributes that should be hidden for arrays.
-     *
-     * @var array<int,string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string,string>
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
 
-    /**
-     * Check if user is an admin
-     */
-    public function isSuperAdmin()
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'department_id');
+    }
+
+    public function organizations(): HasMany
+    {
+        return $this->hasMany(User::class, 'department_id');
+    }
+
+    public function displayName(): string
+    {
+        return $this->profile_name ?: $this->name;
+    }
+
+    public function roleLabel(): string
+    {
+        return match ($this->role) {
+            'super_admin' => 'Super Admin',
+            'admin' => 'Admin',
+            'pair' => 'PAIR',
+            'department' => 'Department',
+            'org' => 'Organization',
+            default => ucfirst((string) $this->role),
+        };
+    }
+
+    public static function departments()
+    {
+        return static::query()
+            ->where('role', 'department')
+            ->orderBy('profile_name')
+            ->orderBy('name');
+    }
+
+    public function isSuperAdmin(): bool
     {
         return $this->role === 'super_admin';
     }
 
-    /**
-     * Check if user is an admin
-     */
-    public function isAdmin()
+    public function isAdmin(): bool
     {
         return $this->role === 'admin' || $this->role === 'super_admin';
     }
 
-    /**
-     * Check if user is from PAIR
-     */
-    public function isPair()
+    public function isPair(): bool
     {
         return $this->role === 'pair';
     }
 
-    /**
-     * Check if user is from an organization
-     */
-    public function isOrg()
+    public function isDepartment(): bool
+    {
+        return $this->role === 'department';
+    }
+
+    public function isOrg(): bool
     {
         return $this->role === 'org';
+    }
+
+    public function canSubmitPosts(): bool
+    {
+        return $this->isOrg() || $this->isDepartment();
+    }
+
+    public function isStaffReviewer(): bool
+    {
+        return $this->isAdmin() || $this->isPair();
     }
 }

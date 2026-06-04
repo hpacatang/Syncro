@@ -7,26 +7,23 @@ use App\Models\User;
 
 class SubmissionPolicy
 {
-    /**
-     * Org: own submissions only. Admin/PAIR: all submissions.
-     */
     public function viewAny(User $user): bool
     {
-        return $user->isOrg() || $user->isAdmin() || $user->isPair();
+        return $user->canSubmitPosts() || $user->isStaffReviewer();
     }
 
     public function view(User $user, Submission $submission): bool
     {
-        if ($user->isAdmin() || $user->isPair()) {
+        if ($user->isStaffReviewer()) {
             return true;
         }
 
-        return $user->isOrg() && (int) $submission->user_id === (int) $user->id;
+        return $user->canSubmitPosts() && (int) $submission->user_id === (int) $user->id;
     }
 
     public function create(User $user): bool
     {
-        return $user->isOrg();
+        return $user->canSubmitPosts();
     }
 
     public function update(User $user, Submission $submission): bool
@@ -39,27 +36,18 @@ class SubmissionPolicy
         return $this->view($user, $submission);
     }
 
-    /**
-     * Manual lifecycle transitions (evaluator dashboard).
-     */
     public function transition(User $user, Submission $submission): bool
     {
-        return ($user->isAdmin() || $user->isPair()) && $this->view($user, $submission);
+        return $user->isStaffReviewer() && $this->view($user, $submission);
     }
 
-    /**
-     * PAIR enhance / staff approve endpoints.
-     */
     public function reviewAsStaff(User $user, Submission $submission): bool
     {
-        return ($user->isAdmin() || $user->isPair()) && $this->view($user, $submission);
+        return $user->isStaffReviewer() && $this->view($user, $submission);
     }
 
-    /**
-     * Org approve / reject enhanced caption.
-     */
     public function reviewAsOrg(User $user, Submission $submission): bool
     {
-        return false;
+        return $user->isOrg() && (int) $submission->user_id === (int) $user->id;
     }
 }
