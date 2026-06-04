@@ -110,7 +110,7 @@
                                             <td style="min-width: 12rem;">
                                                 <x-submission-lifecycle-progress :submission="$submission" :compact="true" />
                                             </td>
-                                            <td class="text-muted small">{{ $submission->created_at->format('M d, Y') }}</td>
+                                            <td class="text-muted small">{{ $submission->created_at ? $submission->created_at->format('M d, Y') : 'N/A' }}</td>
                                             <td>
                                                 <x-submission-status-manager-inline :submission="$submission" />
                                             </td>

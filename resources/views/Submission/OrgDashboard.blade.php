@@ -110,7 +110,7 @@
                                         <small>{{ $submission->enhancer?->name ?? 'PAIR Staff' }}</small>
                                         <br><small class="text-muted">{{ $submission->enhanced_at?->format('M d, Y') }}</small>
                                     </td>
-                                    <td class="text-muted small">{{ $submission->created_at->format('M d') }}</td>
+                                    <td class="text-muted small">{{ $submission->created_at ? $submission->created_at->format('M d') : 'N/A' }}</td>
                                     <td>
                                         <div class="d-flex flex-wrap gap-1">
                                             <a href="{{ route('org.submissions.review', $submission) }}" class="btn btn-sm btn-outline-primary">Review page</a>
@@ -179,7 +179,7 @@
                                             <td style="min-width: 14rem;">
                                                 <x-submission-lifecycle-progress :submission="$submission" :compact="true" />
                                             </td>
-                                            <td class="text-muted small">{{ $submission->created_at->format('M d') }}</td>
+                                            <td class="text-muted small">{{ $submission->created_at ? $submission->created_at->format('M d') : 'N/A' }}</td>
                                             <td>
                                                 <x-view-action-link :href="route('org.submissions.review', $submission)" :title="__('View details')" />
                                             </td>
