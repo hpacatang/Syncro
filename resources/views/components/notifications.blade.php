@@ -2,17 +2,23 @@
 
 @auth
     @php
-        $notifListRoute = auth()->user()->isOrg() ? route('org.notifications') : route('dashboard.notifications');
+        $notifListRoute = auth()->user()->canSubmitPosts() ? route('org.notifications') : route('dashboard.notifications');
         $initialUnread = auth()->user()->unreadNotifications()->count();
     @endphp
 
-    <li class="nav-item dropdown me-2">
-        <a class="nav-link position-relative text-light" href="#" id="syncroNotifToggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+    <div class="dropdown syncro-notif-wrap">
+        <button
+            type="button"
+            class="btn syncro-notif-btn position-relative"
+            id="syncroNotifToggle"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            aria-label="Notifications">
             <i class="bi bi-bell"></i>
             <span id="syncroNotifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $initialUnread === 0 ? 'd-none' : '' }}" data-count="{{ $initialUnread }}">
                 {{ $initialUnread > 99 ? '99+' : $initialUnread }}
             </span>
-        </a>
+        </button>
         <ul class="dropdown-menu dropdown-menu-end shadow syncro-notif-dropdown" aria-labelledby="syncroNotifToggle">
             <li class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
                 <span class="fw-semibold small">Notifications</span>
@@ -25,7 +31,7 @@
             </li>
             <li class="border-top"><a class="dropdown-item text-center small" href="{{ $notifListRoute }}">View all</a></li>
         </ul>
-    </li>
+    </div>
 @endauth
 
 @auth

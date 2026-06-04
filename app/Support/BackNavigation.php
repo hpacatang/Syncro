@@ -33,7 +33,7 @@ class BackNavigation
     {
         $user = $user ?? auth()->user();
         $route = request()->route()?->getName() ?? '';
-        $dashboard = $user?->isOrg() ? route('org.dashboard') : route('dashboard');
+        $dashboard = $user?->canSubmitPosts() ? route('org.dashboard') : route('dashboard');
 
         $map = [
             'dashboard.submissions.review' => [

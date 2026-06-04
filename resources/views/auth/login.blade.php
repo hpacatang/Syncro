@@ -299,13 +299,12 @@
 
             <!-- Divider -->
             <div class="form-divider">
-                <span>New to Syncro?</span>
+                <span>Organization account?</span>
             </div>
 
-            <!-- Register Link -->
             <div class="auth-link">
                 <a href="{{ route('register') }}">
-                    <i class="fas fa-user-plus"></i> Create an account
+                    <i class="fas fa-user-plus"></i> Register your organization
                 </a>
             </div>
         </div>

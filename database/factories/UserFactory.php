@@ -24,10 +24,11 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'name' => fake()->unique()->userName(),
+            'profile_name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'password' => static::$password ??= Hash::make('password'),
-            'role' => fake()->randomElement(['user', 'pair', 'org', 'admin']),
+            'role' => fake()->randomElement(['pair', 'org', 'department']),
         ];
     }
 
@@ -58,6 +59,13 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role' => 'admin',
+        ]);
+    }
+
+    public function department(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'department',
         ]);
     }
 }

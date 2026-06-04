@@ -3,67 +3,45 @@
 @section('content')
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-person me-2"></i> User Details</h2>
-        <a href="{{ route('users.edit', $user) }}" class="btn btn-primary">
-            <i class="bi bi-pencil me-2"></i> Edit
-        </a>
+        <h2><i class="bi bi-person me-2"></i> {{ $user->displayName() }}</h2>
+        <a href="{{ route('users.edit', $user) }}" class="btn btn-primary"><i class="bi bi-pencil me-2"></i> Edit</a>
     </div>
 
     <div class="card">
         <div class="card-body">
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <h6 class="text-muted mb-2">Name</h6>
-                    <p class="mb-3">{{ $user->name }}</p>
-
-                    <h6 class="text-muted mb-2">Email</h6>
-                    <p class="mb-3">{{ $user->email }}</p>
+                    <h6 class="text-muted">Profile name</h6>
+                    <p>{{ $user->displayName() }}</p>
+                    <h6 class="text-muted">Login username</h6>
+                    <p><code>{{ $user->name }}</code></p>
+                    <h6 class="text-muted">Email</h6>
+                    <p>{{ $user->email }}</p>
                 </div>
                 <div class="col-md-6">
-                    <h6 class="text-muted mb-2">Role</h6>
-                    <p class="mb-3">
-                        <span class="badge bg-{{ $user->role === 'admin' ? 'danger' : ($user->role === 'pair' ? 'info' : 'secondary') }}">
-                            {{ ucfirst($user->role) }}
-                        </span>
-                    </p>
-
-                    <h6 class="text-muted mb-2">Account Status</h6>
-                    <p class="mb-3">
-                        <span class="badge bg-success">Active</span>
-                    </p>
+                    <h6 class="text-muted">Role</h6>
+                    <p><span class="badge bg-secondary">{{ $user->roleLabel() }}</span></p>
+                    @if($user->department)
+                        <h6 class="text-muted">Department</h6>
+                        <p>{{ $user->department->displayName() }}</p>
+                    @endif
+                    @if($user->role === 'department' && $user->organizations->isNotEmpty())
+                        <h6 class="text-muted">Registered organizations</h6>
+                        <ul class="mb-0">
+                            @foreach($user->organizations as $org)
+                                <li>{{ $org->displayName() }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
                 </div>
-            </div>
-
-            <hr>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <h6 class="text-muted mb-2">Created At</h6>
-                    <p class="mb-3">{{ $user->created_at->format('M d, Y H:i:s') }}</p>
-                </div>
-                <div class="col-md-6">
-                    <h6 class="text-muted mb-2">Last Updated</h6>
-                    <p class="mb-3">{{ $user->updated_at->format('M d, Y H:i:s') }}</p>
-                </div>
-            </div>
-
-            <hr>
-
-            <div class="alert alert-info" role="alert">
-                <i class="bi bi-info-circle me-2"></i>
-                <strong>User ID:</strong> {{ $user->id }}
             </div>
 
             @if($user->id !== auth()->id())
-            <div class="d-flex gap-2 mt-4">
-                <form method="POST" action="{{ route('users.destroy', $user) }}" style="display: inline;">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this user? This action cannot be undone.')">
-                        <i class="bi bi-trash me-2"></i> Delete User
-                    </button>
-                </form>
-            </div>
+            <form method="POST" action="{{ route('users.destroy', $user) }}" class="mt-3">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this user?')">Delete</button>
+            </form>
             @endif
         </div>
     </div>

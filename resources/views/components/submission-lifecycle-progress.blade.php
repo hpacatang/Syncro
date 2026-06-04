@@ -6,9 +6,10 @@
     $current = $submission->lifecycle();
     $steps = SubmissionLifecycleStatus::progressSteps();
     $currentIndex = $current->progressIndex();
-    $isRejected = $current === SubmissionLifecycleStatus::Rejected;
-    $isRevised = $current === SubmissionLifecycleStatus::Revised;
-    $activeTheme = $isRejected ? 'rejected' : ($isRevised ? 'revised' : $current->progressTheme());
+    $isRejected       = $current === SubmissionLifecycleStatus::Rejected;
+    $isRevised        = $current === SubmissionLifecycleStatus::Revised;
+    $isUnderReview    = $current === SubmissionLifecycleStatus::UnderPeerReview;
+    $activeTheme      = $isRejected ? 'rejected' : ($isRevised ? 'revised' : $current->progressTheme());
 @endphp
 
 <div
@@ -27,6 +28,11 @@
         <div class="alert alert-warning py-2 mb-2 small">
             <strong>Revisions requested</strong> — PAIR is updating the caption based on your feedback.
         </div>
+    @elseif($isUnderReview && ! $compact)
+        <div class="alert alert-under-review py-2 mb-2 small d-flex align-items-center gap-2">
+            <span class="review-pulse-dot" aria-hidden="true"></span>
+            <span><strong>Under PAIR Review</strong> — our team is reviewing your submission. You'll be notified once a decision is made.</span>
+        </div>
     @endif
 
     <div class="lifecycle-progress__track">
@@ -39,9 +45,16 @@
                     || ($currentIndex === $index && ! $isRevised)
                 );
                 $stateClass = $active ? 'is-active' : ($done ? 'is-done' : 'is-upcoming');
+                $accent = ($active && $isRevised)
+                    ? SubmissionLifecycleStatus::Revised
+                    : $step;
             @endphp
-            <div class="lifecycle-step lifecycle-step--{{ $theme }} {{ $stateClass }}" data-step="{{ $step->value }}">
-                <div class="lifecycle-step__dot" style="--step-color: {{ $step->progressColor() }}"></div>
+            <div
+                class="lifecycle-step lifecycle-step--{{ $theme }} {{ $stateClass }}"
+                data-step="{{ $step->value }}"
+                style="--step-color: {{ $accent->progressColor() }}; --step-glow-rgb: {{ $accent->progressGlowRgb() }};"
+            >
+                <div class="lifecycle-step__dot"></div>
                 <small class="lifecycle-step__label">{{ $step->label() }}</small>
             </div>
             @if(! $loop->last)

@@ -1,21 +1,14 @@
 @extends('layouts.app')
 
+@section('page-title', 'PAIR Office Dashboard')
+@section('page-subtitle', 'Content queue & submission management')
+
 @section('content')
-<div class="container-fluid p-4">
-    <!-- Header -->
-    <div class="mb-4">
-        <h1 class="h3 fw-bold">PAIR Office Dashboard</h1>
-        <p class="text-muted">Content Queue & Submission Management</p>
-    </div>
+<div class="container-fluid px-0">
 
-    @if(count($submissions ?? []) > 0)
-        <x-submission-lifecycle-tracker-card :submission="$submissions->first()" title="Submission progress (latest in queue)" />
-    @endif
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm border-0">
+    <div class="row mb-4 g-3">
+        <div class="col-md-3">
+            <div class="card syncro-stat-card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
@@ -27,8 +20,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm border-0">
+        <div class="col-md-3">
+            <div class="card syncro-stat-card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
@@ -40,8 +33,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm border-0">
+        <div class="col-md-3">
+            <div class="card syncro-stat-card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
@@ -53,8 +46,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm border-0">
+        <div class="col-md-3">
+            <div class="card syncro-stat-card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
@@ -68,80 +61,74 @@
         </div>
     </div>
 
-    <!-- Content Queue Section -->
-    <div class="row mb-4">
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-bottom">
-                    <h5 class="mb-3 fw-bold">Content Queue</h5>
-                    <x-submission-filters
-                        :action="route('dashboard')"
-                        :current-filter="$currentFilter"
-                        :current-search="$currentSearch ?? ''"
-                        variant="admin"
-                        compact
-                    />
+    <div class="row mb-4 g-4">
+        <div class="col-xl-9 col-lg-8">
+            <div class="syncro-panel syncro-panel--compact">
+                <div class="syncro-panel__header syncro-panel__header--compact">
+                    <h6 class="fw-bold mb-0">Content Queue</h6>
+                    <div class="mt-2">
+                        <x-submission-filters
+                            :action="route('dashboard')"
+                            :current-filter="$currentFilter"
+                            :current-search="$currentSearch ?? ''"
+                            variant="admin"
+                            compact
+                        />
+                    </div>
                 </div>
-                <div class="card-body p-0">
+                <div class="syncro-panel__body syncro-panel__body--flush">
                     @if(count($submissions) === 0)
-                        <div class="text-center py-5">
+                        <div class="text-center py-5 px-3">
                             <i class="fas fa-inbox text-muted" style="font-size: 3rem;"></i>
-                            <p class="text-muted mt-3">No submissions in the queue</p>
+                            <p class="text-muted mt-3 mb-1">No submissions in the queue</p>
                             <p class="text-muted small">Waiting for organizations to submit content for review</p>
                         </div>
                     @else
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th class="ps-4">Organization</th>
-                                        <th>Title/Caption</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
-                                        <th>Manage</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($submissions as $submission)
-                                        <tr>
-                                            <td class="ps-4">{{ $submission->user->name ?? 'Unknown' }}</td>
-                                            <td>{{ Str::limit($submission->original_caption, 40) }}</td>
-                                            <td style="min-width: 12rem;">
-                                                <x-submission-lifecycle-progress :submission="$submission" :compact="true" />
-                                            </td>
-                                            <td class="text-muted small">{{ $submission->created_at ? $submission->created_at->format('M d, Y') : 'N/A' }}</td>
-                                            <td>
-                                                <x-submission-status-manager-inline :submission="$submission" />
-                                            </td>
-                                            <td>
-                                                <div class="d-flex flex-wrap gap-1">
-                                                    <a href="{{ route('dashboard.submissions.review', $submission) }}" class="btn btn-sm btn-outline-secondary">Review</a>
-                                                    <button type="button" class="btn btn-sm btn-outline-primary generate-btn" title="Generate Caption" data-bs-toggle="modal" data-bs-target="#generateModal" data-submission-id="{{ $submission->id }}" data-caption="{{ htmlspecialchars($submission->original_caption, ENT_QUOTES) }}">
-                                                        <i class="fas fa-wand-magic-sparkles"></i> Evaluate
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="6" class="text-center text-muted py-4">
-                                                No submissions found
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                        <div class="syncro-queue">
+                            <div class="syncro-queue__head" aria-hidden="true">
+                                <span>Organization</span>
+                                <span>Title / Caption</span>
+                                <span>Status</span>
+                                <span>Date</span>
+                                <span class="text-end">Actions</span>
+                            </div>
+                            <ul class="syncro-queue__list list-unstyled mb-0">
+                                @foreach($submissions as $submission)
+                                    <li class="syncro-queue__item">
+                                        <div class="syncro-queue__org">
+                                            <span class="syncro-queue__org-name" title="{{ $submission->user?->displayName() }}">
+                                                {{ $submission->user?->displayName() ?? 'Unknown' }}
+                                            </span>
+                                            @if($submission->user?->department)
+                                                <span class="syncro-queue__org-dept" title="{{ $submission->user->department->displayName() }}">
+                                                    {{ $submission->user->department->displayName() }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <p class="syncro-queue__caption" title="{{ $submission->original_caption }}">
+                                            {{ $submission->original_caption }}
+                                        </p>
+                                        <div class="syncro-queue__status">
+                                            <x-submission-workflow-badge :submission="$submission" size="sm" />
+                                        </div>
+                                        <time class="syncro-queue__date" @if($submission->created_at) datetime="{{ $submission->created_at->toIso8601String() }}" @endif>
+                                            {{ $submission->created_at ? $submission->created_at->format('M d, Y') : 'N/A' }}
+                                        </time>
+                                        <div class="syncro-queue__actions">
+                                            <x-submission-queue-actions :submission="$submission" />
+                                        </div>
+                                    </li>
+                                @endforeach
+                            </ul>
                         </div>
                     @endif
                 </div>
             </div>
         </div>
 
-        <!-- Progress Overview -->
-        <div class="col-lg-4">
-            <div class="card shadow-sm border-0 mb-3">
-                <div class="card-header bg-white border-bottom">
+        <div class="col-xl-3 col-lg-4">
+            <div class="syncro-sidebar-card card mb-3">
+                <div class="card-header bg-white py-3">
                     <h5 class="mb-0 fw-bold">Status Overview</h5>
                 </div>
                 <div class="card-body">
@@ -151,7 +138,6 @@
                         $underReview = $stats['under_review'] ?? 0;
                         $approved = $stats['approved'] ?? 0;
                         
-                        // Prevent division by zero
                         if ($total <= 0) {
                             $pendingPercent = 0;
                             $underReviewPercent = 0;
@@ -199,9 +185,8 @@
                 </div>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-bottom">
+            <div class="syncro-sidebar-card card">
+                <div class="card-header bg-white py-3">
                     <h5 class="mb-0 fw-bold">Quick Actions</h5>
                 </div>
                 <div class="card-body">
@@ -216,12 +201,11 @@
         </div>
     </div>
 
-    <!-- Media Gallery Preview -->
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white border-bottom">
+    <div class="syncro-panel">
+        <div class="syncro-panel__header">
             <h5 class="mb-0 fw-bold">Recent Media Uploads</h5>
         </div>
-        <div class="card-body">
+        <div class="syncro-panel__body">
             @if(count($submissions) === 0 || !$submissions->whereNotNull('media_paths')->count())
                 <div class="text-center py-5">
                     <i class="fas fa-images text-muted" style="font-size: 3rem;"></i>
@@ -234,15 +218,15 @@
                         @if(is_array($submission->media_paths) && count($submission->media_paths) > 0)
                             @foreach($submission->media_paths as $media)
                                 <div class="col-md-3">
-                                    <div class="card border-0 overflow-hidden">
+                                    <div class="syncro-media-tile">
                                         <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
                                             <div class="text-center">
                                                 <i class="fas fa-image text-muted fa-3x mb-2"></i>
                                                 <p class="text-muted small">{{ basename($media) }}</p>
                                             </div>
                                         </div>
-                                        <div class="card-body p-2">
-                                            <small class="text-muted">{{ $submission->user->name ?? 'Unknown' }}</small>
+                                        <div class="p-2 border-top">
+                                            <small class="text-muted">{{ $submission->user?->displayName() ?? 'Unknown' }}</small>
                                         </div>
                                     </div>
                                 </div>
@@ -255,14 +239,10 @@
     </div>
 </div>
 
-<!-- Font Awesome for icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<!-- Caption Generation Modal -->
 <div class="modal fade" id="generateModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white border-0">
+        <div class="modal-content shadow-lg" style="border: 1px solid #dee2e6;">
+            <div class="modal-header bg-primary text-white" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
                 <div>
                     <h5 class="modal-title fw-bold">
                         <i class="fas fa-pen-fancy"></i> Enhance Caption
@@ -273,7 +253,6 @@
             </div>
             <div class="modal-body">
                 <form id="generateForm">
-                    <!-- Original Caption Display -->
                     <div class="mb-4">
                         <label class="form-label fw-bold">Original Caption</label>
                         <div class="alert alert-light border">
@@ -281,15 +260,12 @@
                         </div>
                     </div>
 
-                    <!-- Two-Column Layout: AI Option (Left) | Manual Option (Right) -->
                     <div class="row g-4">
-                        <!-- LEFT: AI-Assisted Enhancement -->
                         <div class="col-md-6">
                             <h6 class="fw-bold mb-3">
                                 <i class="fas fa-wand-magic-sparkles text-primary"></i> AI-Assisted
                             </h6>
                             
-                            <!-- AI Provider Selection -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold small">AI Provider</label>
                                 <div class="btn-group d-flex gap-1" role="group" style="width: 100%;">
@@ -310,7 +286,6 @@
                                 </div>
                             </div>
 
-                            <!-- Tone Selection -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold small">Tone</label>
                                 <select class="form-select form-select-sm" name="tone" id="toneSelect">
@@ -323,12 +298,10 @@
                                 </select>
                             </div>
 
-                            <!-- Generate Button -->
                             <button type="button" class="btn btn-primary btn-sm w-100 mb-3" id="generateBtn" onclick="generateCaption()">
                                 <i class="fas fa-wand-magic-sparkles"></i> Generate with AI
                             </button>
 
-                            <!-- Status Alert -->
                             <div id="generatingAlert" class="alert alert-info d-none mb-0 py-2" role="alert" style="font-size: 0.85rem;">
                                 <div class="spinner-border spinner-border-sm me-2" role="status" style="width: 1rem; height: 1rem;">
                                     <span class="visually-hidden">Loading...</span>
@@ -337,7 +310,6 @@
                             </div>
                         </div>
 
-                        <!-- RIGHT: Manual Enhancement -->
                         <div class="col-md-6">
                             <h6 class="fw-bold mb-3">
                                 <i class="fas fa-pen-fancy text-info"></i> Manual Input
@@ -357,7 +329,6 @@
                         </div>
                     </div>
 
-                    <!-- PAIR Feedback Section -->
                     <div class="row mt-4">
                         <div class="col-12">
                             <div class="border-top pt-4">
@@ -382,10 +353,6 @@
             <div class="modal-footer border-top">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 
-                <!-- AI Success Path -->
-                <!-- <button type="button" class="btn btn-primary" id="generateBtn" onclick="generateCaption()">
-                    <i class="fas fa-wand-magic-sparkles"></i> Generate with AI
-                </button> -->
                 <button type="button" class="btn btn-success" id="approveBtn" onclick="approveFinalCaption()">
                     <i class="fas fa-check"></i> Approve & Update
                 </button>
@@ -420,7 +387,7 @@ document.getElementById('generateModal').addEventListener('show.bs.modal', funct
         setupEnhanceModal(
             button.getAttribute('data-submission-id'),
             button.getAttribute('data-caption'),
-            ''
+            button.getAttribute('data-enhanced-caption') || ''
         );
     }
 });
@@ -453,8 +420,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 });
 
 async function generateCaption() {
-    console.log('Generating caption for submission:', currentSubmissionId);
-    
     if (!currentSubmissionId) {
         alert('Error: Submission ID not found. Please close and try again.');
         return;
@@ -486,16 +451,13 @@ async function generateCaption() {
         const data = await response.json();
 
         if (data.success) {
-            // AI Generation Successful - Fill the manual textarea with AI result
             document.getElementById('manualCaption').value = data.data.enhanced_caption;
             generatingAlert.className = 'alert alert-success';
             generatingAlert.innerHTML = '<i class=\"fas fa-check-circle\"></i> <strong>Success!</strong> AI-generated caption loaded. Review and click Approve to finalize.';
         } else if (data.fallback) {
-            // AI Generation Failed - Show helpful message but keep manual input visible
             generatingAlert.className = 'alert alert-warning';
             generatingAlert.innerHTML = '<i class=\"fas fa-lightbulb\"></i> <strong>AI Service Unavailable</strong> - No problem! Manually enhance the caption below and click Approve.';
         } else {
-            // Other error
             generatingAlert.className = 'alert alert-danger';
             generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${data.message || 'Failed to generate caption'}`;
         }

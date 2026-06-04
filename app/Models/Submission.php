@@ -16,7 +16,6 @@ class Submission extends Model
         'enhanced_by', 'enhanced_at', 'workflow_status', 'org_review_notes', 'pair_feedback'
     ];
 
-    // This ensures links and images are properly formatted as JSON arrays
     protected $casts = [
         'links' => 'array',
         'media_paths' => 'array',
@@ -40,9 +39,6 @@ class Submission extends Model
         return $this->belongsTo(User::class, 'enhanced_by');
     }
 
-    /**
-     * Get all feedback for this submission
-     */
     public function feedback()
     {
         return $this->hasMany(Feedback::class);

@@ -6,6 +6,8 @@
     $class = 'badge ' . ($lightText ? 'text-dark' : 'text-white');
     if ($size === 'lg') {
         $class .= ' fs-6 px-3 py-2';
+    } elseif ($size === 'sm') {
+        $class .= ' syncro-badge-sm';
     }
 @endphp
 

@@ -4,7 +4,7 @@
 <div class="container-fluid p-4">
     <div class="mb-4">
         <h1 class="h3 fw-bold">AI caption from media</h1>
-        <p class="text-muted mb-0">Upload reference files (same rules as org submissions). Default tone: <a href="{{ route('settings.tone') }}">tone settings</a>.</p>
+        <p class="text-muted mb-0">Upload reference files (same rules as org submissions). Default tone is configured by the administrator.</p>
     </div>
 
     <div class="row justify-content-center">

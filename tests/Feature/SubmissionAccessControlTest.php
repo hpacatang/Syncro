@@ -60,15 +60,35 @@ class SubmissionAccessControlTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_staff_can_transition_any_submission(): void
+    /**
+     * under_peer_review is now a system-only auto-transition (triggered when staff opens the
+     * review page). Staff must not be able to set it manually via the API; they should move the
+     * submission from under_peer_review to approved/rejected/revised instead.
+     */
+    public function test_staff_cannot_manually_transition_to_under_peer_review(): void
     {
         $pair = User::factory()->create(['role' => 'pair']);
-        $org = User::factory()->create(['role' => 'org']);
+        $org  = User::factory()->create(['role' => 'org']);
         $submission = Submission::factory()->submitted()->create(['user_id' => $org->id]);
 
         $this->actingAs($pair)
             ->postJson('/api/submissions/'.$submission->id.'/transition', ['status' => 'under_peer_review'])
+            ->assertStatus(422); // Invalid lifecycle status — not a manual target
+    }
+
+    /**
+     * Staff can approve a submission once it is already under_peer_review.
+     */
+    public function test_staff_can_approve_submission_under_peer_review(): void
+    {
+        $pair = User::factory()->create(['role' => 'pair']);
+        $org  = User::factory()->create(['role' => 'org']);
+        $submission = Submission::factory()->awaitingOrgApproval()->create(['user_id' => $org->id]);
+
+        $this->actingAs($pair)
+            ->postJson('/api/submissions/'.$submission->id.'/transition', ['status' => 'approved'])
             ->assertOk()
-            ->assertJsonPath('data.workflow_status', 'under_peer_review');
+            ->assertJsonPath('data.workflow_status', 'approved');
     }
 }
+

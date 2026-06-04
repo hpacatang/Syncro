@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
 
 /**
- * Org users may only see submissions they own (user_id).
- * Admin and PAIR reviewers are not scoped — global queue access.
+ * Org and department users only see their own submissions.
+ * PAIR and admin reviewers see the full queue.
  */
 class OrgOwnedSubmissionScope implements Scope
 {
@@ -16,7 +16,7 @@ class OrgOwnedSubmissionScope implements Scope
     {
         $user = auth()->user();
 
-        if ($user && $user->isOrg()) {
+        if ($user && $user->canSubmitPosts()) {
             $builder->where($model->getTable().'.user_id', $user->id);
         }
     }

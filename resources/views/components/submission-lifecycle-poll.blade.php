@@ -9,7 +9,7 @@
 
     const stepColors = {
         pending: '#6c757d',
-        submitted: '#0aa2c0',
+        submitted: '#3d9b5c',
         under_peer_review: '#fd7e14',
         approved: '#198754',
         rejected: '#dc3545',

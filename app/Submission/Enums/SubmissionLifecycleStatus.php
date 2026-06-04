@@ -23,6 +23,19 @@ enum SubmissionLifecycleStatus: string
         };
     }
 
+    /** Action label for PAIR step buttons (one click per finished step). */
+    public function actionLabel(): string
+    {
+        return match ($this) {
+            self::UnderPeerReview => 'Start PAIR review',
+            self::Approved => 'Approve post',
+            self::Rejected => 'Reject post',
+            self::Revised => 'Send back for revision',
+            self::Posted => 'Mark as posted',
+            default => $this->label(),
+        };
+    }
+
     public function badgeClass(): string
     {
         return match ($this) {
@@ -43,12 +56,25 @@ enum SubmissionLifecycleStatus: string
     public function progressColor(): string
     {
         return match ($this) {
-            self::Submitted => '#0aa2c0',
-            self::UnderPeerReview => '#fd7e14',
-            self::Approved => '#198754',
-            self::Rejected => '#dc3545',
-            self::Revised => '#ffc107',
-            self::Posted => '#212529',
+            self::Submitted => '#22c55e',
+            self::UnderPeerReview => '#f97316',
+            self::Approved => '#2563eb',
+            self::Rejected => '#ef4444',
+            self::Revised => '#eab308',
+            self::Posted => '#7c3aed',
+        };
+    }
+
+    /** RGB components for CSS glow animations (e.g. `249, 115, 22`). */
+    public function progressGlowRgb(): string
+    {
+        return match ($this) {
+            self::Submitted => '34, 197, 94',
+            self::UnderPeerReview => '249, 115, 22',
+            self::Approved => '37, 99, 235',
+            self::Rejected => '239, 68, 68',
+            self::Revised => '234, 179, 8',
+            self::Posted => '124, 58, 237',
         };
     }
 

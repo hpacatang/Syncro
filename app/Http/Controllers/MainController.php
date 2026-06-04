@@ -22,9 +22,6 @@ class MainController extends Controller
         'posted',
     ];
 
-    /**
-     * Apply workflow status, search, and sort filters to a submission query.
-     */
     private function applySubmissionFilters(Builder $query, Request $request, string $defaultStatus = 'all'): string
     {
         $filter = $request->get('status', $defaultStatus);
@@ -60,9 +57,10 @@ class MainController extends Controller
                 $q->where('original_caption', 'like', '%' . $search . '%')
                     ->orWhere('enhanced_caption', 'like', '%' . $search . '%');
 
-                if (!$request->user()->isOrg()) {
+                if ($request->user()->isStaffReviewer()) {
                     $q->orWhereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('name', 'like', '%' . $search . '%');
+                        $userQuery->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('profile_name', 'like', '%' . $search . '%');
                     });
                 }
             });
@@ -79,20 +77,18 @@ class MainController extends Controller
 
         return $filter;
     }
-    /**
-     * Display the main dashboard with submission statistics
-     */
     public function index(Request $request)
     {
-        // For PAIR staff, show submissions pending their review or pending org approval
         $stats = [
             'total' => Submission::count(),
             'pending_submission' => Submission::whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
             'pending_pair_review' => Submission::whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
             'approved' => Submission::where('workflow_status', 'approved')->count(),
+            'pending' => Submission::whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
+            'under_review' => Submission::whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
         ];
 
-        $query = Submission::with('user');
+        $query = Submission::with(['user.department']);
         $filter = $this->applySubmissionFilters($query, $request, 'pending');
         $recentSubmissions = $query->limit(10)->get();
 
@@ -105,14 +101,11 @@ class MainController extends Controller
         ]);
     }
 
-    /**
-     * Display all submissions with filtering options
-     */
     public function submissions(Request $request)
     {
         $query = Submission::with('user');
 
-        if ($request->user()->isOrg()) {
+        if ($request->user()->canSubmitPosts()) {
             $query->where('user_id', $request->user()->id);
         }
 
@@ -128,9 +121,6 @@ class MainController extends Controller
         ]);
     }
 
-    /**
-     * Display feedback for a specific submission
-     */
     public function submissionFeedback($submissionId)
     {
         $submission = Submission::with(['user', 'feedback.user'])
@@ -142,9 +132,6 @@ class MainController extends Controller
         ]);
     }
 
-    /**
-     * Display the organization dashboard
-     */
     public function orgDashboard(Request $request)
     {
         $userId = auth()->id();
