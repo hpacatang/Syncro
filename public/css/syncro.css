@@ -169,16 +169,16 @@
     z-index: 0;
 }
 
-/* Active tab merges into white content area */
+/* Active tab — white pill with matching corners on all sides */
 .syncro-rail__link.is-active {
     color: var(--syncro-rail-icon-active);
 }
 
 .syncro-rail__link.is-active .syncro-rail__link-bg {
     background: var(--syncro-rail-active);
-    border-radius: 0.85rem 0 0 0.85rem;
-    inset: 0 -0.65rem 0 0;
-    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.04);
+    border-radius: 0.85rem;
+    inset: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .syncro-rail__icon {
