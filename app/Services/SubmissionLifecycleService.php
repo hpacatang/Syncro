@@ -30,9 +30,9 @@ class SubmissionLifecycleService
      * @var array<string, list<string>>
      */
     private const ROLE_TARGETS = [
-        'admin' => ['under_peer_review', 'approved', 'rejected', 'revised', 'posted'],
-        'pair' => ['under_peer_review', 'approved', 'rejected', 'revised', 'posted'],
-        'org' => [],
+        'admin' => ['approved', 'rejected', 'revised', 'posted'],
+        'pair' => ['approved', 'rejected', 'revised', 'posted'],
+        'org' => ['approved', 'revised'],
     ];
 
     public function current(Submission $submission): SubmissionLifecycleStatus

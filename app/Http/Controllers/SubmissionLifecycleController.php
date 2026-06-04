@@ -33,7 +33,7 @@ class SubmissionLifecycleController extends Controller
             ], 422);
         }
 
-        if ($target === SubmissionLifecycleStatus::Revised) {
+        if (in_array($target, [SubmissionLifecycleStatus::Revised, SubmissionLifecycleStatus::Rejected], true)) {
             $request->validate(['notes' => 'required|string|min:10']);
         }
 

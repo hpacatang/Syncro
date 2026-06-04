@@ -487,9 +487,13 @@ body.syncro-nav-open {
 .lifecycle-step--submitted.is-active .lifecycle-step__label { color: var(--syncro-submitted); }
 
 .lifecycle-step--under_peer_review.is-done .lifecycle-step__dot,
-.lifecycle-step--under_peer_review.is-active .lifecycle-step__dot { background: #fd7e14; border-color: #fd7e14; }
+.lifecycle-step--under_peer_review.is-active .lifecycle-step__dot {
+    background: #fd7e14;
+    border-color: #fd7e14;
+    animation: pairReviewPulse 1.8s ease-in-out infinite;
+}
 .lifecycle-step--under_peer_review.is-done .lifecycle-step__label,
-.lifecycle-step--under_peer_review.is-active .lifecycle-step__label { color: #e8590c; }
+.lifecycle-step--under_peer_review.is-active .lifecycle-step__label { color: #e8590c; font-weight: 700; }
 
 .lifecycle-step--approved.is-done .lifecycle-step__dot,
 .lifecycle-step--approved.is-active .lifecycle-step__dot { background: #198754; border-color: #198754; }
@@ -506,6 +510,36 @@ body.syncro-nav-open {
 
 .lifecycle-step--revised.is-active .lifecycle-step__dot { background: #ffc107; border-color: #ffc107; box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.35); }
 .lifecycle-step--revised.is-active .lifecycle-step__label { color: #cc9a06; }
+
+/* Pulsing glow keyframe for the active under_peer_review dot */
+@keyframes pairReviewPulse {
+    0%   { box-shadow: 0 0 0 0   rgba(253, 126, 20, 0.55); }
+    60%  { box-shadow: 0 0 0 7px rgba(253, 126, 20, 0);    }
+    100% { box-shadow: 0 0 0 0   rgba(253, 126, 20, 0);    }
+}
+
+/* "Under PAIR Review" orange banner in the progress tracker */
+.alert-under-review {
+    background: rgba(253, 126, 20, 0.1);
+    border: 1px solid rgba(253, 126, 20, 0.35);
+    color: #7a3800;
+    border-radius: 0.375rem;
+}
+
+/* Pulsing dot used inside the alert banner */
+.review-pulse-dot {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #fd7e14;
+    animation: reviewDotBlink 1.4s ease-in-out infinite;
+}
+@keyframes reviewDotBlink {
+    0%, 100% { opacity: 1;   transform: scale(1);    }
+    50%       { opacity: 0.4; transform: scale(0.75); }
+}
 
 .lifecycle-progress__connector {
     flex: 0 0 auto;
@@ -559,7 +593,7 @@ body.syncro-nav-open {
 
 /* Content queue — CSS grid list (no column bleed) */
 .syncro-queue {
-    --queue-cols: minmax(9rem, 1.1fr) minmax(10rem, 2fr) 6.5rem 5.5rem minmax(9.5rem, auto);
+    --queue-cols: minmax(10rem, 1.2fr) minmax(12rem, 2fr) minmax(8.5rem, max-content) minmax(6.5rem, max-content) minmax(11rem, auto);
     font-size: 0.8125rem;
     border-top: 1px solid var(--syncro-border);
 }
@@ -720,7 +754,7 @@ body.syncro-nav-open {
 /* Narrow sidebar column: icon-only actions, tighter grid */
 @media (max-width: 1399.98px) {
     .syncro-queue {
-        --queue-cols: minmax(7.5rem, 1fr) minmax(6rem, 1.6fr) 5.5rem 4.75rem minmax(7rem, auto);
+        --queue-cols: minmax(8rem, 1.1fr) minmax(8rem, 1.6fr) minmax(8.5rem, max-content) minmax(6.2rem, max-content) minmax(9.5rem, auto);
         font-size: 0.78rem;
     }
 

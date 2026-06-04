@@ -6,11 +6,19 @@
     $allowed = auth()->user()->isStaffReviewer()
         ? app(SubmissionLifecycleService::class)->allowedTransitions($submission, auth()->user())
         : [];
+
+    $canReject = false;
+    foreach ($allowed as $status) {
+        if ($status->value === 'rejected') {
+            $canReject = true;
+            break;
+        }
+    }
 @endphp
 
 <div class="syncro-queue-actions" data-submission-id="{{ $submission->id }}">
     <div class="btn-group btn-group-sm syncro-queue-actions__group" role="group" aria-label="Submission actions">
-        <a href="{{ route('dashboard.submissions.review', $submission) }}" class="btn btn-primary" title="Open full review">
+        <a href="{{ route('dashboard.submissions.review', $submission) }}" class="btn btn-primary" title="Review submission details">
             <i class="bi bi-eye"></i>
             <span class="d-none d-xxl-inline ms-1">Review</span>
         </a>
@@ -21,37 +29,22 @@
             data-bs-target="#generateModal"
             data-submission-id="{{ $submission->id }}"
             data-caption="{{ htmlspecialchars($submission->original_caption, ENT_QUOTES) }}"
-            title="Enhance caption">
+            data-enhanced-caption="{{ htmlspecialchars($submission->enhanced_caption ?? '', ENT_QUOTES) }}"
+            title="Generate AI caption evaluation">
             <i class="bi bi-magic"></i>
             <span class="d-none d-xxl-inline ms-1">Evaluate</span>
         </button>
-        @if(count($allowed) > 0)
-            <div class="btn-group btn-group-sm" role="group">
-                <button
-                    type="button"
-                    class="btn btn-outline-secondary dropdown-toggle"
-                    data-bs-toggle="dropdown"
-                    data-bs-auto-close="true"
-                    aria-expanded="false"
-                    title="PAIR workflow steps">
-                    <i class="bi bi-check2-square"></i>
-                    <span class="d-none d-xxl-inline ms-1">Steps</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow syncro-queue-actions__menu">
-                    @foreach($allowed as $status)
-                        <li>
-                            <button
-                                type="button"
-                                class="dropdown-item lifecycle-inline-step"
-                                data-submission-id="{{ $submission->id }}"
-                                data-status="{{ $status->value }}"
-                                data-needs-notes="{{ in_array($status->value, ['revised', 'rejected'], true) ? '1' : '0' }}">
-                                {{ $status->actionLabel() }}
-                            </button>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
+        @if($canReject)
+            <button
+                type="button"
+                class="btn btn-outline-danger lifecycle-inline-step"
+                data-submission-id="{{ $submission->id }}"
+                data-status="rejected"
+                data-needs-notes="1"
+                title="Reject post">
+                <i class="bi bi-x-lg"></i>
+                <span class="d-none d-xxl-inline ms-1">Reject post</span>
+            </button>
         @endif
     </div>
     <span class="lifecycle-inline-msg syncro-queue-actions__msg" role="status"></span>

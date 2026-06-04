@@ -16,14 +16,12 @@ class SubmissionLifecycleServiceTest extends TestCase
 
     public function test_staff_can_move_submitted_to_under_peer_review(): void
     {
-        $staff = User::factory()->create(['role' => 'pair']);
         $submission = Submission::factory()->submitted()->create();
 
         $service = app(SubmissionLifecycleService::class);
-        $updated = $service->transition(
+        $updated = $service->systemTransition(
             $submission,
-            SubmissionLifecycleStatus::UnderPeerReview,
-            $staff
+            SubmissionLifecycleStatus::UnderPeerReview
         );
 
         $this->assertSame(SubmissionLifecycleStatus::UnderPeerReview->value, $updated->workflow_status);

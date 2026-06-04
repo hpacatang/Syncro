@@ -171,18 +171,30 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($submissions as $submission)
-                                        <tr data-submission-row="{{ $submission->id }}" data-workflow-status="{{ $submission->workflow_status }}">
-                                            <td class="ps-4">{{ Str::limit($submission->original_caption, 50) }}</td>
-                                            <td style="min-width: 14rem;">
-                                                <x-submission-lifecycle-progress :submission="$submission" :compact="true" />
-                                            </td>
-                                            <td class="text-muted small">{{ $submission->created_at->format('M d') }}</td>
-                                            <td>
-                                                <x-view-action-link :href="route('org.submissions.review', $submission)" :title="__('View details')" />
-                                            </td>
-                                        </tr>
-                                    @endforeach
+                                        @foreach($submissions as $submission)
+                                            @php $needsReview = $submission->workflow_status === 'under_peer_review' && $submission->enhanced_caption; @endphp
+                                            <tr data-submission-row="{{ $submission->id }}" data-workflow-status="{{ $submission->workflow_status }}">
+                                                <td class="ps-4">{{ Str::limit($submission->original_caption, 50) }}</td>
+                                                <td style="min-width: 14rem;">
+                                                    <x-submission-lifecycle-progress :submission="$submission" :compact="true" />
+                                                </td>
+                                                <td class="text-muted small">{{ $submission->created_at->format('M d') }}</td>
+                                                <td>
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        <x-view-action-link :href="route('org.submissions.review', $submission)" :title="__('View details')" />
+                                                        @if($needsReview)
+                                                            <button class="btn btn-sm btn-warning"
+                                                                title="Quick Review"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#reviewModal"
+                                                                onclick="loadReviewModal({{ $submission->id }}, '{{ htmlspecialchars($submission->original_caption, ENT_QUOTES) }}', '{{ htmlspecialchars($submission->enhanced_caption, ENT_QUOTES) }}')">
+                                                                <i class="fas fa-check-circle"></i> Decide
+                                                            </button>
+                                                        @endif
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
                                 </tbody>
                             </table>
                         </div>
@@ -478,8 +490,8 @@ async function submitRejection() {
     }
     
     const notes = document.getElementById('revisionNotes').value.trim();
-    if (!notes) {
-        alert('Please provide feedback for PAIR staff.');
+    if (notes.length < 10) {
+        alert('Please provide specific feedback of at least 10 characters for PAIR staff.');
         return;
     }
     

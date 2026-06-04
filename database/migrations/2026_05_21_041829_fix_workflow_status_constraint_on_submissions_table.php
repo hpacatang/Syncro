@@ -19,13 +19,13 @@ return new class extends Migration
         // Recreate with proper enum constraint
         Schema::table('submissions', function (Blueprint $table) {
             $table->enum('workflow_status', [
-                'pending_submission',
-                'pending_pair_review',
-                'pending_org_approval',
+                'submitted',
+                'under_peer_review',
+                'revised',
                 'approved',
                 'rejected',
                 'posted'
-            ])->default('pending_submission')->after('status');
+            ])->default('submitted')->after('status');
         });
     }
 

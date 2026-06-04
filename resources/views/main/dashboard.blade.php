@@ -387,7 +387,7 @@ document.getElementById('generateModal').addEventListener('show.bs.modal', funct
         setupEnhanceModal(
             button.getAttribute('data-submission-id'),
             button.getAttribute('data-caption'),
-            ''
+            button.getAttribute('data-enhanced-caption') || ''
         );
     }
 });
