@@ -33,6 +33,7 @@ class SubmissionFactory extends Factory
                 'uploads/media/' . $this->faker->uuid() . '.jpg',
             ] : null,
             'status' => $this->faker->randomElement($statuses),
+            'workflow_status' => 'submitted',
         ];
     }
 

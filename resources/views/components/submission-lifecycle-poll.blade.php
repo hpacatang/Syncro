@@ -9,12 +9,12 @@
 
     const stepColors = {
         pending: '#6c757d',
-        submitted: '#3d9b5c',
-        under_peer_review: '#fd7e14',
-        approved: '#198754',
-        rejected: '#dc3545',
-        revised: '#ffc107',
-        posted: '#212529',
+        submitted: '#22c55e',
+        under_peer_review: '#f97316',
+        approved: '#2563eb',
+        rejected: '#ef4444',
+        revised: '#eab308',
+        posted: '#7c3aed',
     };
 
     const badgeLabel = {

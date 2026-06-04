@@ -17,35 +17,34 @@
 @endphp
 
 <div class="syncro-queue-actions" data-submission-id="{{ $submission->id }}">
-    <div class="btn-group btn-group-sm syncro-queue-actions__group" role="group" aria-label="Submission actions">
-        <a href="{{ route('dashboard.submissions.review', $submission) }}" class="btn btn-primary" title="Review submission details">
-            <i class="bi bi-eye"></i>
-            <span class="d-none d-xxl-inline ms-1">Review</span>
+    <div class="syncro-queue-actions__group" role="group" aria-label="Submission actions">
+        <a href="{{ route('dashboard.submissions.review', $submission) }}" class="btn btn-sm btn-primary syncro-queue-actions__btn" title="Review submission details">
+            <i class="bi bi-eye" aria-hidden="true"></i>
+            <span class="syncro-queue-actions__label">Review</span>
         </a>
         <button
             type="button"
-            class="btn btn-outline-primary generate-btn"
+            class="btn btn-sm btn-outline-primary syncro-queue-actions__btn generate-btn"
             data-bs-toggle="modal"
             data-bs-target="#generateModal"
             data-submission-id="{{ $submission->id }}"
             data-caption="{{ htmlspecialchars($submission->original_caption, ENT_QUOTES) }}"
             data-enhanced-caption="{{ htmlspecialchars($submission->enhanced_caption ?? '', ENT_QUOTES) }}"
             title="Generate AI caption evaluation">
-            <i class="bi bi-magic"></i>
-            <span class="d-none d-xxl-inline ms-1">Evaluate</span>
+            <i class="bi bi-magic" aria-hidden="true"></i>
+            <span class="syncro-queue-actions__label">Evaluate</span>
         </button>
-        @if($canReject)
-            <button
-                type="button"
-                class="btn btn-outline-danger lifecycle-inline-step"
-                data-submission-id="{{ $submission->id }}"
-                data-status="rejected"
-                data-needs-notes="1"
-                title="Reject post">
-                <i class="bi bi-x-lg"></i>
-                <span class="d-none d-xxl-inline ms-1">Reject post</span>
-            </button>
-        @endif
+        <button
+            type="button"
+            class="btn btn-sm btn-outline-danger syncro-queue-actions__btn lifecycle-inline-step"
+            data-submission-id="{{ $submission->id }}"
+            data-status="rejected"
+            data-needs-notes="1"
+            @disabled(! $canReject)
+            title="{{ $canReject ? 'Reject post' : 'Reject is not available for this submission status' }}">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+            <span class="syncro-queue-actions__label">Reject</span>
+        </button>
     </div>
     <span class="lifecycle-inline-msg syncro-queue-actions__msg" role="status"></span>
 </div>
@@ -55,7 +54,7 @@
 <script>
 document.addEventListener('click', async function (e) {
     const btn = e.target.closest('.lifecycle-inline-step');
-    if (!btn) return;
+    if (!btn || btn.disabled) return;
 
     const submissionId = btn.dataset.submissionId;
     const status = btn.dataset.status;

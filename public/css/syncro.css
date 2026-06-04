@@ -569,7 +569,7 @@ body.syncro-nav-open {
 
 /* Content queue — CSS grid list (no column bleed) */
 .syncro-queue {
-    --queue-cols: minmax(10rem, 1.2fr) minmax(12rem, 2fr) minmax(8.5rem, max-content) minmax(6.5rem, max-content) minmax(11rem, auto);
+    --queue-cols: minmax(10rem, 1.15fr) minmax(12rem, 2fr) minmax(9rem, max-content) minmax(6.5rem, max-content) 16.5rem;
     font-size: 0.8125rem;
     border-top: 1px solid var(--syncro-border);
 }
@@ -651,6 +651,17 @@ body.syncro-nav-open {
 
 .syncro-queue__status {
     justify-self: start;
+    align-self: center;
+}
+
+.syncro-queue__head > span:nth-child(3),
+.syncro-queue__head > span:nth-child(4) {
+    justify-self: start;
+}
+
+.syncro-queue__head > span:last-child {
+    justify-self: stretch;
+    text-align: center;
 }
 
 .syncro-queue__date {
@@ -660,7 +671,8 @@ body.syncro-nav-open {
 }
 
 .syncro-queue__actions {
-    justify-self: end;
+    justify-self: stretch;
+    align-self: center;
 }
 
 .syncro-badge-sm {
@@ -672,31 +684,49 @@ body.syncro-nav-open {
     white-space: nowrap;
 }
 
-/* Action button group — always one row */
+/* Action buttons — fixed 3-column grid so every row aligns */
 .syncro-queue-actions {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: stretch;
     gap: 0.15rem;
+    width: 100%;
 }
 
 .syncro-queue-actions__group {
-    flex-wrap: nowrap;
-    box-shadow: none;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
+    width: 100%;
 }
 
-.syncro-queue-actions__group > .btn,
-.syncro-queue-actions__group .btn-group > .btn {
+.syncro-queue-actions__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
     font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
+    padding: 0.3rem 0.4rem;
     line-height: 1.25;
     white-space: nowrap;
+    min-height: 1.875rem;
+    width: 100%;
 }
 
-.syncro-queue-actions__group > .btn .bi,
-.syncro-queue-actions__group .btn-group > .btn .bi {
+.syncro-queue-actions__btn .bi {
     font-size: 0.8rem;
-    vertical-align: -0.1em;
+    flex-shrink: 0;
+}
+
+.syncro-queue-actions__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.syncro-queue-actions__btn:disabled,
+.syncro-queue-actions__btn.disabled {
+    opacity: 0.45;
+    pointer-events: none;
 }
 
 .syncro-queue-actions__menu {
@@ -730,8 +760,16 @@ body.syncro-nav-open {
 /* Narrow sidebar column: icon-only actions, tighter grid */
 @media (max-width: 1399.98px) {
     .syncro-queue {
-        --queue-cols: minmax(8rem, 1.1fr) minmax(8rem, 1.6fr) minmax(8.5rem, max-content) minmax(6.2rem, max-content) minmax(9.5rem, auto);
+        --queue-cols: minmax(8rem, 1.1fr) minmax(8rem, 1.6fr) minmax(8.5rem, max-content) minmax(6.2rem, max-content) 14.5rem;
         font-size: 0.78rem;
+    }
+
+    .syncro-queue-actions__label {
+        display: none;
+    }
+
+    .syncro-queue-actions__btn {
+        padding: 0.3rem 0.25rem;
     }
 
     .syncro-queue__head,
@@ -761,7 +799,7 @@ body.syncro-nav-open {
     .syncro-queue__date { grid-column: 2; grid-row: 2; justify-self: end; font-size: 0.7rem; }
     .syncro-queue__actions { grid-column: 1 / -1; grid-row: 3; justify-self: stretch; }
     .syncro-queue-actions { align-items: stretch; }
-    .syncro-queue-actions__group { width: 100%; justify-content: flex-end; }
+    .syncro-queue-actions__group { width: 100%; }
 }
 
 .syncro-stat-card {

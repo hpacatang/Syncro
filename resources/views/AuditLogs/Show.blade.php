@@ -11,7 +11,7 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <h6 class="text-muted mb-2">Timestamp</h6>
-                    <p class="mb-3">{{ $auditLog->created_at->format('M d, Y H:i:s') }}</p>
+                    <p class="mb-3"><x-formatted-date :at="$auditLog->created_at" format="M d, Y H:i:s" /></p>
 
                     <h6 class="text-muted mb-2">User</h6>
                     <p class="mb-3">

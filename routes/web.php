@@ -77,10 +77,10 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/submissions', [SubmissionController::class, 'index']);
         Route::get('/submissions/pending', [SubmissionController::class, 'index']);
+        Route::get('/submissions/lifecycle-updates', [SubmissionLifecycleController::class, 'updates']);
+        Route::get('/submissions/{submission}/lifecycle', [SubmissionLifecycleController::class, 'show']);
         Route::get('/submissions/{id}', [SubmissionController::class, 'show']);
         Route::put('/submissions/{id}', [SubmissionController::class, 'update']);
         Route::delete('/submissions/{id}', [SubmissionController::class, 'destroy']);
-        Route::get('/submissions/lifecycle-updates', [SubmissionLifecycleController::class, 'updates']);
-        Route::get('/submissions/{submission}/lifecycle', [SubmissionLifecycleController::class, 'show']);
     });
 });

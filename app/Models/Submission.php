@@ -27,6 +27,12 @@ class Submission extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new OrgOwnedSubmissionScope);
+
+        static::creating(function (self $submission): void {
+            $now = now();
+            $submission->created_at ??= $now;
+            $submission->updated_at ??= $now;
+        });
     }
 
     public function user()

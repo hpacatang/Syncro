@@ -48,7 +48,7 @@
                             <td style="min-width: 14rem;">
                                 <x-submission-lifecycle-progress :submission="$sub" :compact="true" />
                             </td>
-                            <td>{{ $sub->created_at ? $sub->created_at->format('M d, Y h:i A') : 'N/A' }}</td>
+                            <td><x-formatted-date :at="$sub->created_at" format="M d, Y h:i A" /></td>
                             <td class="pe-4 text-end">
                                 @if(auth()->user()->canSubmitPosts())
                                     <a href="{{ route('org.submissions.review', $sub) }}" class="btn btn-sm btn-primary">Review</a>

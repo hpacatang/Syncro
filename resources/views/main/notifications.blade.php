@@ -23,7 +23,7 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <h5 class="card-title text-primary mb-0">{{ $title }}</h5>
-                            <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
+                            <small class="text-muted"><x-formatted-date :at="$notification->created_at" relative /></small>
                         </div>
                         <p class="card-text text-secondary mb-3">{{ $message }}</p>
                         <div class="d-flex flex-wrap gap-2">

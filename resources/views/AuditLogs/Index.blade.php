@@ -67,7 +67,7 @@
                     @forelse($auditLogs as $log)
                         <tr>
                             <td>
-                                <small>{{ $log->created_at->format('M d, Y H:i:s') }}</small>
+                                <small><x-formatted-date :at="$log->created_at" format="M d, Y H:i:s" /></small>
                             </td>
                             <td>
                                 @if($log->user)

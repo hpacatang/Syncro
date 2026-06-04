@@ -65,7 +65,7 @@
                                     —
                                 @endif
                             </td>
-                            <td><small>{{ $user->created_at->format('M d, Y') }}</small></td>
+                            <td><small><x-formatted-date :at="$user->created_at" /></small></td>
                             <td>
                                 <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-primary">View</a>
                                 <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-secondary">Edit</a>

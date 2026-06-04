@@ -108,7 +108,7 @@
                                         <small>{{ $submission->enhancer?->name ?? 'PAIR Staff' }}</small>
                                         <br><small class="text-muted">{{ $submission->enhanced_at?->format('M d, Y') }}</small>
                                     </td>
-                                    <td class="text-muted small">{{ $submission->created_at ? $submission->created_at->format('M d') : 'N/A' }}</td>
+                                    <td class="text-muted small"><x-formatted-date :at="$submission->created_at" format="M d" /></td>
                                     <td>
                                         <div class="d-flex flex-wrap gap-1">
                                             <a href="{{ route('org.submissions.review', $submission) }}" class="btn btn-sm btn-outline-primary">Review page</a>
@@ -178,7 +178,7 @@
                                             <td style="min-width: 14rem;">
                                                 <x-submission-lifecycle-progress :submission="$submission" :compact="true" />
                                             </td>
-                                            <td class="text-muted small">{{ $submission->created_at ? $submission->created_at->format('M d') : 'N/A' }}</td>
+                                            <td class="text-muted small"><x-formatted-date :at="$submission->created_at" format="M d" /></td>
                                             <td>
                                                 <div class="d-flex flex-wrap gap-1">
                                                     <x-view-action-link :href="route('org.submissions.review', $submission)" :title="__('View details')" />
@@ -219,8 +219,8 @@
                         @foreach($feedback as $comment)
                             <div class="mb-3 pb-3 border-bottom">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <strong class="text-sm">{{ $comment->user->displayName() }}</strong>
-                                    <small class="text-muted">{{ $comment->created_at->diffForHumans() }}</small>
+                                    <strong class="text-sm">{{ $comment->user?->displayName() ?? 'PAIR Staff' }}</strong>
+                                    <small class="text-muted"><x-formatted-date :at="$comment->created_at" relative /></small>
                                 </div>
                                 <p class="text-sm mb-0">{{ $comment->message }}</p>
                             </div>

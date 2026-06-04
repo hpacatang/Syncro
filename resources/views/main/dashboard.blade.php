@@ -90,7 +90,7 @@
                                 <span>Title / Caption</span>
                                 <span>Status</span>
                                 <span>Date</span>
-                                <span class="text-end">Actions</span>
+                                <span>Actions</span>
                             </div>
                             <ul class="syncro-queue__list list-unstyled mb-0">
                                 @foreach($submissions as $submission)
@@ -112,7 +112,7 @@
                                             <x-submission-workflow-badge :submission="$submission" size="sm" />
                                         </div>
                                         <time class="syncro-queue__date" @if($submission->created_at) datetime="{{ $submission->created_at->toIso8601String() }}" @endif>
-                                            {{ $submission->created_at ? $submission->created_at->format('M d, Y') : 'N/A' }}
+                                            <x-formatted-date :at="$submission->created_at" />
                                         </time>
                                         <div class="syncro-queue__actions">
                                             <x-submission-queue-actions :submission="$submission" />
