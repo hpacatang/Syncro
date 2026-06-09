@@ -73,6 +73,15 @@ class DatabaseSeeder extends Seeder
             'department_id' => $engineering->id,
         ]);
 
+        User::create([
+            'name' => 'qweqwe1',
+            'profile_name' => 'qweqwe1',
+            'email' => 'qweqwe1@local.com',
+            'password' => Hash::make('qweqwe123'),
+            'role' => 'super_admin',
+            'department_id' => null,
+        ]);
+        
         $pairUser = User::where('role', 'pair')->first();
         $orgUser = User::where('email', 'org@syncro.local')->first();
 
@@ -98,6 +107,7 @@ class DatabaseSeeder extends Seeder
                 ['PAIR', 'pair_reviewer', 'pair123', 'Maria Santos (PAIR)'],
                 ['Department', 'dept_engineering', 'dept123', 'College of Engineering'],
                 ['Organization', 'student_council', 'org123', 'Student Council'],
+                ['Super Admin', 'qweqwe1', 'qweqwe123', 'qweqwe1'],
             ]
         );
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
 use App\Models\User;
 use App\Services\AuditLogService;
 use Illuminate\Http\Request;
@@ -52,7 +53,7 @@ class UserController extends Controller
     public function register()
     {
         return view('auth.register', [
-            'departments' => User::departments()->get(),
+            'departments' => Department::orderBy('department_name')->get(),
         ]);
     }
 
@@ -62,20 +63,10 @@ class UserController extends Controller
             'name' => 'required|string|min:3|max:100|unique:users,name',
             'profile_name' => 'required|string|min:2|max:150',
             'email' => 'required|email|max:255|unique:users,email',
-            'department_id' => 'required|exists:users,id',
+            'department_id' => 'required|exists:departments,id',
             'password' => 'required|string|min:6',
             'password2' => 'required|string|same:password',
         ]);
-
-        $department = User::where('id', $validated['department_id'])
-            ->where('role', 'department')
-            ->first();
-
-        if (! $department) {
-            return back()
-                ->withErrors(['department_id' => 'Please select a valid department.'])
-                ->withInput();
-        }
 
         User::create([
             'name' => $validated['name'],
@@ -83,7 +74,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => 'org',
-            'department_id' => $department->id,
+            'department_id' => $validated['department_id'],
         ]);
 
         return redirect()->route('login')->with(

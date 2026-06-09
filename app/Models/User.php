@@ -32,13 +32,9 @@ class User extends Authenticatable
 
     public function department(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'department_id');
+        return $this->belongsTo(Department::class, 'department_id');
     }
 
-    public function organizations(): HasMany
-    {
-        return $this->hasMany(User::class, 'department_id');
-    }
 
     public function displayName(): string
     {

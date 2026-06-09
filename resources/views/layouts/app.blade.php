@@ -25,6 +25,7 @@
         ];
         if (auth()->user()->role === 'super_admin') {
             $navItems[] = ['route' => 'audit-logs.index', 'match' => ['audit-logs.*'], 'icon' => 'bi-journal-text', 'label' => 'Audit logs'];
+            $navItems[] = ['route' => 'departments.index', 'match' => ['departments.*'], 'icon' => 'bi-building', 'label' => 'Departments'];
             $navItems[] = ['route' => 'users.index', 'match' => ['users.*'], 'icon' => 'bi-people', 'label' => 'Users'];
         }
     @endphp

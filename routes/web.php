@@ -11,6 +11,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StaffToolsController;
 use App\Http\Controllers\SubmissionLifecycleController;
 use App\Http\Controllers\SubmissionMediaController;
+use App\Http\Controllers\DepartmentController;
 
 Route::get('/', function () {
     return redirect('login');
@@ -87,5 +88,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/submissions/{id}', [SubmissionController::class, 'show']);
         Route::put('/submissions/{id}', [SubmissionController::class, 'update']);
         Route::delete('/submissions/{id}', [SubmissionController::class, 'destroy']);
+    });
+
+    Route::prefix('departments')->middleware('role:super_admin')->group(function () {
+        Route::get('/', [DepartmentController::class, 'index'])->name('departments.index');
+        Route::get('/create', [DepartmentController::class, 'create'])->name('departments.create');
+        Route::post('/', [DepartmentController::class, 'store'])->name('departments.store');
+        Route::get('/{department}', [DepartmentController::class, 'show'])->name('departments.show');
+        Route::get('/{department}/edit', [DepartmentController::class, 'edit'])->name('departments.edit');
+        Route::put('/{department}', [DepartmentController::class, 'update'])->name('departments.update');
+        Route::delete('/{department}', [DepartmentController::class, 'destroy'])->name('departments.destroy');
+        Route::get('/{department}/users', [DepartmentController::class, 'users'])->name('departments.users');
     });
 });
