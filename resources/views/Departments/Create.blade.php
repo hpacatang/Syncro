@@ -13,12 +13,12 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="department_name" class="form-label">Department name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control @error('department_name') is-invalid @enderror" id="department_name" name="department_name" value="{{ old('department_name') }}" placeholder="e.g., College of Engineering" required>
+                        <input type="text" class="form-control @error('department_name') is-invalid @enderror" id="department_name" name="department_name" value="{{ old('department_name') }}" placeholder="e.g., School of Computer Studies" required>
                         @error('department_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-md-6">
                         <label for="department_short_name" class="form-label">Short name (optional)</label>
-                        <input type="text" class="form-control @error('department_short_name') is-invalid @enderror" id="department_short_name" name="department_short_name" value="{{ old('department_short_name') }}" placeholder="e.g., COE">
+                        <input type="text" class="form-control @error('department_short_name') is-invalid @enderror" id="department_short_name" name="department_short_name" value="{{ old('department_short_name') }}" placeholder="e.g., SCS">
                         @error('department_short_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>

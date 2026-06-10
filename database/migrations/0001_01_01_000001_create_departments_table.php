@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string('department_name');
             $table->string('department_short_name')->nullable();
-            $table->string('users')->nullable();
             $table->timestamps();
         });
     }
