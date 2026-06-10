@@ -7,9 +7,7 @@ use App\Models\User;
 
 class NotificationTargetUrl
 {
-    /**
-     * Resolve the best click target for a database notification payload.
-     */
+    
     public static function resolve(array $data, User $user): string
     {
         if (! empty($data['review_url'])) {

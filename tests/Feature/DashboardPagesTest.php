@@ -66,6 +66,34 @@ class DashboardPagesTest extends TestCase
             ->assertOk();
     }
 
+    public function test_org_user_is_redirected_from_staff_dashboard(): void
+    {
+        $org = User::factory()->create(['role' => 'org']);
+
+        $this->actingAs($org)
+            ->get('/dashboard')
+            ->assertRedirect(route('org.dashboard'));
+    }
+
+    public function test_under_pair_review_banner_shows_for_org_not_staff(): void
+    {
+        $pair = User::factory()->create(['role' => 'pair']);
+        $org = User::factory()->create(['role' => 'org']);
+        $submission = Submission::factory()->awaitingOrgApproval()->create(['user_id' => $org->id]);
+
+        $banner = 'our team is reviewing your submission';
+
+        $this->actingAs($pair)
+            ->get(route('dashboard.submissions.review', $submission))
+            ->assertOk()
+            ->assertDontSee($banner, false);
+
+        $this->actingAs($org)
+            ->get(route('org.submissions.review', $submission))
+            ->assertOk()
+            ->assertSee($banner, false);
+    }
+
     public function test_submission_media_route_serves_uploaded_file(): void
     {
         Storage::fake('public');

@@ -49,7 +49,6 @@
     </div>
 </div>
 
-{{-- Lifecycle action modal (rendered once per submission) --}}
 <div class="modal fade" id="lifecycleModal-{{ $submission->id }}" tabindex="-1" aria-labelledby="lifecycleModalLabel-{{ $submission->id }}" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
@@ -103,9 +102,6 @@
 
     let pendingStatus  = null;
 
-    /**
-     * Core transition — fires the API and handles UI feedback.
-     */
     async function doTransition(status, notes) {
         const allBtns = document.querySelectorAll('#lifecycleSteps-' + submissionId + ' .lifecycle-step-btn');
         allBtns.forEach(b => b.disabled = true);
@@ -137,9 +133,6 @@
         }
     }
 
-    /**
-     * Button click — open modal if notes are needed, otherwise fire directly.
-     */
     document.querySelectorAll('#lifecycleSteps-' + submissionId + ' .lifecycle-step-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             const status      = this.dataset.status;
@@ -147,8 +140,7 @@
 
             if (needsNotes && bsModal) {
                 pendingStatus = status;
-                
-                // Reset modal state
+
                 if (notesInput) notesInput.value = '';
                 if (notesError) notesError.style.display = 'none';
                 if (confirmBtn) {
@@ -156,7 +148,6 @@
                     confirmBtn.className = 'btn';
                 }
 
-                // Customize modal content based on status
                 if (status === 'rejected') {
                     if (modalTitle) modalTitle.textContent = 'Reject Submission #' + submissionId;
                     if (modalTitle) {
@@ -189,14 +180,10 @@
                 return;
             }
 
-            // Non-notes transitions — fire immediately
             doTransition(status, null);
         });
     });
 
-    /**
-     * Confirm button inside the modal — validate then submit.
-     */
     if (confirmBtn && actionModal) {
         confirmBtn.addEventListener('click', function () {
             const notes = notesInput ? notesInput.value.trim() : '';
@@ -215,7 +202,6 @@
             doTransition(pendingStatus, notes);
         });
 
-        // Clear error message as the user types
         if (notesInput) {
             notesInput.addEventListener('input', function () {
                 if (this.value.trim().length >= 10) {

@@ -16,7 +16,7 @@
         </div>
     @endif
 
-    <!-- Statistics Cards -->
+    
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
             <div class="card shadow-sm border-0">
@@ -72,9 +72,9 @@
         </div>
     </div>
 
-    <!-- Main Content -->
+    
     <div class="row mb-4">
-        <!-- Ready for review -->
+        
         @if(count($awaitingApproval) > 0)
         <div class="col-lg-8 mb-4">
             <div class="card shadow-sm border-0 border-warning border-top border-5">
@@ -131,7 +131,7 @@
         </div>
         @endif
 
-        <!-- Your Submissions -->
+        
         <div class="col-lg-{{ count($awaitingApproval) > 0 ? '8' : '8' }}">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white border-bottom">
@@ -203,7 +203,7 @@
             </div>
         </div>
 
-        <!-- Recent Feedback -->
+        
         <div class="col-lg-4">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white border-bottom">
@@ -229,7 +229,7 @@
                 </div>
             </div>
 
-            <!-- Quick Actions -->
+            
             <div class="card shadow-sm border-0 mt-3">
                 <div class="card-header bg-white border-bottom">
                     <h5 class="mb-0 fw-bold">Quick Actions</h5>
@@ -247,7 +247,6 @@
     </div>
 </div>
 
-<!-- Review & Approval Modal -->
 <div class="modal fade" id="reviewModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -256,7 +255,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!-- Original Caption -->
+                
                 <div class="mb-4">
                     <label class="form-label fw-bold text-muted">Original Caption</label>
                     <div class="bg-light p-3 rounded">
@@ -264,7 +263,7 @@
                     </div>
                 </div>
 
-                <!-- Enhanced Caption -->
+                
                 <div class="mb-4">
                     <label class="form-label fw-bold text-success">Enhanced Caption</label>
                     <div class="bg-light p-3 rounded">
@@ -272,7 +271,7 @@
                     </div>
                 </div>
 
-                <!-- PAIR Feedback Section -->
+                
                 <div id="pairFeedbackSection" class="mb-4" style="display: none;">
                     <label class="form-label fw-bold">
                         <i class="fas fa-comments text-info"></i> PAIR updates
@@ -280,7 +279,7 @@
                     <div class="bg-info bg-opacity-10 border border-info border-opacity-25 p-3 rounded pair-updates" id="pairFeedbackText"></div>
                 </div>
 
-                <!-- Org Revision History -->
+                
                 <div id="orgRevisionSection" class="mb-4" style="display: none;">
                     <label class="form-label fw-bold text-warning">
                         <i class="fas fa-history"></i> Your Previous Feedback
@@ -290,7 +289,7 @@
                     </div>
                 </div>
 
-                <!-- Decision Section -->
+                
                 <div class="border-top pt-4">
                     <h6 class="fw-bold mb-3">Your Decision</h6>
                     <div class="mb-3">
@@ -308,7 +307,7 @@
                         </label>
                     </div>
 
-                    <!-- Feedback for Rejection -->
+                    
                     <div id="rejectionNotes" style="display: none;" class="mt-3">
                         <label for="revisionNotes" class="form-label">What needs improvement?</label>
                         <textarea id="revisionNotes" class="form-control" rows="3" 
@@ -365,7 +364,6 @@ async function fetchSubmissionDetails(submissionId) {
         if (data.success) {
             const submission = data.data;
             
-            // Display PAIR feedback if it exists
             const pairFeedbackSection = document.getElementById('pairFeedbackSection');
             const pairFeedbackText = document.getElementById('pairFeedbackText');
             
@@ -376,7 +374,6 @@ async function fetchSubmissionDetails(submissionId) {
                 pairFeedbackSection.style.display = 'none';
             }
 
-            // Display org revision history if it exists
             const orgRevisionSection = document.getElementById('orgRevisionSection');
             const orgRevisionText = document.getElementById('orgRevisionText');
             
@@ -397,16 +394,13 @@ function loadReviewModal(submissionId, originalCaption, enhancedCaption) {
     document.getElementById('originalCaption').textContent = originalCaption;
     document.getElementById('enhancedCaption').textContent = enhancedCaption;
     
-    // Fetch submission details to get feedback
     fetchSubmissionDetails(submissionId);
-    
-    // Reset form
+
     document.getElementById('approveRadio').checked = true;
     document.getElementById('rejectionNotes').style.display = 'none';
     document.getElementById('revisionNotes').value = '';
 }
 
-// Attach event listeners when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     const approveBtn = document.getElementById('approveBtn');
     const rejectBtn = document.getElementById('rejectBtn');
@@ -420,7 +414,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Show/hide revision notes based on radio selection
 document.addEventListener('change', function(e) {
     if (e.target.name === 'decision') {
         const rejectionNotesDiv = document.getElementById('rejectionNotes');

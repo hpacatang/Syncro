@@ -24,9 +24,7 @@ class AuditLog extends Model
         'updated_at' => 'datetime',
     ];
 
-    /**
-     * Get the user associated with the audit log
-     */
+    
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

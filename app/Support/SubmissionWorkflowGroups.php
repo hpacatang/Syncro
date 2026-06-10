@@ -2,9 +2,6 @@
 
 namespace App\Support;
 
-/**
- * Maps legacy and unified lifecycle workflow_status values (post-migration).
- */
 class SubmissionWorkflowGroups
 {
     public const SUBMITTED = ['pending_submission', 'submitted'];
@@ -13,7 +10,7 @@ class SubmissionWorkflowGroups
 
     public const REVISED = ['revised'];
 
-    /** @deprecated Legacy statuses; treated as under PAIR review. */
+    
     public const AWAITING_ORG = ['pending_org_approval', 'awaiting_org_approval'];
 
     public const READY_FOR_ORG_REVIEW = ['under_peer_review', 'pending_org_approval', 'awaiting_org_approval'];

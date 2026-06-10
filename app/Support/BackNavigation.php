@@ -26,9 +26,7 @@ class BackNavigation
         return $name && ! in_array($name, self::HOME_ROUTES, true);
     }
 
-    /**
-     * @return array{href: string, label: string}
-     */
+    
     public static function resolve(?User $user = null): array
     {
         $user = $user ?? auth()->user();
@@ -114,9 +112,29 @@ class BackNavigation
             && Str::startsWith($previous, url('/'))
             && ! Str::contains($previous, ['/login', '/register', '/authenticate'])
         ) {
+            $previousPath = parse_url($previous, PHP_URL_PATH) ?: '/';
+
+            if ($user?->canSubmitPosts() && self::isStaffArea($previousPath)) {
+                return ['href' => $dashboard, 'label' => 'Back to dashboard'];
+            }
+
+            if ($user?->isStaffReviewer() && self::isOrgArea($previousPath)) {
+                return ['href' => $dashboard, 'label' => 'Back to dashboard'];
+            }
+
             return ['href' => $previous, 'label' => 'Back'];
         }
 
         return ['href' => $dashboard, 'label' => 'Back to dashboard'];
+    }
+
+    private static function isStaffArea(string $path): bool
+    {
+        return Str::startsWith($path, ['/dashboard', '/audit-logs', '/users']);
+    }
+
+    private static function isOrgArea(string $path): bool
+    {
+        return Str::startsWith($path, '/org');
     }
 }

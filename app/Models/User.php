@@ -95,4 +95,21 @@ class User extends Authenticatable
     {
         return $this->isAdmin() || $this->isPair();
     }
+
+    public function homeRoute(): string
+    {
+        if ($this->canSubmitPosts()) {
+            return 'org.dashboard';
+        }
+
+        if ($this->isSuperAdmin()) {
+            return 'users.index';
+        }
+
+        if ($this->isStaffReviewer()) {
+            return 'dashboard';
+        }
+
+        return 'dashboard';
+    }
 }

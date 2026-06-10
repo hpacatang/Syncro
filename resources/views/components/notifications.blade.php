@@ -64,7 +64,7 @@
                             const r = await fetch(@json(route('notifications.unread-count')), { credentials: 'same-origin' });
                             const j = await r.json();
                             setBadge(j.count);
-                        } catch (e) { /* ignore */ }
+                        } catch (e) {  }
                     }
 
                     function escapeHtml(s) {
@@ -117,7 +117,7 @@
                                     headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
                                 });
                                 await refreshCount();
-                            } catch (err) { /* still navigate */ }
+                            } catch (err) {  }
                         }
 
                         window.location.assign(href);
@@ -135,7 +135,7 @@
                                 });
                                 setBadge(0);
                                 await loadRecent();
-                            } catch (err) { /* ignore */ }
+                            } catch (err) {  }
                         });
                     }
 
@@ -151,7 +151,7 @@
                         if (document.visibilityState === 'visible') refreshCount();
                     });
                 })();
-            </script>
+</script>
         @endpush
     @endonce
 @endauth

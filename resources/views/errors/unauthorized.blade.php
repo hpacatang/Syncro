@@ -13,15 +13,9 @@
                     @if(auth()->check())
                         <p class="text-sm text-muted">Your current role: <strong>{{ auth()->user()->role }}</strong></p>
                         <div class="mt-4">
-                            @if(auth()->user()->role === 'org')
-                                <a href="{{ route('org.dashboard') }}" class="btn btn-primary">
-                                    <i class="fas fa-arrow-left"></i> Go to Your Dashboard
-                                </a>
-                            @else
-                                <a href="{{ route('dashboard') }}" class="btn btn-primary">
-                                    <i class="fas fa-arrow-left"></i> Go to Dashboard
-                                </a>
-                            @endif
+                            <a href="{{ route(auth()->user()->homeRoute()) }}" class="btn btn-primary">
+                                <i class="fas fa-arrow-left"></i> Go to Your Dashboard
+                            </a>
                         </div>
                     @endif
                     

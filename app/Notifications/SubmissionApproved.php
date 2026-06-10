@@ -13,27 +13,19 @@ class SubmissionApproved extends Notification
 
     public $submission;
 
-    /**
-     * Create a new notification instance.
-     */
+    
     public function __construct(Submission $submission)
     {
         $this->submission = $submission;
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
+    
     public function via(object $notifiable): array
     {
         return ['mail', 'database'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
+    
     public function toMail(object $notifiable): MailMessage
     {
         $id = $this->submission->id;
@@ -51,11 +43,7 @@ class SubmissionApproved extends Notification
             ->line('Thank you for contributing to our platform!');
     }
 
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
+    
     public function toArray(object $notifiable): array
     {
         $id = $this->submission->id;

@@ -9,7 +9,7 @@ final class SubmissionMedia
 {
     private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
-    /** @var list<string> */
+    
     private const DISKS = ['supabase', 'public'];
 
     public static function isImage(string $path): bool
@@ -32,9 +32,7 @@ final class SubmissionMedia
         ]);
     }
 
-    /**
-     * @return array{disk: string, path: string}|null
-     */
+    
     public static function resolve(string $path): ?array
     {
         $path = ltrim($path, '/');
@@ -78,7 +76,7 @@ final class SubmissionMedia
         return $storage->url($path);
     }
 
-    /** @return list<string> */
+    
     private static function disksToTry(): array
     {
         $default = (string) config('filesystems.default', 'supabase');

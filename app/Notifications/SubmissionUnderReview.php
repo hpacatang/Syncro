@@ -13,17 +13,13 @@ class SubmissionUnderReview extends Notification
 
     public function __construct(public readonly Submission $submission) {}
 
-    /**
-     * Deliver via database (in-app bell) and optionally mail.
-     */
+    
     public function via(object $notifiable): array
     {
         return ['database', 'mail'];
     }
 
-    /**
-     * E-mail representation.
-     */
+    
     public function toMail(object $notifiable): MailMessage
     {
         $id  = $this->submission->id;
@@ -42,9 +38,7 @@ class SubmissionUnderReview extends Notification
             ->line('Thank you for submitting to our platform!');
     }
 
-    /**
-     * In-app (database) representation shown in the notification bell.
-     */
+    
     public function toArray(object $notifiable): array
     {
         $id = $this->submission->id;

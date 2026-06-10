@@ -6,13 +6,11 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    
     public function up(): void
     {
         Schema::table('audit_logs', function (Blueprint $table) {
-            // Add audit log specific columns
+            
             $table->foreignId('user_id')->nullable()->constrained('users')->cascadeOnDelete();
             $table->string('action_type')->index();
             $table->text('description')->nullable();
@@ -24,9 +22,7 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
+    
     public function down(): void
     {
         Schema::table('audit_logs', function (Blueprint $table) {

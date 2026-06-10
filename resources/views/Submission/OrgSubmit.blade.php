@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container-fluid p-4">
-    <!-- Header -->
+    
     <div class="mb-4">
         <h1 class="h3 fw-bold">Submit Content</h1>
         <p class="text-muted">Share your content with the PAIR office for review and enhancement</p>
@@ -10,13 +10,13 @@
 
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <!-- Submission Form Card -->
+            
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4">
                     <form id="submissionForm">
                         @csrf
                         
-                        <!-- Caption Input -->
+                        
                         <div class="mb-4">
                             <label for="caption" class="form-label fw-bold">
                                 <i class="fas fa-file-alt text-primary"></i> Caption/Description
@@ -33,7 +33,7 @@
                             </small>
                         </div>
 
-                        <!-- Link Input (Optional) -->
+                        
                         <div class="mb-4">
                             <label for="links" class="form-label fw-bold">
                                 <i class="fas fa-link text-primary"></i> Related Links (Optional)
@@ -52,7 +52,7 @@
                             </small>
                         </div>
 
-                        <!-- Media Upload (Optional) -->
+                        
                         <div class="mb-4">
                             <label for="media" class="form-label fw-bold">
                                 <i class="fas fa-paperclip text-primary"></i> Attach files (optional)
@@ -72,7 +72,7 @@
                             <div id="mediaPreview" class="mt-3"></div>
                         </div>
 
-                        <!-- Submit Button -->
+                        
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
                                 <i class="fas fa-paper-plane"></i> Submit for Review
@@ -82,13 +82,20 @@
                     </form>
                 </div>
             </div>
+<<<<<<< Updated upstream
+=======
+
+            
+            <div class="alert alert-info mt-4 border-0">
+                <i class="fas fa-lightbulb"></i>
+                <strong>Pro Tip:</strong> The more detailed your caption, the better PAIR can enhance it. Include key details like dates, event names, and main points.
+            </div>
+>>>>>>> Stashed changes
         </div>
     </div>
 </div>
 
-<!-- Script for Form Handling -->
 <script>
-// Add link input
 function addLinkInput() {
     const linksContainer = document.getElementById('linksContainer') || createLinksContainer();
     const input = document.createElement('input');
@@ -106,7 +113,6 @@ function createLinksContainer() {
     return container;
 }
 
-// Drag and drop for media
 const dropZone = document.getElementById('dropZone');
 const mediaInput = document.getElementById('media');
 const mediaPreview = document.getElementById('mediaPreview');
@@ -213,7 +219,6 @@ function removeMedia(index) {
     updateMediaPreview();
 }
 
-// Form submission
 document.getElementById('submissionForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -249,7 +254,6 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
         const data = await response.json();
         
         if (data.success) {
-            // Show success message
             const alert = document.createElement('div');
             alert.className = 'alert alert-success alert-dismissible fade show';
             alert.innerHTML = `
@@ -257,12 +261,10 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             form.parentElement.insertBefore(alert, form);
-            
-            // Reset form
+
             form.reset();
             mediaPreview.innerHTML = '';
-            
-            // Redirect after 2 seconds
+
             setTimeout(() => {
                 window.location.href = "{{ route('org.dashboard') }}";
             }, 2000);
@@ -279,7 +281,6 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
 });
 </script>
 
-<!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 @endsection
