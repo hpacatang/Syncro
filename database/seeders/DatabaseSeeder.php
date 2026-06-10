@@ -74,9 +74,9 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::create([
-            'name' => 'qweqwe1',
-            'profile_name' => 'qweqwe1',
-            'email' => 'qweqwe1@local.com',
+            'name' => 'syncroadmin',
+            'profile_name' => 'syncroadmin',
+            'email' => 'syncroadmin@local.com',
             'password' => Hash::make('qweqwe123'),
             'role' => 'super_admin',
             'department_id' => null,
@@ -107,7 +107,7 @@ class DatabaseSeeder extends Seeder
                 ['PAIR', 'pair_reviewer', 'pair123', 'Maria Santos (PAIR)'],
                 ['Department', 'dept_engineering', 'dept123', 'College of Engineering'],
                 ['Organization', 'student_council', 'org123', 'Student Council'],
-                ['Super Admin', 'qweqwe1', 'qweqwe123', 'qweqwe1'],
+                ['Super Admin', 'syncroadmin', 'qweqwe123', 'syncroadmin'],
             ]
         );
     }
