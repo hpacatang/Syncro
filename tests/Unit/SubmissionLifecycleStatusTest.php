@@ -23,7 +23,7 @@ class SubmissionLifecycleStatusTest extends TestCase
         $this->assertSame('#f97316', SubmissionLifecycleStatus::UnderPeerReview->progressColor());
         $this->assertSame('#2563eb', SubmissionLifecycleStatus::Approved->progressColor());
         $this->assertSame('#ef4444', SubmissionLifecycleStatus::Rejected->progressColor());
-        $this->assertSame('#eab308', SubmissionLifecycleStatus::Revised->progressColor());
+        $this->assertSame('#f97316', SubmissionLifecycleStatus::Revised->progressColor());
         $this->assertSame('#7c3aed', SubmissionLifecycleStatus::Posted->progressColor());
     }
 }

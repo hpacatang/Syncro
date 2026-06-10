@@ -31,21 +31,37 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin',
         ]);
 
-        $engineering = User::create([
-            'name' => 'dept_engineering',
-            'profile_name' => 'College of Engineering',
-            'email' => 'engineering@syncro.local',
-            'password' => Hash::make('dept123'),
-            'role' => 'department',
-        ]);
+        $soe = \App\Models\Department::firstOrCreate(
+            ['department_short_name' => 'SOE'],
+            ['department_name' => 'School of Engineering']
+        );
 
-        $arts = User::create([
-            'name' => 'dept_arts',
-            'profile_name' => 'College of Arts & Sciences',
-            'email' => 'arts@syncro.local',
-            'password' => Hash::make('dept123'),
-            'role' => 'department',
-        ]);
+        $sas = \App\Models\Department::firstOrCreate(
+            ['department_short_name' => 'SAS'],
+            ['department_name' => 'School of Arts and Sciences']
+        );
+
+        User::firstOrCreate(
+            ['name' => 'dept_engineering'],
+            [
+                'profile_name' => 'College of Engineering',
+                'email' => 'engineering@syncro.local',
+                'password' => Hash::make('dept123'),
+                'role' => 'department',
+                'department_id' => $soe->id,
+            ]
+        );
+
+        User::firstOrCreate(
+            ['name' => 'dept_arts'],
+            [
+                'profile_name' => 'College of Arts & Sciences',
+                'email' => 'arts@syncro.local',
+                'password' => Hash::make('dept123'),
+                'role' => 'department',
+                'department_id' => $sas->id,
+            ]
+        );
 
         User::create([
             'name' => 'pair_reviewer',
@@ -61,7 +77,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'org@syncro.local',
             'password' => Hash::make('org123'),
             'role' => 'org',
-            'department_id' => $engineering->id,
+            'department_id' => $soe->id,
         ]);
 
         User::create([
@@ -70,7 +86,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'marketing@syncro.local',
             'password' => Hash::make('org123'),
             'role' => 'org',
-            'department_id' => $engineering->id,
+            'department_id' => $soe->id,
         ]);
 
         User::create([
