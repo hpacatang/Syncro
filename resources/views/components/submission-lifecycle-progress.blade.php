@@ -1,4 +1,4 @@
-@props(['submission', 'compact' => false])
+@props(['submission', 'compact' => false, 'showStatusAlerts' => null])
 
 @php
     use App\Submission\Enums\SubmissionLifecycleStatus;
@@ -10,6 +10,7 @@
     $isRevised        = $current === SubmissionLifecycleStatus::Revised;
     $isUnderReview    = $current === SubmissionLifecycleStatus::UnderPeerReview;
     $activeTheme      = $isRejected ? 'rejected' : ($isRevised ? 'revised' : $current->progressTheme());
+    $showStatusAlerts = $showStatusAlerts ?? auth()->user()?->canSubmitPosts() ?? false;
 @endphp
 
 <div
@@ -20,19 +21,21 @@
     data-progress-index="{{ $currentIndex }}"
     data-active-theme="{{ $activeTheme }}"
 >
-    @if($isRejected && ! $compact)
-        <div class="alert alert-danger py-2 mb-2 small">
-            <strong>Rejected</strong> — this submission will not proceed unless staff reopens it.
-        </div>
-    @elseif($isRevised && ! $compact)
-        <div class="alert alert-warning py-2 mb-2 small">
-            <strong>Revisions requested</strong> — PAIR is updating the caption based on your feedback.
-        </div>
-    @elseif($isUnderReview && ! $compact)
-        <div class="alert alert-under-review py-2 mb-2 small d-flex align-items-center gap-2">
-            <span class="review-pulse-dot" aria-hidden="true"></span>
-            <span><strong>Under PAIR Review</strong> — our team is reviewing your submission. You'll be notified once a decision is made.</span>
-        </div>
+    @if($showStatusAlerts && ! $compact)
+        @if($isRejected)
+            <div class="alert alert-danger py-2 mb-2 small">
+                <strong>Rejected</strong> — this submission will not proceed unless PAIR reopens it.
+            </div>
+        @elseif($isRevised)
+            <div class="alert alert-warning py-2 mb-2 small">
+                <strong>Revisions requested</strong> — PAIR is updating the caption based on your feedback.
+            </div>
+        @elseif($isUnderReview)
+            <div class="alert alert-under-review py-2 mb-2 small d-flex align-items-center gap-2">
+                <span class="review-pulse-dot" aria-hidden="true"></span>
+                <span><strong>Under PAIR Review</strong> — our team is reviewing your submission. You'll be notified once a decision is made.</span>
+            </div>
+        @endif
     @endif
 
     <div class="lifecycle-progress__track">

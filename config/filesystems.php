@@ -68,7 +68,6 @@ return [
             'bucket' => env('SUPABASE_BUCKET'),
             'endpoint' => env('SUPABASE_S3_ENDPOINT'),
             'use_path_style_endpoint' => true,
-            // Optional: https://{project}.supabase.co/storage/v1/object/public/{bucket}
             'public_url' => env('SUPABASE_PUBLIC_BASE_URL'),
             'throw' => true,
             'report' => true,

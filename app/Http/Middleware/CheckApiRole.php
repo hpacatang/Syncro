@@ -8,10 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckApiRole
 {
-    /**
-     * Handle an incoming request for API routes.
-     * Returns JSON errors instead of redirects.
-     */
+    
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
         if (!auth('sanctum')->check()) {
@@ -20,7 +17,7 @@ class CheckApiRole
 
         $userRole = auth('sanctum')->user()->role;
 
-        // Normalize the user's role and the allowed roles
+        
         $userRoleNormalized = strtolower(trim((string) $userRole));
 
         $allowed = [];

@@ -47,7 +47,6 @@ class StaffToolsController extends Controller
         return view('main.media-gallery', ['assets' => $assets]);
     }
 
-
     public function captionAssist(): View
     {
         return view('main.caption-assist');

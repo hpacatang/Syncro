@@ -8,16 +8,7 @@ use Illuminate\Support\Facades\Request;
 
 class AuditLogService
 {
-    /**
-     * Log an action to the audit trail
-     *
-     * @param string $actionType The type of action (e.g., 'login', 'feedback_submitted', 'user_created')
-     * @param string|null $description Human-readable description of what happened
-     * @param string|null $modelType The model type that was affected (e.g., 'Submission', 'Feedback', 'User')
-     * @param int|null $modelId The ID of the affected model
-     * @param array|null $changes Array of changes made (for update operations)
-     * @return AuditLog
-     */
+    
     public static function log(
         string $actionType,
         ?string $description = null,
@@ -37,9 +28,7 @@ class AuditLogService
         ]);
     }
 
-    /**
-     * Log a login action
-     */
+    
     public static function logLogin(): AuditLog
     {
         return self::log(
@@ -50,9 +39,7 @@ class AuditLogService
         );
     }
 
-    /**
-     * Log a logout action
-     */
+    
     public static function logLogout(?int $userId = null): AuditLog
     {
         return self::log(
@@ -63,9 +50,7 @@ class AuditLogService
         );
     }
 
-    /**
-     * Log a feedback submission
-     */
+    
     public static function logFeedbackSubmitted(int $submissionId, int $feedbackId): AuditLog
     {
         return self::log(
@@ -77,9 +62,7 @@ class AuditLogService
         );
     }
 
-    /**
-     * Log a revision request
-     */
+    
     public static function logRevisionRequested(int $submissionId): AuditLog
     {
         return self::log(
@@ -90,9 +73,7 @@ class AuditLogService
         );
     }
 
-    /**
-     * Log a user creation
-     */
+    
     public static function logUserCreated(int $userId, array $userData): AuditLog
     {
         return self::log(
@@ -104,9 +85,7 @@ class AuditLogService
         );
     }
 
-    /**
-     * Log a user update
-     */
+    
     public static function logUserUpdated(int $userId, array $changes): AuditLog
     {
         return self::log(
@@ -118,9 +97,7 @@ class AuditLogService
         );
     }
 
-    /**
-     * Log a user deletion
-     */
+    
     public static function logUserDeleted(int $userId, array $userData): AuditLog
     {
         return self::log(

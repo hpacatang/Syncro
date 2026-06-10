@@ -5,7 +5,7 @@
     --syncro-border: #e8eaef;
     --syncro-radius: 0.5rem;
 
-    /* App shell */
+    
     --syncro-shell-bg: #e8efe9;
     --syncro-rail-bg: #1a4d2e;
     --syncro-rail-bg-deep: #0f391d;
@@ -23,7 +23,6 @@
     --syncro-submitted: #22c55e;
 }
 
-/* Bootstrap primary → Syncro green (all highlights) */
 .syncro-app {
     --bs-primary: var(--syncro-highlight);
     --bs-primary-rgb: 45, 122, 74;
@@ -104,7 +103,6 @@
     color: var(--syncro-highlight);
 }
 
-/* ─── App shell layout ─── */
 .syncro-app {
     margin: 0;
     min-height: 100vh;
@@ -169,7 +167,6 @@
     z-index: 0;
 }
 
-/* Active tab — white pill with matching corners on all sides */
 .syncro-rail__link.is-active {
     color: var(--syncro-rail-icon-active);
 }
@@ -357,7 +354,6 @@ body.syncro-nav-open {
     overflow: hidden;
 }
 
-/* Notifications in topbar */
 .syncro-notif-btn {
     border: 1px solid var(--syncro-border);
     background: #f8f9fc;
@@ -386,8 +382,6 @@ body.syncro-nav-open {
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     border: 0;
 }
-
-/* back bar — see app shell section */
 
 .syncro-notif-dropdown {
     min-width: 320px;
@@ -424,7 +418,6 @@ body.syncro-nav-open {
     background: #fff;
 }
 
-/* Submission lifecycle progress — per-step colors */
 .submission-lifecycle-progress {
     --lifecycle-upcoming: #ced4da;
 }
@@ -509,7 +502,6 @@ body.syncro-nav-open {
     100% { box-shadow: 0 0 0 0   rgba(var(--step-glow-rgb), 0);    }
 }
 
-/* Status banners in the progress tracker */
 .alert-under-review {
     background: rgba(249, 115, 22, 0.1);
     border: 1px solid rgba(249, 115, 22, 0.35);
@@ -546,7 +538,6 @@ body.syncro-nav-open {
     border-top: 4px solid var(--syncro-highlight) !important;
 }
 
-/* Dashboard & cards */
 .syncro-panel {
     border: 1px solid var(--syncro-border);
     border-radius: var(--syncro-radius);
@@ -569,7 +560,6 @@ body.syncro-nav-open {
     padding: 0;
 }
 
-/* Compact dashboard panel */
 .syncro-panel--compact .syncro-panel__header--compact {
     padding: 0.65rem 0.85rem;
 }
@@ -578,7 +568,6 @@ body.syncro-nav-open {
     font-size: 0.95rem;
 }
 
-/* Content queue — CSS grid list (no column bleed) */
 .syncro-queue {
     --queue-cols: minmax(10rem, 1.15fr) minmax(12rem, 2fr) minmax(9rem, max-content) minmax(6.5rem, max-content) 16.5rem;
     font-size: 0.8125rem;
@@ -620,7 +609,6 @@ body.syncro-nav-open {
     background: rgba(var(--syncro-primary-rgb), 0.04);
 }
 
-/* Each cell: isolate overflow */
 .syncro-queue__org,
 .syncro-queue__caption,
 .syncro-queue__status,
@@ -695,7 +683,6 @@ body.syncro-nav-open {
     white-space: nowrap;
 }
 
-/* Action buttons — fixed 3-column grid so every row aligns */
 .syncro-queue-actions {
     display: flex;
     flex-direction: column;
@@ -768,7 +755,6 @@ body.syncro-nav-open {
     color: #dc3545;
 }
 
-/* Narrow sidebar column: icon-only actions, tighter grid */
 @media (max-width: 1399.98px) {
     .syncro-queue {
         --queue-cols: minmax(8rem, 1.1fr) minmax(8rem, 1.6fr) minmax(8.5rem, max-content) minmax(6.2rem, max-content) 14.5rem;
@@ -791,7 +777,6 @@ body.syncro-nav-open {
     }
 }
 
-/* Small screens: stack caption under org */
 @media (max-width: 991.98px) {
     .syncro-queue__head {
         display: none;

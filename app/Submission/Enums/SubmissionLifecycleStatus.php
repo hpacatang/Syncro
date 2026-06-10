@@ -23,7 +23,7 @@ enum SubmissionLifecycleStatus: string
         };
     }
 
-    /** Action label for PAIR step buttons (one click per finished step). */
+    
     public function actionLabel(): string
     {
         return match ($this) {
@@ -65,7 +65,7 @@ enum SubmissionLifecycleStatus: string
         };
     }
 
-    /** RGB components for CSS glow animations (e.g. `249, 115, 22`). */
+    
     public function progressGlowRgb(): string
     {
         return match ($this) {

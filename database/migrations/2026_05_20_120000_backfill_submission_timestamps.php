@@ -19,6 +19,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Irreversible: prior rows had no timestamps.
+        
     }
 };

@@ -25,7 +25,7 @@ class CheckRole
             }
         }
 
-        if (!in_array($userRoleNormalized, $allowed, true)) {
+        if (! in_array($userRoleNormalized, $allowed, true)) {
             if ($request->wantsJson()) {
                 return response()->json([
                     'error' => 'Unauthorized',
@@ -33,10 +33,7 @@ class CheckRole
                 ], 403);
             }
 
-            return response()->view('errors.unauthorized', [
-                'userRole' => $userRole,
-                'requiredRoles' => $allowed,
-            ], 403);
+            return redirect()->route($user->homeRoute());
         }
 
         return $next($request);

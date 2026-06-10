@@ -99,7 +99,7 @@
 
             const id = a.getAttribute('data-notif-id');
             if (id && csrf) {
-                try { await markRead(id); } catch (err) { /* still navigate */ }
+                try { await markRead(id); } catch (err) {  }
             }
             window.location.assign(href);
         });

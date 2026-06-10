@@ -10,11 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class SubmissionLifecycleService
 {
-    /**
-     * Allowed transitions: from => [to, ...]
-     *
-     * @var array<string, list<string>>
-     */
+    
     private const TRANSITIONS = [
         'submitted' => ['under_peer_review', 'rejected'],
         'under_peer_review' => ['approved', 'rejected', 'revised'],
@@ -24,11 +20,7 @@ class SubmissionLifecycleService
         'posted' => [],
     ];
 
-    /**
-     * Which roles may trigger each target status manually.
-     *
-     * @var array<string, list<string>>
-     */
+    
     private const ROLE_TARGETS = [
         'admin' => ['approved', 'rejected', 'revised', 'posted'],
         'pair' => ['approved', 'rejected', 'revised', 'posted'],
@@ -40,9 +32,7 @@ class SubmissionLifecycleService
         return SubmissionLifecycleStatus::fromLegacy($submission->workflow_status);
     }
 
-    /**
-     * @return list<SubmissionLifecycleStatus>
-     */
+    
     public function allowedTransitions(Submission $submission, User $actor): array
     {
         $current = $this->current($submission);
@@ -120,9 +110,7 @@ class SubmissionLifecycleService
         return $submission->fresh();
     }
 
-    /**
-     * System transitions used by automated flows (enhance, submit, etc.).
-     */
+    
     public function systemTransition(Submission $submission, SubmissionLifecycleStatus $target, array $context = []): Submission
     {
         $from = $this->current($submission);

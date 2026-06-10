@@ -7,19 +7,17 @@ use Illuminate\Http\Request;
 
 class AuditLogController extends Controller
 {
-    /**
-     * Display a listing of the audit logs
-     */
+    
     public function index(Request $request)
     {
         $query = AuditLog::with('user')->orderBy('created_at', 'desc');
 
-        // Filter by action type if provided
+        
         if ($request->has('action_type') && $request->action_type) {
             $query->where('action_type', $request->action_type);
         }
 
-        // Filter by date range if provided
+        
         if ($request->has('from_date') && $request->from_date) {
             $query->whereDate('created_at', '>=', $request->from_date);
         }
@@ -27,7 +25,7 @@ class AuditLogController extends Controller
             $query->whereDate('created_at', '<=', $request->to_date);
         }
 
-        // Filter by user if provided
+        
         if ($request->has('user_id') && $request->user_id) {
             $query->where('user_id', $request->user_id);
         }
@@ -47,9 +45,7 @@ class AuditLogController extends Controller
         ]);
     }
 
-    /**
-     * Display the specified audit log
-     */
+    
     public function show(AuditLog $auditLog)
     {
         $auditLog->load('user');

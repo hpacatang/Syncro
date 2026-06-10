@@ -11,10 +11,7 @@ use App\Http\Controllers\Controller;
 
 class FeedbackController extends Controller
 {
-    /**
-     * Get all feedback for a submission
-     * GET /api/submissions/{submission_id}/feedback
-     */
+    
     public function index($submission_id)
     {
         try {
@@ -39,10 +36,7 @@ class FeedbackController extends Controller
         }
     }
 
-    /**
-     * Add feedback/comment to a submission
-     * POST /api/submissions/{submission_id}/feedback
-     */
+    
     public function store(Request $request, $submission_id)
     {
         try {
@@ -50,7 +44,7 @@ class FeedbackController extends Controller
                 'message' => 'required|string|min:3|max:1000'
             ]);
 
-            // Verify submission exists
+            
             Submission::findOrFail($submission_id);
 
             $feedback = Feedback::create([
@@ -76,10 +70,7 @@ class FeedbackController extends Controller
         }
     }
 
-    /**
-     * Get a specific feedback record
-     * GET /api/feedback/{id}
-     */
+    
     public function show($id)
     {
         try {
@@ -98,10 +89,7 @@ class FeedbackController extends Controller
         }
     }
 
-    /**
-     * Update feedback
-     * PUT /api/feedback/{id}
-     */
+    
     public function update(Request $request, $id)
     {
         try {
@@ -111,7 +99,7 @@ class FeedbackController extends Controller
 
             $feedback = Feedback::findOrFail($id);
 
-            // Check if user is the feedback author or admin
+            
             $authId = auth()->id();
             $isAuthor = $feedback->user_id === $authId;
             $isAdmin = auth()->check() && auth()->user()->isAdmin();
@@ -140,16 +128,13 @@ class FeedbackController extends Controller
         }
     }
 
-    /**
-     * Delete feedback
-     * DELETE /api/feedback/{id}
-     */
+    
     public function destroy($id)
     {
         try {
             $feedback = Feedback::findOrFail($id);
 
-            // Check if user is the feedback author or admin
+            
             $authId = auth()->id();
             $isAuthor = $feedback->user_id === $authId;
             $isAdmin = auth()->check() && auth()->user()->isAdmin();

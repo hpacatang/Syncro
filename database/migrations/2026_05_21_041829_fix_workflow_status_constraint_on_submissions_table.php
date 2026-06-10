@@ -6,17 +6,15 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    
     public function up(): void
     {
         Schema::table('submissions', function (Blueprint $table) {
-            // Drop the existing column and recreate it
+            
             $table->dropColumn('workflow_status');
         });
 
-        // Recreate with proper enum constraint
+        
         Schema::table('submissions', function (Blueprint $table) {
             $table->enum('workflow_status', [
                 'submitted',
@@ -29,9 +27,7 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
+    
     public function down(): void
     {
         Schema::table('submissions', function (Blueprint $table) {

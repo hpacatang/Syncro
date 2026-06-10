@@ -14,6 +14,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Cannot reliably restore prior awaiting_org_approval rows.
+        
     }
 };

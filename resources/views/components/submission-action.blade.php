@@ -24,19 +24,19 @@
 
         @if($isOwnerOrg)
 
-            {{-- Status badge --}}
+            
             <p class="text-muted small mb-3">
                 Status: <span class="{{ $statusBadge }}">{{ ucwords(str_replace('_', ' ', $wfStatus)) }}</span>
             </p>
 
             @if($isAwaitingOrgReview)
-                {{-- ---- Org inline approve / reject ---- --}}
+                
                 <div class="alert alert-warning py-2 mb-3">
                     <i class="bi bi-bell-fill me-1"></i>
                     <strong>Action required:</strong> PAIR has enhanced your caption. Please review and decide below.
                 </div>
 
-                {{-- Captions side-by-side --}}
+                
                 <div class="mb-3">
                     <label class="form-label fw-semibold small text-muted text-uppercase">Original Caption</label>
                     <div class="bg-light p-2 rounded small">{{ $submission->original_caption }}</div>
@@ -46,7 +46,7 @@
                     <div class="bg-light p-2 rounded small">{{ $submission->enhanced_caption }}</div>
                 </div>
 
-                {{-- Decision form --}}
+                
                 <div id="orgDecisionWrap-{{ $submission->id }}">
                     <div class="mb-2">
                         <div class="form-check">
@@ -137,7 +137,6 @@
 @push('scripts')
 <script>
 (function () {
-    // Toggle notes field based on radio selection
     document.querySelectorAll('[name^="orgDecision-"]').forEach(function (radio) {
         radio.addEventListener('change', function () {
             const id = this.name.replace('orgDecision-', '');
