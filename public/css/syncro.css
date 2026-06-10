@@ -843,3 +843,72 @@ body.syncro-nav-open {
     --bs-gutter-y: 0.35rem;
     --bs-gutter-x: 0.35rem;
 }
+
+/* Custom Green Borders for Modals and Textareas */
+.syncro-app .modal-content {
+    border: 2px solid var(--syncro-accent) !important;
+}
+
+.syncro-app .modal-header {
+    background-color: var(--syncro-primary) !important;
+    color: #ffffff !important;
+}
+
+.syncro-app .modal-header .modal-title,
+.syncro-app .modal-header .modal-title i,
+.syncro-app .modal-header .text-primary {
+    color: #ffffff !important;
+}
+
+.syncro-app .modal-header .text-muted,
+.syncro-app .modal-header small {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.syncro-app .modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%) !important;
+}
+
+.syncro-app .modal-header.border-bottom {
+    border-bottom: 1.5px solid var(--syncro-accent) !important;
+}
+
+.syncro-app .modal-footer {
+    background-color: var(--syncro-primary) !important;
+    color: #ffffff !important;
+}
+
+.syncro-app .modal-footer.border-top {
+    border-top: 1.5px solid var(--syncro-accent) !important;
+}
+
+.syncro-app .modal-footer .btn-secondary,
+.syncro-app .modal-footer .btn-outline-secondary {
+    color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    background-color: transparent !important;
+}
+
+.syncro-app .modal-footer .btn-secondary:hover,
+.syncro-app .modal-footer .btn-outline-secondary:hover {
+    color: #ffffff !important;
+    border-color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.syncro-app .modal-body .form-control,
+.syncro-app .modal-body .form-select {
+    border: 1.5px solid var(--syncro-accent-soft) !important;
+}
+
+.syncro-app .modal-body .form-control:focus,
+.syncro-app .modal-body .form-select:focus {
+    border-color: var(--syncro-primary) !important;
+    box-shadow: 0 0 0 0.25rem rgba(var(--syncro-primary-rgb), 0.2) !important;
+}
+
+.syncro-app .modal-body .alert.border {
+    border-color: var(--syncro-accent-soft) !important;
+}
+
+

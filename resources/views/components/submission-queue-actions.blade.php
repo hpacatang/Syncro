@@ -139,6 +139,15 @@
         await applyQueueTransition(submissionId, status, null, wrap, msg, csrf);
     });
 
+    const inputEl = document.getElementById('transitionNotesInput');
+    if (inputEl) {
+        inputEl.addEventListener('input', function () {
+            if (this.value.trim().length >= 10) {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+
     const submitBtn = document.getElementById('transitionNotesSubmitBtn');
     if (submitBtn) {
         submitBtn.addEventListener('click', async function () {

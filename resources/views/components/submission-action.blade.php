@@ -142,6 +142,18 @@
             const id = this.name.replace('orgDecision-', '');
             const notesDiv = document.getElementById('orgNotes-' + id);
             if (notesDiv) notesDiv.style.display = this.value === 'reject' ? 'block' : 'none';
+            const msg = document.getElementById('orgDecisionMsg-' + id);
+            if (msg) msg.textContent = '';
+        });
+    });
+
+    document.querySelectorAll('[id^="orgNotesText-"]').forEach(function (textarea) {
+        textarea.addEventListener('input', function () {
+            const id = this.id.replace('orgNotesText-', '');
+            const msg = document.getElementById('orgDecisionMsg-' + id);
+            if (msg && this.value.trim().length >= 10) {
+                msg.textContent = '';
+            }
         });
     });
 })();

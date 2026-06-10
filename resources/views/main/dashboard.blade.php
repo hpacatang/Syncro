@@ -247,15 +247,15 @@
 
 <div class="modal fade" id="generateModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content shadow-lg" style="border: 1px solid #dee2e6;">
-            <div class="modal-header bg-primary text-white" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header bg-light border-bottom">
                 <div>
                     <h5 class="modal-title fw-bold">
-                        <i class="fas fa-pen-fancy"></i> Enhance Caption
+                        <i class="fas fa-pen-fancy text-primary"></i> Enhance Caption
                     </h5>
-                    <small class="text-white-50">Choose AI-assisted or manual enhancement</small>
+                    <small class="text-muted">Choose AI-assisted or manual enhancement</small>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="generateForm">
@@ -356,7 +356,7 @@
                     </div>
                 </form>
             </div>
-            <div class="modal-footer border-top">
+            <div class="modal-footer border-top bg-light">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 
                 <button type="button" class="btn btn-success" id="approveBtn" onclick="approveFinalCaption()">

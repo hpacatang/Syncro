@@ -52,7 +52,7 @@
 <div class="modal fade" id="lifecycleModal-{{ $submission->id }}" tabindex="-1" aria-labelledby="lifecycleModalLabel-{{ $submission->id }}" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0">
+            <div class="modal-header bg-light border-bottom">
                 <h5 class="modal-title fw-bold" id="lifecycleModalLabel-{{ $submission->id }}">
                     Action Required
                 </h5>
@@ -75,7 +75,7 @@
                     Notes are required (minimum 10 characters).
                 </div>
             </div>
-            <div class="modal-footer border-top-0 pt-0">
+            <div class="modal-footer border-top bg-light">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn" id="lifecycleConfirmBtn-{{ $submission->id }}">
                     Confirm

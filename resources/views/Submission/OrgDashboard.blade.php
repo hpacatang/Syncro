@@ -312,11 +312,14 @@
                         <label for="revisionNotes" class="form-label">What needs improvement?</label>
                         <textarea id="revisionNotes" class="form-control" rows="3" 
                                   placeholder="Provide specific feedback for PAIR staff..."></textarea>
-                        <small class="text-muted">Be specific about what changes you'd like.</small>
+                        <div class="invalid-feedback">
+                            Feedback is required and must be at least 10 characters long.
+                        </div>
+                        <small class="text-muted d-block mt-1">Be specific about what changes you'd like.</small>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-top">
+            <div class="modal-footer border-top bg-light">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-success" id="approveBtn">
                     <i class="fas fa-check"></i> Approve & Proceed
@@ -398,7 +401,11 @@ function loadReviewModal(submissionId, originalCaption, enhancedCaption) {
 
     document.getElementById('approveRadio').checked = true;
     document.getElementById('rejectionNotes').style.display = 'none';
-    document.getElementById('revisionNotes').value = '';
+    const inputEl = document.getElementById('revisionNotes');
+    if (inputEl) {
+        inputEl.value = '';
+        inputEl.classList.remove('is-invalid');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -411,6 +418,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (rejectBtn) {
         rejectBtn.addEventListener('click', submitRejection);
+    }
+
+    const revisionNotesEl = document.getElementById('revisionNotes');
+    if (revisionNotesEl) {
+        revisionNotesEl.addEventListener('input', function() {
+            if (this.value.trim().length >= 10) {
+                this.classList.remove('is-invalid');
+            }
+        });
     }
 });
 
@@ -482,11 +498,17 @@ async function submitRejection() {
         return;
     }
     
-    const notes = document.getElementById('revisionNotes').value.trim();
+    const inputEl = document.getElementById('revisionNotes');
+    if (!inputEl) return;
+
+    const notes = inputEl.value.trim();
     if (notes.length < 10) {
-        alert('Please provide specific feedback of at least 10 characters for PAIR staff.');
+        inputEl.classList.add('is-invalid');
+        inputEl.focus();
         return;
     }
+
+    inputEl.classList.remove('is-invalid');
     
     const btn = document.getElementById('rejectBtn');
     btn.disabled = true;
