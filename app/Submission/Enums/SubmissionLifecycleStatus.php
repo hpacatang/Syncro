@@ -60,7 +60,7 @@ enum SubmissionLifecycleStatus: string
             self::UnderPeerReview => '#f97316',
             self::Approved => '#2563eb',
             self::Rejected => '#ef4444',
-            self::Revised => '#eab308',
+            self::Revised => '#f97316',
             self::Posted => '#7c3aed',
         };
     }
@@ -73,7 +73,7 @@ enum SubmissionLifecycleStatus: string
             self::UnderPeerReview => '249, 115, 22',
             self::Approved => '37, 99, 235',
             self::Rejected => '239, 68, 68',
-            self::Revised => '234, 179, 8',
+            self::Revised => '249, 115, 22',
             self::Posted => '124, 58, 237',
         };
     }
@@ -98,7 +98,7 @@ enum SubmissionLifecycleStatus: string
         }
 
         return match ($this) {
-            self::Revised => 2,
+            self::Revised => 1,
             self::Rejected => -1,
             default => 0,
         };

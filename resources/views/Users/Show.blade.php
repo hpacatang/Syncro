@@ -20,7 +20,7 @@
                 </div>
                 <div class="col-md-6">
                     <h6 class="text-muted">Role</h6>
-                    <p><span class="badge bg-secondary">{{ $user->roleLabel() }}</span></p>
+                    <p><span class="badge bg-warning text-dark">{{ $user->roleLabel() }}</span></p>
                     @if($user->department)
                         <h6 class="text-muted">Department</h6>
                         <p>{{ $user->department->displayName() }}</p>

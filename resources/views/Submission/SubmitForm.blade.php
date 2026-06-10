@@ -51,9 +51,9 @@
                             <td><x-formatted-date :at="$sub->created_at" format="M d, Y h:i A" /></td>
                             <td class="pe-4 text-end">
                                 @if(auth()->user()->canSubmitPosts())
-                                    <a href="{{ route('org.submissions.review', $sub) }}" class="btn btn-sm btn-primary">Review</a>
+                                    <a href="{{ route('org.submissions.review', $sub) }}" class="btn btn-sm btn-primary"><i class="bi bi-eye me-1"></i> Review</a>
                                 @else
-                                    <a href="{{ route('dashboard.submissions.review', $sub) }}" class="btn btn-sm btn-primary">Review</a>
+                                    <a href="{{ route('dashboard.submissions.review', $sub) }}" class="btn btn-sm btn-primary"><i class="bi bi-eye me-1"></i> Review</a>
                                 @endif
                             </td>
                         </tr>

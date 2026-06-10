@@ -44,7 +44,7 @@
                             <td>{{ $department->department_name }}</td>
                             <td>
                                 @if($department->department_short_name)
-                                    <span class="badge bg-light text-dark">{{ $department->department_short_name }}</span>
+                                    <span class="badge bg-warning text-dark">{{ $department->department_short_name }}</span>
                                 @else
                                     —
                                 @endif
@@ -52,8 +52,8 @@
                             <td>{{ $department->users()->count() }}</td>
                             <td><small><x-formatted-date :at="$department->created_at" /></small></td>
                             <td>
-                                <a href="{{ route('departments.show', $department) }}" class="btn btn-sm btn-outline-primary">View</a>
-                                <a href="{{ route('departments.edit', $department) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                <a href="{{ route('departments.show', $department) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i> View</a>
+                                <a href="{{ route('departments.edit', $department) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Edit</a>
                             </td>
                         </tr>
                     @empty

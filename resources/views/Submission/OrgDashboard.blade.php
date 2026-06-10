@@ -111,7 +111,7 @@
                                     <td class="text-muted small"><x-formatted-date :at="$submission->created_at" format="M d" /></td>
                                     <td>
                                         <div class="d-flex flex-wrap gap-1">
-                                            <a href="{{ route('org.submissions.review', $submission) }}" class="btn btn-sm btn-outline-primary">Review page</a>
+                                            <a href="{{ route('org.submissions.review', $submission) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i> Review page</a>
                                             <button class="btn btn-sm btn-warning" 
                                                 title="Review & Approve/Reject" 
                                                 data-bs-toggle="modal" 

@@ -13,7 +13,7 @@
         under_peer_review: '#f97316',
         approved: '#2563eb',
         rejected: '#ef4444',
-        revised: '#eab308',
+        revised: '#f97316',
         posted: '#7c3aed',
     };
 
@@ -44,8 +44,6 @@
                     if (stepKey === 'rejected' || index === 0) {
                         stepEl.classList.add('is-active');
                     }
-                } else if (status === 'revised' && stepKey === 'under_peer_review') {
-                    stepEl.classList.add('is-active');
                 } else if (progressIndex > index) {
                     stepEl.classList.add('is-done');
                 } else if (progressIndex === index) {

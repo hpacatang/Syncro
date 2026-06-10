@@ -10,7 +10,7 @@
             <h2 class="mb-1"><i class="bi bi-building me-2"></i> {{ $department->department_name }}</h2>
             @if($department->department_short_name)
                 <p class="text-muted mb-0">
-                    <span class="badge bg-light text-dark">{{ $department->department_short_name }}</span>
+                    <span class="badge bg-warning text-dark">{{ $department->department_short_name }}</span>
                 </p>
             @endif
         </div>
@@ -30,7 +30,7 @@
                     <h6 class="text-muted">Short name</h6>
                     <p>
                         @if($department->department_short_name)
-                            <span class="badge bg-light text-dark">{{ $department->department_short_name }}</span>
+                            <span class="badge bg-warning text-dark">{{ $department->department_short_name }}</span>
                         @else
                             <span class="text-muted">—</span>
                         @endif
@@ -77,7 +77,7 @@
                                     <td>{{ $user->displayName() }}</td>
                                     <td>{{ $user->email }}</td>
                                     <td>
-                                        <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                        <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i> View</a>
                                     </td>
                                 </tr>
                             @empty

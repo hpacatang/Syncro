@@ -35,6 +35,12 @@ class User extends Authenticatable
         return $this->belongsTo(Department::class, 'department_id');
     }
 
+    public function organizations(): HasMany
+    {
+        return $this->hasMany(User::class, 'department_id', 'department_id')
+            ->where('role', 'org');
+    }
+
 
     public function displayName(): string
     {

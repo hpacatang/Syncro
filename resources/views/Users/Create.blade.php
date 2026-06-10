@@ -45,6 +45,21 @@
                     </div>
                 </div>
 
+                <div class="row mb-3" id="departmentField" style="{{ old('role') === 'department' ? '' : 'display:none' }}">
+                    <div class="col-md-6">
+                        <label for="department_id" class="form-label">Department <span class="text-danger">*</span></label>
+                        <select class="form-select @error('department_id') is-invalid @enderror" id="department_id" name="department_id">
+                            <option value="">— Select department —</option>
+                            @foreach($departments as $department)
+                                <option value="{{ $department->id }}" {{ (string) old('department_id') === (string) $department->id ? 'selected' : '' }}>
+                                    {{ $department->displayName() }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('department_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
@@ -67,3 +82,14 @@
     </div>  
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.getElementById('role')?.addEventListener('change', function () {
+    const field = document.getElementById('departmentField');
+    if (field) {
+        field.style.display = this.value === 'department' ? '' : 'none';
+    }
+});
+</script>
+@endpush

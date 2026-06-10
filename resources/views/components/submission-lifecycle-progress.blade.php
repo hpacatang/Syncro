@@ -43,14 +43,9 @@
             @php
                 $theme = $step->progressTheme();
                 $done = ! $isRejected && $currentIndex > $index;
-                $active = ! $isRejected && (
-                    ($isRevised && $theme === 'under_peer_review')
-                    || ($currentIndex === $index && ! $isRevised)
-                );
+                $active = ! $isRejected && $currentIndex === $index;
                 $stateClass = $active ? 'is-active' : ($done ? 'is-done' : 'is-upcoming');
-                $accent = ($active && $isRevised)
-                    ? SubmissionLifecycleStatus::Revised
-                    : $step;
+                $accent = $active ? $current : $step;
             @endphp
             <div
                 class="lifecycle-step lifecycle-step--{{ $theme }} {{ $stateClass }}"

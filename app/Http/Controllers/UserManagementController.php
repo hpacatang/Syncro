@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Department;
 use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -42,6 +43,7 @@ class UserManagementController extends Controller
     {
         return view('Users.Create', [
             'roles' => self::CREATABLE_ROLES,
+            'departments' => Department::orderBy('department_name')->get(),
         ]);
     }
 
@@ -53,6 +55,11 @@ class UserManagementController extends Controller
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'role' => ['required', Rule::in(self::CREATABLE_ROLES)],
+            'department_id' => [
+                'nullable',
+                'exists:departments,id',
+                Rule::requiredIf(fn () => $request->input('role') === 'department'),
+            ],
         ]);
 
         $user = User::create([
@@ -61,6 +68,7 @@ class UserManagementController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
+            'department_id' => $validated['department_id'] ?? null,
         ]);
 
         AuditLogService::logUserCreated($user->id, [
@@ -93,7 +101,7 @@ class UserManagementController extends Controller
         return view('Users.Edit', [
             'user' => $user,
             'roles' => array_merge(self::CREATABLE_ROLES, ['org', 'admin', 'super_admin']),
-            'departments' => User::departments()->get(),
+            'departments' => Department::orderBy('department_name')->get(),
         ]);
     }
 
@@ -111,17 +119,14 @@ class UserManagementController extends Controller
             'role' => 'required|in:super_admin,admin,pair,department,org',
             'department_id' => [
                 'nullable',
-                'exists:users,id',
-                Rule::requiredIf(fn () => $request->input('role') === 'org'),
+                'exists:departments,id',
+                Rule::requiredIf(fn () => in_array($request->input('role'), ['org', 'department'], true)),
             ],
         ]);
 
-        if ($validated['role'] === 'org') {
-            $dept = User::where('id', $validated['department_id'] ?? null)
-                ->where('role', 'department')
-                ->exists();
-            if (! $dept) {
-                return back()->withErrors(['department_id' => 'Organizations must belong to a department account.']);
+        if (in_array($validated['role'], ['org', 'department'], true)) {
+            if (empty($validated['department_id'])) {
+                return back()->withErrors(['department_id' => 'This role must belong to a department.']);
             }
         } else {
             $validated['department_id'] = null;

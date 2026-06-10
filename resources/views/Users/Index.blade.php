@@ -57,7 +57,7 @@
                             <td>{{ $user->displayName() }}</td>
                             <td><code>{{ $user->name }}</code></td>
                             <td>{{ $user->email }}</td>
-                            <td><span class="badge bg-secondary">{{ $user->roleLabel() }}</span></td>
+                            <td><span class="badge bg-warning text-dark">{{ $user->roleLabel() }}</span></td>
                             <td>
                                 @if($user->department)
                                     {{ $user->department->displayName() }}
@@ -67,8 +67,8 @@
                             </td>
                             <td><small><x-formatted-date :at="$user->created_at" /></small></td>
                             <td>
-                                <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-primary">View</a>
-                                <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i> View</a>
+                                <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Edit</a>
                             </td>
                         </tr>
                     @empty

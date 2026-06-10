@@ -82,15 +82,10 @@
                     </form>
                 </div>
             </div>
-<<<<<<< Updated upstream
-=======
-
-            
             <div class="alert alert-info mt-4 border-0">
                 <i class="fas fa-lightbulb"></i>
                 <strong>Pro Tip:</strong> The more detailed your caption, the better PAIR can enhance it. Include key details like dates, event names, and main points.
             </div>
->>>>>>> Stashed changes
         </div>
     </div>
 </div>

@@ -5,20 +5,7 @@
     <div class="mb-4">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
             <h1 class="h3 fw-bold mb-0">Review submission #{{ $submission->id }}</h1>
-<<<<<<< Updated upstream
-            @php
-                if (auth()->user()->isAdmin()) {
-                    $backRoute = route('dashboard');
-                } elseif (auth()->user()->isOrg() || auth()->user()->isDepartment()) {
-                    $backRoute = route('org.dashboard');
-                } else {
-                    $backRoute = route('dashboard');
-                }
-            @endphp
-            <a href="{{ $backRoute }}" class="btn btn-outline-secondary btn-sm">
-=======
             <a href="{{ route(auth()->user()->canSubmitPosts() ? 'org.dashboard' : 'dashboard') }}" class="btn btn-outline-secondary btn-sm">
->>>>>>> Stashed changes
                 ← Back to Queue
             </a>
         </div>

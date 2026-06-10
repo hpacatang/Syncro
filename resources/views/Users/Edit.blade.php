@@ -42,7 +42,7 @@
                     </div>
                 </div>
 
-                <div class="row mb-3" id="departmentField" style="{{ old('role', $user->role) === 'org' ? '' : 'display:none' }}">
+                <div class="row mb-3" id="departmentField" style="{{ in_array(old('role', $user->role), ['org', 'department'], true) ? '' : 'display:none' }}">
                     <div class="col-md-6">
                         <label for="department_id" class="form-label">Department <span class="text-danger">*</span></label>
                         <select class="form-select @error('department_id') is-invalid @enderror" id="department_id" name="department_id">
@@ -83,7 +83,7 @@
 <script>
 document.getElementById('role')?.addEventListener('change', function () {
     const field = document.getElementById('departmentField');
-    field.style.display = this.value === 'org' ? '' : 'none';
+    field.style.display = (this.value === 'org' || this.value === 'department') ? '' : 'none';
 });
 </script>
 @endpush
