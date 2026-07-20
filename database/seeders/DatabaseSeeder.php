@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Feedback;
 use App\Models\Submission;
 use App\Models\User;
+use App\Models\Department;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -31,12 +32,12 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin',
         ]);
 
-        $soe = \App\Models\Department::firstOrCreate(
+        $soe = Department::firstOrCreate(
             ['department_short_name' => 'SOE'],
             ['department_name' => 'School of Engineering']
         );
 
-        $sas = \App\Models\Department::firstOrCreate(
+        $sas = Department::firstOrCreate(
             ['department_short_name' => 'SAS'],
             ['department_name' => 'School of Arts and Sciences']
         );
@@ -46,7 +47,7 @@ class DatabaseSeeder extends Seeder
             [
                 'profile_name' => 'College of Engineering',
                 'email' => 'engineering@syncro.local',
-                'password' => Hash::make('dept123'),
+                'password' => Hash::make('qweqwe123'),
                 'role' => 'department',
                 'department_id' => $soe->id,
             ]
@@ -57,7 +58,7 @@ class DatabaseSeeder extends Seeder
             [
                 'profile_name' => 'College of Arts & Sciences',
                 'email' => 'arts@syncro.local',
-                'password' => Hash::make('dept123'),
+                'password' => Hash::make('qweqwe123'),
                 'role' => 'department',
                 'department_id' => $sas->id,
             ]
@@ -67,7 +68,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'pair_reviewer',
             'profile_name' => 'Maria Santos (PAIR)',
             'email' => 'pair@syncro.local',
-            'password' => Hash::make('pair123'),
+            'password' => Hash::make('qweqwe123'),
             'role' => 'pair',
         ]);
 
@@ -75,7 +76,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'student_council',
             'profile_name' => 'Student Council',
             'email' => 'org@syncro.local',
-            'password' => Hash::make('org123'),
+            'password' => Hash::make('qweqwe123'),
             'role' => 'org',
             'department_id' => $soe->id,
         ]);
@@ -84,15 +85,15 @@ class DatabaseSeeder extends Seeder
             'name' => 'marketing_club',
             'profile_name' => 'Marketing Club',
             'email' => 'marketing@syncro.local',
-            'password' => Hash::make('org123'),
+            'password' => Hash::make('qweqwe123'),
             'role' => 'org',
             'department_id' => $soe->id,
         ]);
 
         User::create([
-            'name' => 'qweqwe1',
-            'profile_name' => 'qweqwe1',
-            'email' => 'qweqwe1@local.com',
+            'name' => 'syncroadmin',
+            'profile_name' => 'syncroadmin',
+            'email' => 'syncroadmin@local.com',
             'password' => Hash::make('qweqwe123'),
             'role' => 'super_admin',
             'department_id' => null,
@@ -119,9 +120,9 @@ class DatabaseSeeder extends Seeder
         $this->command->table(
             ['Role', 'Username', 'Password', 'Profile name'],
             [
-                ['Super Admin', 'superadmin', 'super123', 'Super Admin User'],
-                ['PAIR', 'pair_reviewer', 'pair123', 'Maria Santos (PAIR)'],
-                ['Department', 'dept_engineering', 'dept123', 'College of Engineering'],
+                ['Super Admin', 'syncroadmin', 'qweqwe123', 'syncroadmin'],
+                ['PAIR', 'pair_reviewer', 'qweqwe123', 'Maria Santos (PAIR)'],
+                ['Department', 'dept_engineering', 'qweqwe123', 'College of Engineering'],
                 ['Organization', 'student_council', 'org123', 'Student Council'],
                 ['Super Admin', 'qweqwe1', 'qweqwe123', 'qweqwe1'],
             ]
