@@ -296,11 +296,11 @@
                                 <label class="form-label fw-bold small">Tone</label>
                                 <select class="form-select form-select-sm" name="tone" id="toneSelect">
                                     @php $defTone = $defaultCaptionTone ?? 'formal'; @endphp
-                                    <option value="formal" {{ $defTone === 'formal' ? 'selected' : '' }}>📋 Formal</option>
-                                    <option value="friendly" {{ $defTone === 'friendly' ? 'selected' : '' }}>😊 Friendly</option>
-                                    <option value="enthusiastic" {{ $defTone === 'enthusiastic' ? 'selected' : '' }}>🎉 Enthusiastic</option>
-                                    <option value="urgent" {{ $defTone === 'urgent' ? 'selected' : '' }}>⚡ Urgent</option>
-                                    <option value="professional" {{ $defTone === 'professional' ? 'selected' : '' }}>💼 Academic</option>
+                                    <option value="formal" {{ $defTone === 'formal' ? 'selected' : '' }}> Formal</option>
+                                    <option value="friendly" {{ $defTone === 'friendly' ? 'selected' : '' }}> Friendly</option>
+                                    <option value="enthusiastic" {{ $defTone === 'enthusiastic' ? 'selected' : '' }}> Enthusiastic</option>
+                                    <option value="urgent" {{ $defTone === 'urgent' ? 'selected' : '' }}> Urgent</option>
+                                    <option value="professional" {{ $defTone === 'professional' ? 'selected' : '' }}> Academic</option>
                                 </select>
                             </div>
 
