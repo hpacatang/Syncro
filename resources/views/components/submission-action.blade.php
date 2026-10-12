@@ -2,7 +2,7 @@
 
 @php
     $isOwnerOrg = auth()->user()->canSubmitPosts() && (int) $submission->user_id === (int) auth()->id();
-    $isStaff    = auth()->user()->isAdmin() || auth()->user()->isPair();
+    $isStaff    = auth()->user()->isStaffReviewer();
     $wfStatus   = $submission->workflow_status;
     $statusBadge = match($wfStatus) {
         'submitted'         => 'badge bg-secondary',
@@ -33,7 +33,7 @@
                 
                 <div class="alert alert-warning py-2 mb-3">
                     <i class="bi bi-bell-fill me-1"></i>
-                    <strong>Action required:</strong> PAIR has enhanced your caption. Please review and decide below.
+                    <strong>Action required:</strong> The review team has updated your caption. Please review and decide below.
                 </div>
 
                 
@@ -60,7 +60,7 @@
                             <input class="form-check-input" type="radio" name="orgDecision-{{ $submission->id }}"
                                 id="orgReject-{{ $submission->id }}" value="reject">
                             <label class="form-check-label text-warning fw-semibold" for="orgReject-{{ $submission->id }}">
-                                ⟲ Request revisions — send back to PAIR
+                                ⟲ Request revisions — send back to the review team
                             </label>
                         </div>
                     </div>
@@ -104,12 +104,12 @@
             @elseif($wfStatus === 'revised')
                 <div class="alert alert-info py-2 mb-3">
                     <i class="bi bi-arrow-repeat me-1"></i>
-                    Your feedback has been <strong>sent to PAIR</strong> for revision. We'll notify you when it's ready.
+                    Your feedback has been <strong>sent to the review team</strong> for revision. We'll notify you when it's ready.
                 </div>
             @else
                 <div class="alert alert-secondary py-2 mb-3">
                     <i class="bi bi-hourglass-split me-1"></i>
-                    Your submission is being <strong>processed</strong> by the PAIR team.
+                    Your submission is being <strong>processed</strong> by the review team.
                 </div>
             @endif
 

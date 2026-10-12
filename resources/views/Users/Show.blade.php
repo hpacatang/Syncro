@@ -1,10 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
+@php $userRoutePrefix = auth()->user()->isDepartment() ? 'department.users' : 'users'; @endphp
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-person me-2"></i> {{ $user->displayName() }}</h2>
-        <a href="{{ route('users.edit', $user) }}" class="btn btn-primary"><i class="bi bi-pencil me-2"></i> Edit</a>
+        <a href="{{ route($userRoutePrefix.'.edit', $user) }}" class="btn btn-primary"><i class="bi bi-pencil me-2"></i> Edit</a>
     </div>
 
     <div class="card">
@@ -37,7 +38,7 @@
             </div>
 
             @if($user->id !== auth()->id())
-            <form method="POST" action="{{ route('users.destroy', $user) }}" class="mt-3">
+            <form method="POST" action="{{ route($userRoutePrefix.'.destroy', $user) }}" class="mt-3">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this user?')">Delete</button>

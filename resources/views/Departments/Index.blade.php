@@ -5,6 +5,9 @@
 
 @section('content')
 <div class="container-fluid px-0 py-1">
+    @if(session('error'))
+        <div class="alert alert-danger" role="alert">{{ session('error') }}</div>
+    @endif
     <div class="d-flex justify-content-end mb-3">
         <a href="{{ route('departments.create') }}" class="btn btn-primary">
             <i class="bi bi-building me-1"></i> New department

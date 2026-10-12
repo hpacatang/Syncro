@@ -94,12 +94,12 @@ class User extends Authenticatable
 
     public function canSubmitPosts(): bool
     {
-        return $this->isOrg() || $this->isDepartment();
+        return $this->isOrg();
     }
 
     public function isStaffReviewer(): bool
     {
-        return $this->isAdmin() || $this->isPair();
+        return $this->isAdmin() || $this->isPair() || $this->isDepartment();
     }
 
     public function homeRoute(): string

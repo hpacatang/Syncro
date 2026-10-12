@@ -28,12 +28,12 @@
             </div>
         @elseif($isRevised)
             <div class="alert alert-warning py-2 mb-2 small">
-                <strong>Revisions requested</strong> — PAIR is updating the caption based on your feedback.
+                <strong>Revisions requested</strong> — the review team is updating the caption based on your feedback.
             </div>
         @elseif($isUnderReview)
             <div class="alert alert-under-review py-2 mb-2 small d-flex align-items-center gap-2">
                 <span class="review-pulse-dot" aria-hidden="true"></span>
-                <span><strong>Under PAIR Review</strong> — our team is reviewing your submission. You'll be notified once a decision is made.</span>
+                <span><strong>Under Review</strong> — our team is reviewing your submission. You'll be notified once a decision is made.</span>
             </div>
         @endif
     @endif

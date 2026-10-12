@@ -14,8 +14,13 @@ class SubmissionPolicy
 
     public function view(User $user, Submission $submission): bool
     {
-        if ($user->isStaffReviewer()) {
+        if ($user->isAdmin() || $user->isPair()) {
             return true;
+        }
+
+        if ($user->isDepartment()) {
+            return $user->department_id !== null
+                && (int) $submission->review_department_id === (int) $user->department_id;
         }
 
         return $user->canSubmitPosts() && (int) $submission->user_id === (int) $user->id;

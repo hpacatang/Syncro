@@ -4,9 +4,10 @@
 @section('page-subtitle', 'Department & PAIR accounts')
 
 @section('content')
+@php $userRoutePrefix = auth()->user()->isDepartment() ? 'department.users' : 'users'; @endphp
 <div class="container-fluid px-0 py-1">
     <div class="d-flex justify-content-end mb-3">
-        <a href="{{ route('users.create') }}" class="btn btn-primary">
+        <a href="{{ route($userRoutePrefix.'.create') }}" class="btn btn-primary">
             <i class="bi bi-person-plus me-1"></i> New account
         </a>
     </div>
@@ -31,7 +32,7 @@
                 </div>
                 <div class="col-md-2 d-flex align-items-end gap-2">
                     <button type="submit" class="btn btn-primary w-100">Search</button>
-                    <a href="{{ route('users.index') }}" class="btn btn-secondary w-100">Reset</a>
+                    <a href="{{ route($userRoutePrefix.'.index') }}" class="btn btn-secondary w-100">Reset</a>
                 </div>
             </form>
         </div>
@@ -67,8 +68,8 @@
                             </td>
                             <td><small><x-formatted-date :at="$user->created_at" /></small></td>
                             <td>
-                                <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i> View</a>
-                                <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Edit</a>
+                                <a href="{{ route($userRoutePrefix.'.show', $user) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i> View</a>
+                                <a href="{{ route($userRoutePrefix.'.edit', $user) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Edit</a>
                             </td>
                         </tr>
                     @empty

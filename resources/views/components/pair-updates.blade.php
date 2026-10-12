@@ -9,7 +9,7 @@
                 $bullets = array_slice($lines, 1);
             @endphp
             <div class="pair-update-block mb-3">
-                @if(str_starts_with($header, '[PAIR'))
+                @if(str_starts_with($header, '[PAIR') || str_starts_with($header, '[Review team'))
                     <div class="fw-bold syncro-pair-header mb-1">{{ $header }}</div>
                 @else
                     <div class="mb-1">{{ $header }}</div>

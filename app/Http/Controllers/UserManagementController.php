@@ -16,6 +16,12 @@ class UserManagementController extends Controller
     public function index(Request $request)
     {
         $query = User::with('department')->orderBy('name');
+        $departmentManager = $this->isDepartmentManager($request);
+
+        if ($departmentManager) {
+            $query->where('role', 'org')
+                ->where('department_id', $request->user()->department_id);
+        }
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -39,28 +45,39 @@ class UserManagementController extends Controller
         return view('Users.Index', ['users' => $users]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        if ($this->isDepartmentManager($request)) {
+            abort_unless($request->user()->department_id, 403, 'Your account is not assigned to a department.');
+        }
+
         return view('Users.Create', [
-            'roles' => self::CREATABLE_ROLES,
-            'departments' => Department::orderBy('department_name')->get(),
+            'roles' => $this->isDepartmentManager($request) ? ['org'] : self::CREATABLE_ROLES,
+            'departments' => $this->isDepartmentManager($request)
+                ? collect([$request->user()->department])
+                : Department::orderBy('department_name')->get(),
         ]);
     }
 
     public function store(Request $request)
     {
+        $departmentManager = $this->isDepartmentManager($request);
         $validated = $request->validate([
             'name' => 'required|string|min:3|max:100|unique:users,name',
             'profile_name' => 'required|string|min:2|max:150',
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => ['required', Rule::in(self::CREATABLE_ROLES)],
+            'role' => ['required', Rule::in($departmentManager ? ['org'] : self::CREATABLE_ROLES)],
             'department_id' => [
                 'nullable',
                 'exists:departments,id',
-                Rule::requiredIf(fn () => $request->input('role') === 'department'),
+                Rule::requiredIf(fn () => ! $departmentManager && $request->input('role') === 'department'),
             ],
         ]);
+
+        if ($departmentManager && ! $request->user()->department_id) {
+            abort(403, 'Your account is not assigned to a department.');
+        }
 
         $user = User::create([
             'name' => $validated['name'],
@@ -68,7 +85,9 @@ class UserManagementController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
-            'department_id' => $validated['department_id'] ?? null,
+            'department_id' => $departmentManager
+                ? $request->user()->department_id
+                : ($validated['department_id'] ?? null),
         ]);
 
         AuditLogService::logUserCreated($user->id, [
@@ -82,11 +101,13 @@ class UserManagementController extends Controller
             return response()->json($user, 201);
         }
 
-        return redirect()->route('users.index')->with('success', 'Account created successfully.');
+        return redirect()->route($departmentManager ? 'department.users.index' : 'users.index')
+            ->with('success', 'Account created successfully.');
     }
 
-    public function show(User $user)
+    public function show(Request $request, User $user)
     {
+        $this->authorizeDepartmentManagedUser($request, $user);
         $user->load('department', 'organizations');
 
         if (request()->wantsJson()) {
@@ -96,17 +117,27 @@ class UserManagementController extends Controller
         return view('Users.Show', ['user' => $user]);
     }
 
-    public function edit(User $user)
+    public function edit(Request $request, User $user)
     {
+        $this->authorizeDepartmentManagedUser($request, $user);
+        $departmentManager = $this->isDepartmentManager($request);
+        if ($departmentManager) {
+            abort_unless($request->user()->department_id, 403, 'Your account is not assigned to a department.');
+        }
+
         return view('Users.Edit', [
             'user' => $user,
-            'roles' => array_merge(self::CREATABLE_ROLES, ['org', 'admin', 'super_admin']),
-            'departments' => Department::orderBy('department_name')->get(),
+            'roles' => $departmentManager ? ['org'] : array_merge(self::CREATABLE_ROLES, ['org', 'admin', 'super_admin']),
+            'departments' => $departmentManager
+                ? collect([$request->user()->department])
+                : Department::orderBy('department_name')->get(),
         ]);
     }
 
     public function update(Request $request, User $user)
     {
+        $this->authorizeDepartmentManagedUser($request, $user);
+        $departmentManager = $this->isDepartmentManager($request);
         $validated = $request->validate([
             'name' => ['required', 'string', 'min:3', 'max:100', Rule::unique('users')->ignore($user->id)],
             'profile_name' => 'required|string|min:2|max:150',
@@ -116,15 +147,17 @@ class UserManagementController extends Controller
                 Rule::unique('users')->ignore($user->id),
             ],
             'password' => 'nullable|string|min:8|confirmed',
-            'role' => 'required|in:super_admin,admin,pair,department,org',
+            'role' => ['required', Rule::in($departmentManager ? ['org'] : ['super_admin', 'admin', 'pair', 'department', 'org'])],
             'department_id' => [
                 'nullable',
                 'exists:departments,id',
-                Rule::requiredIf(fn () => in_array($request->input('role'), ['org', 'department'], true)),
+                Rule::requiredIf(fn () => ! $departmentManager && in_array($request->input('role'), ['org', 'department'], true)),
             ],
         ]);
 
-        if (in_array($validated['role'], ['org', 'department'], true)) {
+        if ($departmentManager) {
+            $validated['department_id'] = $request->user()->department_id;
+        } elseif (in_array($validated['role'], ['org', 'department'], true)) {
             if (empty($validated['department_id'])) {
                 return back()->withErrors(['department_id' => 'This role must belong to a department.']);
             }
@@ -156,11 +189,13 @@ class UserManagementController extends Controller
             return response()->json($user);
         }
 
-        return redirect()->route('users.show', $user)->with('success', 'User updated successfully');
+        return redirect()->route($departmentManager ? 'department.users.show' : 'users.show', $user)
+            ->with('success', 'User updated successfully');
     }
 
     public function destroy(User $user, Request $request)
     {
+        $this->authorizeDepartmentManagedUser($request, $user);
         if ($user->id === auth()->id()) {
             if ($request->wantsJson()) {
                 return response()->json(['error' => 'Cannot delete your own account'], 403);
@@ -184,6 +219,25 @@ class UserManagementController extends Controller
             return response()->json(['message' => 'User deleted successfully']);
         }
 
-        return redirect()->route('users.index')->with('success', 'User deleted successfully');
+        return redirect()->route($this->isDepartmentManager($request) ? 'department.users.index' : 'users.index')
+            ->with('success', 'User deleted successfully');
+    }
+
+    private function isDepartmentManager(Request $request): bool
+    {
+        return $request->routeIs('department.users.*');
+    }
+
+    private function authorizeDepartmentManagedUser(Request $request, User $user): void
+    {
+        if (! $this->isDepartmentManager($request)) {
+            return;
+        }
+
+        $departmentId = $request->user()->department_id;
+        abort_unless(
+            $departmentId !== null && $user->isOrg() && (int) $user->department_id === (int) $departmentId,
+            404
+        );
     }
 }

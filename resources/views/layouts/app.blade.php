@@ -28,6 +28,9 @@
             $navItems[] = ['route' => 'departments.index', 'match' => ['departments.*'], 'icon' => 'bi-building', 'label' => 'Departments'];
             $navItems[] = ['route' => 'users.index', 'match' => ['users.*'], 'icon' => 'bi-people', 'label' => 'Users'];
         }
+        if (auth()->user()->isDepartment()) {
+            $navItems[] = ['route' => 'department.users.index', 'match' => ['department.users.*'], 'icon' => 'bi-people', 'label' => 'Department users'];
+        }
     @endphp
 
     <div class="syncro-shell">

@@ -15,7 +15,7 @@
         'all' => 'All statuses',
         'pending' => 'Pending review',
         'submitted' => 'Submitted',
-        'under_peer_review' => 'Under PAIR review',
+        'under_peer_review' => 'Under review',
         'approved' => 'Approved',
         'posted' => 'Posted',
     ];

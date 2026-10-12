@@ -17,6 +17,7 @@
                 @endif
             </p>
         @endif
+        <p class="text-muted small mb-3">Review owner: <strong>{{ $submission->reviewOwnerLabel() }}</strong></p>
         <x-submission-lifecycle-tracker-card :submission="$submission" class="mb-0" />
 
         <x-submission-lifecycle-poll :submission-ids="(string) $submission->id" />
@@ -32,7 +33,7 @@
                     <h6 class="text-muted small text-uppercase">Original</h6>
                     <p class="mb-4">{{ $submission->original_caption }}</p>
                     @if($submission->enhanced_caption)
-                        <h6 class="text-muted small text-uppercase">PAIR enhanced</h6>
+                        <h6 class="text-muted small text-uppercase">Review team revision</h6>
                         <p class="mb-0">{{ $submission->enhanced_caption }}</p>
                     @else
                         <p class="text-muted mb-0">No enhanced caption yet.</p>
@@ -43,7 +44,7 @@
             @if($submission->pair_feedback)
                 <div class="card syncro-card-elevated border-0 mb-4">
                     <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0 fw-bold">PAIR updates</h5>
+                        <h5 class="mb-0 fw-bold">Review team updates</h5>
                     </div>
                     <div class="card-body">
                         <x-pair-updates :text="$submission->pair_feedback" />
@@ -74,4 +75,3 @@
     </div>
 </div>
 @endsection
-

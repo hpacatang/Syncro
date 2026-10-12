@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('page-title', auth()->user()->displayName())
-@section('page-subtitle', 'Organization submissions')
+@section('page-subtitle', 'Your submissions')
 
 @section('content')
 <div class="container-fluid px-0">
@@ -49,7 +49,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted small mb-1">With PAIR</p>
+                            <p class="text-muted small mb-1">With Review Team</p>
                             <h3 class="fw-bold text-secondary">{{ ($stats['pending_submission'] ?? 0) + ($stats['pending_pair_review'] ?? 0) }}</h3>
                         </div>
                         <i class="fas fa-clock text-secondary"></i>
@@ -84,7 +84,7 @@
                             <h5 class="mb-1 fw-bold">
                                 <i class="fas fa-hourglass-half text-warning"></i> Ready for Review
                             </h5>
-                            <small class="text-muted">PAIR has enhanced these captions. Review and approve or request revisions.</small>
+                            <small class="text-muted">The review team has updated these captions. Review and approve or request revisions.</small>
                         </div>
                         <span class="badge bg-warning text-dark fs-6">{{ count($awaitingApproval) }}</span>
                     </div>
@@ -105,7 +105,7 @@
                                 <tr>
                                     <td class="ps-4">{{ Str::limit($submission->original_caption, 40) }}</td>
                                     <td>
-                                        <small>{{ $submission->enhancer?->name ?? 'PAIR Staff' }}</small>
+                                        <small>{{ $submission->enhancer?->name ?? 'Review team' }}</small>
                                         <br><small class="text-muted">{{ $submission->enhanced_at?->format('M d, Y') }}</small>
                                     </td>
                                     <td class="text-muted small"><x-formatted-date :at="$submission->created_at" format="M d" /></td>
@@ -154,7 +154,7 @@
                         <div class="text-center py-5">
                             <i class="fas fa-inbox text-muted" style="font-size: 3rem;"></i>
                             <p class="text-muted mt-3">No submissions yet</p>
-                            <p class="text-muted small">Start by submitting your first content for PAIR review</p>
+                            <p class="text-muted small">Start by submitting content to your Department or PAIR</p>
                             <a href="{{ route('org.submit') }}" class="btn btn-primary btn-sm mt-2">
                                 <i class="fas fa-plus"></i> Create First Submission
                             </a>
@@ -165,6 +165,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th class="ps-4">Caption Preview</th>
+                                        <th>Review team</th>
                                         <th>Status</th>
                                         <th>Submitted</th>
                                         <th>Action</th>
@@ -175,6 +176,7 @@
                                         @php $needsReview = $submission->workflow_status === 'under_peer_review' && $submission->enhanced_caption; @endphp
                                         <tr data-submission-row="{{ $submission->id }}" data-workflow-status="{{ $submission->workflow_status }}">
                                             <td class="ps-4">{{ Str::limit($submission->original_caption, 50) }}</td>
+                                            <td>{{ $submission->reviewOwnerLabel() }}</td>
                                             <td style="min-width: 14rem;">
                                                 <x-submission-lifecycle-progress :submission="$submission" :compact="true" />
                                             </td>
@@ -207,7 +209,7 @@
         <div class="col-lg-4">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white border-bottom">
-                    <h5 class="mb-0 fw-bold">Recent Feedback from PAIR</h5>
+                    <h5 class="mb-0 fw-bold">Recent feedback</h5>
                 </div>
                 <div class="card-body" style="max-height: 500px; overflow-y: auto;">
                     @if(count($feedback) === 0)
@@ -219,7 +221,7 @@
                         @foreach($feedback as $comment)
                             <div class="mb-3 pb-3 border-bottom">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <strong class="text-sm">{{ $comment->user?->displayName() ?? 'PAIR Staff' }}</strong>
+                                    <strong class="text-sm">{{ $comment->user?->displayName() ?? 'Review team' }}</strong>
                                     <small class="text-muted"><x-formatted-date :at="$comment->created_at" relative /></small>
                                 </div>
                                 <p class="text-sm mb-0">{{ $comment->message }}</p>
@@ -274,7 +276,7 @@
                 
                 <div id="pairFeedbackSection" class="mb-4" style="display: none;">
                     <label class="form-label fw-bold">
-                        <i class="fas fa-comments text-info"></i> PAIR updates
+                        <i class="fas fa-comments text-info"></i> Review team updates
                     </label>
                     <div class="bg-info bg-opacity-10 border border-info border-opacity-25 p-3 rounded pair-updates" id="pairFeedbackText"></div>
                 </div>
@@ -303,7 +305,7 @@
                         <input type="radio" id="rejectRadio" name="decision" value="reject">
                         <label for="rejectRadio" class="form-label">
                             <strong class="text-warning">⟲ Request Revisions</strong><br>
-                            <small class="text-muted">Send back to PAIR with feedback for improvements.</small>
+                            <small class="text-muted">Send back to the review team with feedback for improvements.</small>
                         </label>
                     </div>
 
@@ -311,7 +313,7 @@
                     <div id="rejectionNotes" style="display: none;" class="mt-3">
                         <label for="revisionNotes" class="form-label">What needs improvement?</label>
                         <textarea id="revisionNotes" class="form-control" rows="3" 
-                                  placeholder="Provide specific feedback for PAIR staff..."></textarea>
+                                  placeholder="Provide specific feedback for the review team..."></textarea>
                         <div class="invalid-feedback">
                             Feedback is required and must be at least 10 characters long.
                         </div>
@@ -337,7 +339,7 @@ function formatPairUpdates(text) {
     return text.split(/\n\s*\n/).map(function (block) {
         const lines = block.trim().split(/\r?\n/).filter(Boolean);
         if (!lines.length) return '';
-        const header = lines[0].startsWith('[PAIR') ? '<div class="fw-bold syncro-pair-header mb-1">' + escapeHtml(lines[0]) + '</div>' : '<div class="mb-1">' + escapeHtml(lines[0]) + '</div>';
+        const header = lines[0].startsWith('[PAIR') || lines[0].startsWith('[Review team') ? '<div class="fw-bold syncro-pair-header mb-1">' + escapeHtml(lines[0]) + '</div>' : '<div class="mb-1">' + escapeHtml(lines[0]) + '</div>';
         const bullets = lines.slice(1).map(function (line) {
             return '<li>' + escapeHtml(line.replace(/^•\s*/, '')) + '</li>';
         }).join('');
@@ -535,7 +537,7 @@ async function submitRejection() {
         const data = await response.json();
 
         if (data.success) {
-            alert('Feedback sent to PAIR for further enhancements.');
+            alert('Feedback sent to the review team for further updates.');
             location.reload();
         } else {
             alert('Error: ' + data.message);

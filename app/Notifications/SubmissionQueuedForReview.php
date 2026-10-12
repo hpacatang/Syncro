@@ -19,11 +19,12 @@ class SubmissionQueuedForReview extends Notification
 
     public function toArray(object $notifiable): array
     {
-        $org = $this->submission->user?->name ?? 'An organization';
+        $submitter = $this->submission->user?->displayName() ?? 'A user';
+        $team = $this->submission->reviewOwnerLabel();
 
         return [
             'title' => 'New submission to review',
-            'message' => "{$org} submitted content for PAIR (submission #{$this->submission->id}).",
+            'message' => "{$submitter} submitted content for {$team} (submission #{$this->submission->id}).",
             'submission_id' => $this->submission->id,
             'type' => 'submission_queued',
             'open_enhance' => true,

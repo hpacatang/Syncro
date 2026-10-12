@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+@php $userRoutePrefix = auth()->user()->isDepartment() ? 'department.users' : 'users'; @endphp
 <div class="container-fluid py-4">
     <div class="mb-4">
         <h2 class="mb-0"><i class="bi bi-person me-2"></i> Edit user</h2>
@@ -8,7 +9,7 @@
 
     <div class="card">
         <div class="card-body">
-            <form method="POST" action="{{ route('users.update', $user) }}">
+            <form method="POST" action="{{ route($userRoutePrefix.'.update', $user) }}">
                 @csrf
                 @method('PUT')
 
@@ -31,6 +32,7 @@
                         <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $user->email) }}" required>
                         @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
+                    @if(count($roles) > 1)
                     <div class="col-md-6">
                         <label for="role" class="form-label">Role <span class="text-danger">*</span></label>
                         <select class="form-select @error('role') is-invalid @enderror" id="role" name="role" required>
@@ -40,8 +42,12 @@
                         </select>
                         @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
+                    @else
+                        <input type="hidden" name="role" value="{{ $roles[0] }}">
+                    @endif
                 </div>
 
+                @if(!auth()->user()->isDepartment())
                 <div class="row mb-3" id="departmentField" style="{{ in_array(old('role', $user->role), ['org', 'department'], true) ? '' : 'display:none' }}">
                     <div class="col-md-6">
                         <label for="department_id" class="form-label">Department <span class="text-danger">*</span></label>
@@ -56,6 +62,7 @@
                         @error('department_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
+                @endif
 
                 <div class="row mb-4">
                     <div class="col-md-6">
@@ -71,7 +78,7 @@
 
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">Update</button>
-                    <a href="{{ route('users.index') }}" class="btn btn-secondary">Cancel</a>
+                    <a href="{{ route($userRoutePrefix.'.index') }}" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
         </div>

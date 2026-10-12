@@ -15,7 +15,7 @@ enum SubmissionLifecycleStatus: string
     {
         return match ($this) {
             self::Submitted => 'Submitted',
-            self::UnderPeerReview => 'Under PAIR Review',
+            self::UnderPeerReview => 'Under Review',
             self::Approved => 'Approved',
             self::Rejected => 'Rejected',
             self::Revised => 'Revised',
@@ -27,7 +27,7 @@ enum SubmissionLifecycleStatus: string
     public function actionLabel(): string
     {
         return match ($this) {
-            self::UnderPeerReview => 'Start PAIR review',
+            self::UnderPeerReview => 'Start review',
             self::Approved => 'Approve post',
             self::Rejected => 'Reject post',
             self::Revised => 'Send back for revision',

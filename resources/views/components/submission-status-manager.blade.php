@@ -9,7 +9,7 @@
 
 <div class="card syncro-card-elevated border-0" {{ $attributes }}>
     <div class="card-header bg-white border-bottom">
-        <h5 class="mb-0 fw-bold">PAIR workflow steps</h5>
+        <h5 class="mb-0 fw-bold">Review workflow steps</h5>
     </div>
     <div class="card-body">
         <p class="text-muted small mb-3">

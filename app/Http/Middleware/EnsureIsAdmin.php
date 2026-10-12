@@ -16,7 +16,7 @@ class EnsureIsAdmin
         }
 
         $user = Auth::user();
-        if (! $user->is_admin && ! $user->is_pair) {
+        if (! $user->isStaffReviewer()) {
             if ($request->wantsJson()) {
                 return response()->json(['message' => 'Forbidden'], 403);
             }

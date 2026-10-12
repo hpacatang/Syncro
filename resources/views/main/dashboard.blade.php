@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('page-title', 'PAIR Office Dashboard')
-@section('page-subtitle', 'Content queue & submission management')
+@section('page-title', auth()->user()->isDepartment() ? (auth()->user()->department?->displayName() ?? 'Department').' Dashboard' : 'PAIR Office Dashboard')
+@section('page-subtitle', auth()->user()->isDepartment() ? 'Department content queue & submission management' : 'School-wide content queue & submission management')
 
 @section('content')
 <div class="container-fluid px-0">
@@ -104,6 +104,7 @@
                                                     {{ $submission->user->department->displayName() }}
                                                 </span>
                                             @endif
+                                            <span class="syncro-queue__org-dept">For {{ $submission->reviewOwnerLabel() }}</span>
                                         </div>
                                         <p class="syncro-queue__caption" title="{{ $submission->original_caption }}">
                                             {{ $submission->original_caption }}

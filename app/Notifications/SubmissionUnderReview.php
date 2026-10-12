@@ -30,9 +30,9 @@ class SubmissionUnderReview extends Notification
             : 'Hello,';
 
         return (new MailMessage)
-            ->subject('Your Submission Is Now Under PAIR Review')
+            ->subject('Your Submission Is Now Under Review')
             ->greeting($greeting)
-            ->line("Great news! Submission #{$id} has been picked up by the PAIR office and is currently under review.")
+            ->line("Great news! Submission #{$id} has been picked up by your review team and is currently under review.")
             ->line('Our team will either approve or send feedback shortly. You will be notified once a decision is made.')
             ->action('View Submission', $url)
             ->line('Thank you for submitting to our platform!');
@@ -44,8 +44,8 @@ class SubmissionUnderReview extends Notification
         $id = $this->submission->id;
 
         return [
-            'title'         => 'Submission under PAIR review',
-            'message'       => "Your submission #{$id} is now being reviewed by the PAIR office.",
+            'title'         => 'Submission under review',
+            'message'       => "Your submission #{$id} is now being reviewed by your review team.",
             'submission_id' => $id,
             'type'          => 'submission_under_review',
             'url'           => route('org.submissions.review', $this->submission),

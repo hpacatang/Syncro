@@ -5,7 +5,7 @@
     
     <div class="mb-4">
         <h1 class="h3 fw-bold">Submit Content</h1>
-        <p class="text-muted">Share your content with the PAIR office for review and enhancement</p>
+        <p class="text-muted">Choose whether this submission is for your Department or the PAIR office.</p>
     </div>
 
     <div class="row justify-content-center">
@@ -18,6 +18,23 @@
                         
                         
                         <div class="mb-4">
+                            <label class="form-label fw-bold">Send this submission to</label>
+                            @if(auth()->user()->department_id)
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="review_destination" id="destinationDepartment" value="department" checked>
+                                <label class="form-check-label" for="destinationDepartment">
+                                    {{ auth()->user()->department?->displayName() ?? 'My Department' }}
+                                </label>
+                            </div>
+                            @endif
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="review_destination" id="destinationPair" value="pair" @checked(!auth()->user()->department_id)>
+                                <label class="form-check-label" for="destinationPair">PAIR — school-wide publication</label>
+                            </div>
+                            <small class="text-muted d-block mt-2">PAIR can oversee all submissions. Department submissions are reviewed by your Department.</small>
+                        </div>
+
+                        <div class="mb-4">
                             <label for="caption" class="form-label fw-bold">
                                 <i class="fas fa-file-alt text-primary"></i> Caption/Description
                             </label>
@@ -29,7 +46,7 @@
                                 placeholder="Write your post caption here. Be clear and descriptive..."
                                 required></textarea>
                             <small class="text-muted d-block mt-2">
-                                <i class="fas fa-info-circle"></i> Your caption will be reviewed and enhanced by PAIR staff
+                                <i class="fas fa-info-circle"></i> Your caption will be reviewed by the team you selected
                             </small>
                         </div>
 
@@ -84,7 +101,7 @@
             </div>
             <div class="alert alert-info mt-4 border-0">
                 <i class="fas fa-lightbulb"></i>
-                <strong>Pro Tip:</strong> The more detailed your caption, the better PAIR can enhance it. Include key details like dates, event names, and main points.
+                <strong>Pro Tip:</strong> Include key details like dates, event names, and main points to help reviewers prepare your publication.
             </div>
         </div>
     </div>
@@ -252,7 +269,7 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
             const alert = document.createElement('div');
             alert.className = 'alert alert-success alert-dismissible fade show';
             alert.innerHTML = `
-                <i class="fas fa-check-circle"></i> <strong>Success!</strong> Your submission has been sent to PAIR for review.
+                <i class="fas fa-check-circle"></i> <strong>Success!</strong> Your submission has been sent to the selected team for review.
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             form.parentElement.insertBefore(alert, form);

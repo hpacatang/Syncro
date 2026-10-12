@@ -23,6 +23,7 @@ class SubmissionController extends Controller
         try {
             $request->validate([
                 'original_caption' => 'required|string',
+                'review_destination' => 'nullable|in:pair,department',
                 'links' => 'nullable|array',
                 'media' => 'nullable|array',
                 'media.*' => [
@@ -31,6 +32,17 @@ class SubmissionController extends Controller
                         ->max(5 * 1024),
                 ],
             ]);
+
+            $reviewDestination = $request->input(
+                'review_destination',
+                $request->user()->department_id ? 'department' : 'pair'
+            );
+            if ($reviewDestination === 'department' && ! $request->user()->department_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your account must belong to a department to route submissions there.',
+                ], 422);
+            }
 
             $mediaPaths = [];
             $mediaDisk = config('filesystems.disks.supabase.key')
@@ -54,6 +66,9 @@ class SubmissionController extends Controller
 
             $submission = Submission::create([
                 'user_id' => $userId,
+                'review_department_id' => $reviewDestination === 'pair'
+                    ? null
+                    : $request->user()->department_id,
                 'original_caption' => $request->original_caption,
                 'links' => $request->links ?? [],
                 'media_paths' => $mediaPaths,
@@ -61,8 +76,17 @@ class SubmissionController extends Controller
                 'workflow_status' => 'submitted'
             ]);
 
-            User::query()
-                ->whereIn('role', ['admin', 'pair'])
+            $reviewers = User::query()->whereIn('role', ['super_admin', 'admin']);
+            if ($submission->review_department_id === null) {
+                $reviewers->orWhere('role', 'pair');
+            } else {
+                $reviewers->orWhere(function ($query) use ($submission) {
+                    $query->where('role', 'department')
+                        ->where('department_id', $submission->review_department_id);
+                });
+            }
+
+            $reviewers
                 ->each(function (User $staff) use ($submission) {
                     $staff->notify(new SubmissionQueuedForReview($submission));
                 });
@@ -382,7 +406,7 @@ class SubmissionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Feedback sent to PAIR for further enhancements.',
+                'message' => 'Feedback sent to the review team for further updates.',
                 'data' => [
                     'submission_id' => $submission->id,
                     'workflow_status' => 'revised',

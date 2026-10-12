@@ -21,7 +21,7 @@ class EnhancementReadyForOrg extends Notification
     {
         return [
             'title' => 'Caption ready for your review',
-            'message' => 'PAIR updated your submission. Please review and approve or request changes.',
+            'message' => 'The review team updated your submission. Please review and approve or request changes.',
             'submission_id' => $this->submission->id,
             'url' => route('org.submissions.review', $this->submission),
         ];

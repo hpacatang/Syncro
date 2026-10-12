@@ -52,6 +52,10 @@ class DepartmentController extends Controller
     }
 
     public function destroy(Department $department){
+        if ($department->users()->exists() || $department->reviewedSubmissions()->exists()) {
+            return redirect()->back()->with('error', 'A department with assigned users or submissions cannot be deleted.');
+        }
+
         $department->delete();
 
         // AuditLogService::logDepartmentDeletion($department);

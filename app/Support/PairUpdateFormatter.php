@@ -14,7 +14,7 @@ class PairUpdateFormatter
             $line .= ': '.trim($detail);
         }
 
-        return "[PAIR - {$who}]\n{$line}";
+        return "[Review team - {$who}]\n{$line}";
     }
 
     public static function append(?string $existing, string $block): string

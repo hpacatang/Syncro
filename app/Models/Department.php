@@ -20,6 +20,11 @@ class Department extends Model
         return $this->hasMany(User::class, 'department_id');
     }
 
+    public function reviewedSubmissions(): HasMany
+    {
+        return $this->hasMany(Submission::class, 'review_department_id');
+    }
+
     public function displayName(): string
     {
         return $this->department_short_name 

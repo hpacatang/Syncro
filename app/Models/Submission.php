@@ -12,7 +12,7 @@ class Submission extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'original_caption', 'enhanced_caption', 'links', 'media_paths', 'status',
+        'user_id', 'review_department_id', 'original_caption', 'enhanced_caption', 'links', 'media_paths', 'status',
         'enhanced_by', 'enhanced_at', 'workflow_status', 'org_review_notes', 'pair_feedback'
     ];
 
@@ -38,6 +38,18 @@ class Submission extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function reviewDepartment()
+    {
+        return $this->belongsTo(Department::class, 'review_department_id');
+    }
+
+    public function reviewOwnerLabel(): string
+    {
+        return $this->review_department_id === null
+            ? 'PAIR'
+            : ($this->reviewDepartment?->displayName() ?? 'PAIR');
     }
 
     public function enhancer()

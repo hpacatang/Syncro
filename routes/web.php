@@ -35,7 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
-    Route::middleware('role:super_admin,admin,pair')->group(function () {
+    Route::middleware('role:super_admin,admin,pair,department')->group(function () {
         Route::get('/dashboard', [MainController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/submissions', [MainController::class, 'submissions'])->name('dashboard.submissions');
         Route::get('/dashboard/submissions/{submission}/review', [SubmissionReviewController::class, 'show'])
@@ -50,7 +50,11 @@ Route::middleware('auth')->group(function () {
         Route::resource('users', UserManagementController::class);
     });
 
-    Route::middleware('role:org,department')->group(function () {
+    Route::middleware('role:department')->prefix('department')->name('department.')->group(function () {
+        Route::resource('users', UserManagementController::class)->names('users');
+    });
+
+    Route::middleware('role:org')->group(function () {
         Route::get('/org/dashboard', [MainController::class, 'orgDashboard'])->name('org.dashboard');
         Route::get('/org/submit', function () {
             return view('Submission.OrgSubmit');
@@ -68,13 +72,13 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('api')->group(function () {
-        Route::middleware('role:org,department')->group(function () {
+        Route::middleware('role:org')->group(function () {
             Route::post('/submissions', [SubmissionController::class, 'store']);
             Route::post('/submissions/{id}/org-review/approve', [SubmissionController::class, 'orgApproveEnhancement']);
             Route::post('/submissions/{id}/org-review/reject', [SubmissionController::class, 'orgRejectEnhancement']);
         });
 
-        Route::middleware('role:super_admin,admin,pair')->group(function () {
+        Route::middleware('role:super_admin,admin,pair,department')->group(function () {
             Route::post('/submissions/{id}/enhance', [SubmissionController::class, 'enhance']);
             Route::post('/submissions/{id}/save-manual-caption', [SubmissionController::class, 'saveManualCaption']);
             Route::put('/submissions/{id}/approve', [SubmissionController::class, 'approve']);

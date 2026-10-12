@@ -37,7 +37,7 @@ class SubmissionApproved extends Notification
         return (new MailMessage)
             ->subject('Your Post Has Been Approved!')
             ->greeting($greeting)
-            ->line('Great news! Your recent submission has been reviewed and approved by the PAIR office.')
+            ->line('Great news! Your recent submission has been reviewed and approved by the review team.')
             ->line("Submission #{$id} is approved and ready to post.")
             ->action('View Submission', $reviewUrl)
             ->line('Thank you for contributing to our platform!');

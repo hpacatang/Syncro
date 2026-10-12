@@ -88,7 +88,7 @@ class MainController extends Controller
             'under_review' => Submission::whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
         ];
 
-        $query = Submission::with(['user.department']);
+        $query = Submission::with(['user.department', 'reviewDepartment']);
         $filter = $this->applySubmissionFilters($query, $request, 'pending');
         $recentSubmissions = $query->limit(10)->get();
 
@@ -148,7 +148,7 @@ class MainController extends Controller
         ];
 
         $query = Submission::where('user_id', $userId)
-            ->with(['feedback.user', 'enhancer' => function ($q) {
+            ->with(['feedback.user', 'reviewDepartment', 'enhancer' => function ($q) {
                 $q->select('id', 'name');
             }]);
 

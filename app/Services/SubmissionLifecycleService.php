@@ -24,6 +24,7 @@ class SubmissionLifecycleService
     private const ROLE_TARGETS = [
         'admin' => ['approved', 'rejected', 'revised', 'posted'],
         'pair' => ['approved', 'rejected', 'revised', 'posted'],
+        'department' => ['approved', 'rejected', 'revised', 'posted'],
         'org' => ['approved', 'revised'],
     ];
 
@@ -144,6 +145,12 @@ class SubmissionLifecycleService
             $staffTargets = self::ROLE_TARGETS['admin'];
 
             return in_array($target->value, $staffTargets, true);
+        }
+
+        if ($actor->isDepartment()) {
+            return $actor->department_id !== null
+                && (int) $submission->review_department_id === (int) $actor->department_id
+                && in_array($target->value, self::ROLE_TARGETS['department'], true);
         }
 
         if ($actor->isOrg()) {

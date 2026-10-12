@@ -20,7 +20,7 @@
     const badgeLabel = {
         pending: 'Pending',
         submitted: 'Submitted',
-        under_peer_review: 'Under PAIR Review',
+        under_peer_review: 'Under Review',
         approved: 'Approved',
         rejected: 'Rejected',
         revised: 'Revised',
