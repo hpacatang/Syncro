@@ -24,6 +24,17 @@ class UserController extends Controller
         ]);
 
         if (Auth::attempt($credentials)) {
+            if (auth()->user()->account_status !== 'approved') {
+                $status = auth()->user()->account_status;
+                Auth::logout();
+
+                return back()->withErrors([
+                    'name' => $status === 'pending'
+                        ? 'Your account request is awaiting administrator approval.'
+                        : 'Your account request was not approved.',
+                ])->onlyInput('name');
+            }
+
             $request->session()->regenerate();
 
             AuditLogService::logLogin();
@@ -74,12 +85,13 @@ class UserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => 'org',
+            'account_status' => 'pending',
             'department_id' => $validated['department_id'],
         ]);
 
         return redirect()->route('login')->with(
             'info',
-            'Organization registered. Sign in with your username and password.'
+            'Your account request was submitted. You can sign in after an administrator approves it.'
         );
     }
 

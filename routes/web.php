@@ -50,6 +50,12 @@ Route::middleware('auth')->group(function () {
         Route::resource('users', UserManagementController::class);
     });
 
+    Route::middleware('role:super_admin,admin')->prefix('account-requests')->name('account-requests.')->group(function () {
+        Route::get('/', [UserManagementController::class, 'accountRequests'])->name('index');
+        Route::post('/{user}/approve', [UserManagementController::class, 'approveAccountRequest'])->name('approve');
+        Route::post('/{user}/reject', [UserManagementController::class, 'rejectAccountRequest'])->name('reject');
+    });
+
     Route::middleware('role:department')->prefix('department')->name('department.')->group(function () {
         Route::resource('users', UserManagementController::class)->names('users');
     });
@@ -65,6 +71,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/org/notifications', [NotificationController::class, 'index'])->name('org.notifications');
     });
 
+    Route::middleware('role:department')->group(function () {
+        Route::get('/department/submit', function () {
+            return view('Submission.OrgSubmit');
+        })->name('department.submit');
+    });
+
     Route::middleware('isAdmin')->group(function () {
         Route::get('/dashboard/media-gallery', [StaffToolsController::class, 'mediaGallery'])->name('staff.media-gallery');
         Route::get('/dashboard/caption-assist', [StaffToolsController::class, 'captionAssist'])->name('staff.caption-assist');
@@ -72,7 +84,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('api')->group(function () {
-        Route::middleware('role:org')->group(function () {
+        Route::middleware('role:org,department')->group(function () {
             Route::post('/submissions', [SubmissionController::class, 'store']);
             Route::post('/submissions/{id}/org-review/approve', [SubmissionController::class, 'orgApproveEnhancement']);
             Route::post('/submissions/{id}/org-review/reject', [SubmissionController::class, 'orgRejectEnhancement']);

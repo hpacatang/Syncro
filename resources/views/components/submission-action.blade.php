@@ -1,7 +1,8 @@
 @props(['submission'])
 
 @php
-    $isOwnerOrg = auth()->user()->canSubmitPosts() && (int) $submission->user_id === (int) auth()->id();
+    $isSubmissionOwner = auth()->user()->canSubmitPosts() && (int) $submission->user_id === (int) auth()->id();
+    $isOrgOwner = auth()->user()->isOrg() && $isSubmissionOwner;
     $isStaff    = auth()->user()->isStaffReviewer();
     $wfStatus   = $submission->workflow_status;
     $statusBadge = match($wfStatus) {
@@ -13,7 +14,7 @@
         'posted'            => 'badge bg-primary',
         default             => 'badge bg-secondary',
     };
-    $isAwaitingOrgReview = ($wfStatus === 'under_peer_review') && $submission->enhanced_caption;
+    $isAwaitingOrgReview = $isOrgOwner && ($wfStatus === 'under_peer_review') && $submission->enhanced_caption;
 @endphp
 
 <div {{ $attributes->merge(['class' => 'card syncro-card-elevated border-0']) }}>
@@ -22,7 +23,7 @@
     </div>
     <div class="card-body">
 
-        @if($isOwnerOrg)
+        @if($isSubmissionOwner)
 
             
             <p class="text-muted small mb-3">
@@ -98,7 +99,7 @@
                     <i class="bi bi-x-circle-fill me-1"></i>
                     This submission was <strong>not approved</strong>. You may resubmit with changes.
                 </div>
-                <a href="{{ route('org.submit') }}" class="btn btn-primary btn-sm w-100 mb-2">
+                <a href="{{ route(auth()->user()->isOrg() ? 'org.submit' : 'department.submit') }}" class="btn btn-primary btn-sm w-100 mb-2">
                     <i class="bi bi-plus me-1"></i> New Submission
                 </a>
             @elseif($wfStatus === 'revised')
@@ -113,7 +114,7 @@
                 </div>
             @endif
 
-            <a href="{{ route('org.submissions.review', $submission) }}"
+            <a href="{{ route(auth()->user()->isOrg() ? 'org.submissions.review' : 'dashboard.submissions.review', $submission) }}"
                class="btn btn-outline-primary w-100 btn-sm {{ $isAwaitingOrgReview ? 'mt-1' : '' }}">
                 <i class="bi bi-arrow-up-right-square me-1"></i> Open Full Review Page
             </a>

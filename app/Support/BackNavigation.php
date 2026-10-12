@@ -31,7 +31,7 @@ class BackNavigation
     {
         $user = $user ?? auth()->user();
         $route = request()->route()?->getName() ?? '';
-        $dashboard = $user?->canSubmitPosts() ? route('org.dashboard') : route('dashboard');
+        $dashboard = $user?->isOrg() ? route('org.dashboard') : route('dashboard');
 
         $map = [
             'dashboard.submissions.review' => [
@@ -51,6 +51,10 @@ class BackNavigation
                 'label' => 'Back to dashboard',
             ],
             'org.submit' => [
+                'href' => $dashboard,
+                'label' => 'Back to dashboard',
+            ],
+            'department.submit' => [
                 'href' => $dashboard,
                 'label' => 'Back to dashboard',
             ],
@@ -114,7 +118,7 @@ class BackNavigation
         ) {
             $previousPath = parse_url($previous, PHP_URL_PATH) ?: '/';
 
-            if ($user?->canSubmitPosts() && self::isStaffArea($previousPath)) {
+            if ($user?->isOrg() && self::isStaffArea($previousPath)) {
                 return ['href' => $dashboard, 'label' => 'Back to dashboard'];
             }
 

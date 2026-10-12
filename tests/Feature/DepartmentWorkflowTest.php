@@ -34,6 +34,40 @@ class DepartmentWorkflowTest extends TestCase
         $this->assertNull($pairSubmission['review_department_id']);
     }
 
+    public function test_department_account_can_submit_only_to_pair(): void
+    {
+        $department = $this->createDepartment('School of Engineering');
+        $departmentAccount = User::factory()->department()->create([
+            'department_id' => $department->id,
+        ]);
+
+        $this->actingAs($departmentAccount)
+            ->get(route('department.submit'))
+            ->assertOk()
+            ->assertSee('PAIR oversees official university publications')
+            ->assertDontSee('destinationDepartment');
+
+        $submission = $this->actingAs($departmentAccount)
+            ->postJson('/api/submissions', [
+                'original_caption' => 'University-wide announcement',
+                'review_destination' => 'department',
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $this->assertSame($departmentAccount->id, $submission['user_id']);
+        $this->assertNull($submission['review_department_id']);
+
+        $this->actingAs($departmentAccount)
+            ->getJson('/api/submissions')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $submission['id']);
+
+        $this->actingAs($departmentAccount)
+            ->postJson('/api/submissions/'.$submission['id'].'/transition', ['status' => 'approved'])
+            ->assertForbidden();
+    }
+
     public function test_department_reviewer_can_review_only_submissions_routed_to_their_department(): void
     {
         $department = $this->createDepartment('School of Engineering');
@@ -44,6 +78,7 @@ class DepartmentWorkflowTest extends TestCase
         $submission = Submission::factory()->submitted()->create([
             'user_id' => $student->id,
             'review_department_id' => $department->id,
+            'original_caption' => 'Department queue caption',
         ]);
         $otherSubmission = Submission::factory()->submitted()->create([
             'user_id' => $otherStudent->id,
@@ -57,6 +92,11 @@ class DepartmentWorkflowTest extends TestCase
         $this->actingAs($reviewer)
             ->get(route('dashboard.submissions.review', $submission))
             ->assertOk();
+
+        $this->actingAs($reviewer)
+            ->get(route('dashboard.submissions'))
+            ->assertOk()
+            ->assertSee('Department queue caption');
 
         $this->actingAs($reviewer)
             ->postJson('/api/submissions/'.$submission->id.'/transition', ['status' => 'approved'])

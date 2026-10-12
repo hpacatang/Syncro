@@ -5,7 +5,7 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <h2 class="mb-0">Submissions Overview</h2>
         @if(auth()->user()->canSubmitPosts())
-            <a href="{{ route('org.submit') }}" class="btn btn-primary btn-sm">
+            <a href="{{ route(auth()->user()->isOrg() ? 'org.submit' : 'department.submit') }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-lg"></i> New submission
             </a>
         @endif
@@ -14,12 +14,12 @@
     <div class="card shadow-sm mb-3">
         <div class="card-body py-3">
             <x-submission-filters
-                :action="auth()->user()->canSubmitPosts() ? route('org.submissions') : route('dashboard.submissions')"
+                :action="auth()->user()->isOrg() ? route('org.submissions') : route('dashboard.submissions')"
                 :current-filter="$currentFilter"
                 :current-search="$currentSearch ?? ''"
                 :current-sort="$currentSort ?? 'created_at'"
                 :current-order="$currentOrder ?? 'desc'"
-                :variant="auth()->user()->canSubmitPosts() ? 'org' : 'admin'"
+                :variant="auth()->user()->isOrg() ? 'org' : 'admin'"
                 :show-sort="true"
             />
         </div>
@@ -50,7 +50,7 @@
                             </td>
                             <td><x-formatted-date :at="$sub->created_at" format="M d, Y h:i A" /></td>
                             <td class="pe-4 text-end">
-                                @if(auth()->user()->canSubmitPosts())
+                                @if(auth()->user()->isOrg())
                                     <a href="{{ route('org.submissions.review', $sub) }}" class="btn btn-sm btn-primary"><i class="bi bi-eye me-1"></i> Review</a>
                                 @else
                                     <a href="{{ route('dashboard.submissions.review', $sub) }}" class="btn btn-sm btn-primary"><i class="bi bi-eye me-1"></i> Review</a>

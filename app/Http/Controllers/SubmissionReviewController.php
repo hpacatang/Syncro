@@ -9,6 +9,7 @@ use App\Submission\Enums\SubmissionLifecycleStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class SubmissionReviewController extends Controller
@@ -17,7 +18,7 @@ class SubmissionReviewController extends Controller
     {
         $user = $request->user();
 
-        if ($user->canSubmitPosts() && (int) $submission->user_id !== (int) $user->id) {
+        if ($user->isOrg() && (int) $submission->user_id !== (int) $user->id) {
             return redirect()
                 ->route('org.submissions')
                 ->with('error', 'You can only review your own submissions.');
@@ -29,7 +30,9 @@ class SubmissionReviewController extends Controller
 
         
         
-        if ($user->isStaffReviewer() && $submission->workflow_status === SubmissionLifecycleStatus::Submitted->value) {
+        if ($user->isStaffReviewer()
+            && Gate::allows('reviewAsStaff', $submission)
+            && $submission->workflow_status === SubmissionLifecycleStatus::Submitted->value) {
             try {
                 $submission = $lifecycle->systemTransition($submission, SubmissionLifecycleStatus::UnderPeerReview);
 

@@ -108,7 +108,7 @@ class SubmissionLifecycleController extends Controller
             'id', 'workflow_status', 'status', 'updated_at', 'user_id',
         ]);
 
-        if ($request->user()->canSubmitPosts()) {
+        if ($request->user()->isOrg()) {
             $query->where('user_id', $request->user()->id);
         }
 

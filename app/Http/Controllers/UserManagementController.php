@@ -13,6 +13,46 @@ class UserManagementController extends Controller
 {
     private const CREATABLE_ROLES = ['department', 'pair'];
 
+    public function accountRequests()
+    {
+        $users = User::with('department')
+            ->where('account_status', 'pending')
+            ->orderBy('created_at')
+            ->paginate(20);
+
+        return view('Users.AccountRequests', ['users' => $users]);
+    }
+
+    public function approveAccountRequest(User $user)
+    {
+        abort_unless($user->role === 'org', 404);
+        if ($user->account_status !== 'pending') {
+            return back()->with('error', 'This account request has already been reviewed.');
+        }
+
+        $user->update(['account_status' => 'approved']);
+        AuditLogService::logUserUpdated($user->id, [
+            'account_status' => ['old' => 'pending', 'new' => 'approved'],
+        ]);
+
+        return back()->with('success', 'Account request approved.');
+    }
+
+    public function rejectAccountRequest(User $user)
+    {
+        abort_unless($user->role === 'org', 404);
+        if ($user->account_status !== 'pending') {
+            return back()->with('error', 'This account request has already been reviewed.');
+        }
+
+        $user->update(['account_status' => 'rejected']);
+        AuditLogService::logUserUpdated($user->id, [
+            'account_status' => ['old' => 'pending', 'new' => 'rejected'],
+        ]);
+
+        return back()->with('success', 'Account request rejected.');
+    }
+
     public function index(Request $request)
     {
         $query = User::with('department')->orderBy('name');
@@ -20,7 +60,8 @@ class UserManagementController extends Controller
 
         if ($departmentManager) {
             $query->where('role', 'org')
-                ->where('department_id', $request->user()->department_id);
+                ->where('department_id', $request->user()->department_id)
+                ->where('account_status', 'approved');
         }
 
         if ($request->filled('search')) {
@@ -236,7 +277,10 @@ class UserManagementController extends Controller
 
         $departmentId = $request->user()->department_id;
         abort_unless(
-            $departmentId !== null && $user->isOrg() && (int) $user->department_id === (int) $departmentId,
+            $departmentId !== null
+                && $user->isOrg()
+                && $user->account_status === 'approved'
+                && (int) $user->department_id === (int) $departmentId,
             404
         );
     }

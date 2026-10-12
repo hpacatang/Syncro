@@ -20,23 +20,22 @@ class SubmissionController extends Controller
     {
         $this->authorize('create', Submission::class);
 
-        try {
-            $request->validate([
-                'original_caption' => 'required|string',
-                'review_destination' => 'nullable|in:pair,department',
-                'links' => 'nullable|array',
-                'media' => 'nullable|array',
-                'media.*' => [
-                    'file',
-                    File::types(['jpg', 'jpeg', 'png', 'webp', 'gif', 'doc', 'docx', 'pdf', 'txt'])
-                        ->max(5 * 1024),
-                ],
-            ]);
+        $validated = $request->validate([
+            'original_caption' => 'required|string',
+            'review_destination' => 'nullable|in:pair,department',
+            'links' => 'nullable|array',
+            'media' => 'nullable|array',
+            'media.*' => [
+                'file',
+                File::types(['jpg', 'jpeg', 'png', 'webp', 'gif', 'doc', 'docx', 'pdf', 'txt'])
+                    ->max(5 * 1024),
+            ],
+        ]);
 
-            $reviewDestination = $request->input(
-                'review_destination',
-                $request->user()->department_id ? 'department' : 'pair'
-            );
+        try {
+            $reviewDestination = $request->user()->isDepartment()
+                ? 'pair'
+                : ($validated['review_destination'] ?? ($request->user()->department_id ? 'department' : 'pair'));
             if ($reviewDestination === 'department' && ! $request->user()->department_id) {
                 return response()->json([
                     'success' => false,
@@ -69,8 +68,8 @@ class SubmissionController extends Controller
                 'review_department_id' => $reviewDestination === 'pair'
                     ? null
                     : $request->user()->department_id,
-                'original_caption' => $request->original_caption,
-                'links' => $request->links ?? [],
+                'original_caption' => $validated['original_caption'],
+                'links' => $validated['links'] ?? [],
                 'media_paths' => $mediaPaths,
                 'status' => 'pending',
                 'workflow_status' => 'submitted'
@@ -101,8 +100,7 @@ class SubmissionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create submission',
-                'error' => $e->getMessage()
-            ], 422);
+            ], 500);
         }
     }
 

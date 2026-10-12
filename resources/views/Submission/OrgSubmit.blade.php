@@ -5,7 +5,13 @@
     
     <div class="mb-4">
         <h1 class="h3 fw-bold">Submit Content</h1>
-        <p class="text-muted">Choose whether this submission is for your Department or the PAIR office.</p>
+        <p class="text-muted">
+            @if(auth()->user()->isDepartment())
+                Submit university-wide content to PAIR for publication.
+            @else
+                Choose whether this submission is for your Department or the PAIR office.
+            @endif
+        </p>
     </div>
 
     <div class="row justify-content-center">
@@ -19,7 +25,7 @@
                         
                         <div class="mb-4">
                             <label class="form-label fw-bold">Send this submission to</label>
-                            @if(auth()->user()->department_id)
+                            @if(auth()->user()->department_id && !auth()->user()->isDepartment())
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="review_destination" id="destinationDepartment" value="department" checked>
                                 <label class="form-check-label" for="destinationDepartment">
@@ -28,10 +34,16 @@
                             </div>
                             @endif
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="review_destination" id="destinationPair" value="pair" @checked(!auth()->user()->department_id)>
+                                <input class="form-check-input" type="radio" name="review_destination" id="destinationPair" value="pair" @checked(auth()->user()->isDepartment() || !auth()->user()->department_id) @if(auth()->user()->isDepartment()) required @endif>
                                 <label class="form-check-label" for="destinationPair">PAIR — school-wide publication</label>
                             </div>
-                            <small class="text-muted d-block mt-2">PAIR can oversee all submissions. Department submissions are reviewed by your Department.</small>
+                            <small class="text-muted d-block mt-2">
+                                @if(auth()->user()->isDepartment())
+                                    PAIR oversees official university publications on the website and social media.
+                                @else
+                                    PAIR can oversee all submissions. Department submissions are reviewed by your Department.
+                                @endif
+                            </small>
                         </div>
 
                         <div class="mb-4">
@@ -94,7 +106,7 @@
                             <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
                                 <i class="fas fa-paper-plane"></i> Submit for Review
                             </button>
-                            <a href="{{ route('org.dashboard') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+                            <a href="{{ route(auth()->user()->isDepartment() ? 'dashboard' : 'org.dashboard') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
                         </div>
                     </form>
                 </div>
@@ -259,6 +271,7 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
             method: 'POST',
             body: formData,
             headers: {
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="_token"]')?.value
             }
         });
@@ -278,7 +291,7 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
             mediaPreview.innerHTML = '';
 
             setTimeout(() => {
-                window.location.href = "{{ route('org.dashboard') }}";
+                window.location.href = "{{ route(auth()->user()->isDepartment() ? 'dashboard' : 'org.dashboard') }}";
             }, 2000);
         } else {
             alert('Error: ' + data.message);

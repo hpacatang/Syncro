@@ -14,7 +14,7 @@
 <body class="syncro-app">
 @auth
     @php
-        $isSubmitter = auth()->user()->canSubmitPosts();
+        $isSubmitter = auth()->user()->isOrg();
         $dashRoute = $isSubmitter ? 'org.dashboard' : 'dashboard';
         $subRoute = $isSubmitter ? 'org.submit' : 'dashboard.submissions';
         $notifRoute = $isSubmitter ? 'org.notifications' : 'dashboard.notifications';
@@ -28,8 +28,12 @@
             $navItems[] = ['route' => 'departments.index', 'match' => ['departments.*'], 'icon' => 'bi-building', 'label' => 'Departments'];
             $navItems[] = ['route' => 'users.index', 'match' => ['users.*'], 'icon' => 'bi-people', 'label' => 'Users'];
         }
+        if (auth()->user()->isAdmin()) {
+            $navItems[] = ['route' => 'account-requests.index', 'match' => ['account-requests.*'], 'icon' => 'bi-person-check', 'label' => 'Account requests'];
+        }
         if (auth()->user()->isDepartment()) {
             $navItems[] = ['route' => 'department.users.index', 'match' => ['department.users.*'], 'icon' => 'bi-people', 'label' => 'Department users'];
+            $navItems[] = ['route' => 'department.submit', 'match' => ['department.submit'], 'icon' => 'bi-send', 'label' => 'Submit to PAIR'];
         }
     @endphp
 

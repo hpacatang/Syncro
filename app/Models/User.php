@@ -18,6 +18,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'account_status',
         'department_id',
     ];
 
@@ -53,8 +54,8 @@ class User extends Authenticatable
             'super_admin' => 'Super Admin',
             'admin' => 'Admin',
             'pair' => 'PAIR',
-            'department' => 'Department',
-            'org' => 'Organization',
+            'department' => 'Department Account',
+            'org' => 'Student',
             default => ucfirst((string) $this->role),
         };
     }
@@ -94,7 +95,7 @@ class User extends Authenticatable
 
     public function canSubmitPosts(): bool
     {
-        return $this->isOrg();
+        return $this->isOrg() || $this->isDepartment();
     }
 
     public function isStaffReviewer(): bool
@@ -104,6 +105,10 @@ class User extends Authenticatable
 
     public function homeRoute(): string
     {
+        if ($this->isDepartment()) {
+            return 'dashboard';
+        }
+
         if ($this->canSubmitPosts()) {
             return 'org.dashboard';
         }

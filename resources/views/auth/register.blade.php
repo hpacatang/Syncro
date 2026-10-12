@@ -268,8 +268,8 @@
             <!-- Brand Header -->
             <div class="brand-header">
                 <h1><i class="fas fa-sync"></i> Syncro</h1>
-                <p class="subtitle">Organization registration</p>
-                <p class="text-muted small">PAIR and department accounts are created by the super admin.</p>
+                <p class="subtitle">Request an account</p>
+                <p class="text-muted small">Your request will be reviewed by an administrator before you can sign in.</p>
             </div>
 
             <!-- Register Form -->
@@ -279,7 +279,7 @@
                 <!-- Display name -->
                 <div class="form-group">
                     <label for="profile_name" class="form-label">
-                        <i class="fas fa-id-badge"></i> Organization name
+                        <i class="fas fa-id-badge"></i> Your name
                     </label>
                     <input
                         id="profile_name"
@@ -287,7 +287,7 @@
                         class="form-control @error('profile_name') is-invalid @enderror"
                         name="profile_name"
                         value="{{ old('profile_name') }}"
-                        placeholder="e.g. Student Council"
+                        placeholder="Your full name"
                         required>
                     @error('profile_name')
                         <div class="error-message">
@@ -320,14 +320,14 @@
                 <!-- Department -->
                 <div class="form-group">
                     <label for="department_id" class="form-label">
-                        <i class="fas fa-building"></i> Department
+                        <i class="fas fa-building"></i> School / Department
                     </label>
                     <select
                         id="department_id"
                         name="department_id"
                         class="form-control @error('department_id') is-invalid @enderror"
                         required>
-                        <option value="">— Select your department —</option>
+                        <option value="">                        — Select your school or department —</option>
                         @foreach($departments as $department)
                             <option value="{{ $department->id }}" {{ (string) old('department_id') === (string) $department->id ? 'selected' : '' }}>
                                 {{ $department->displayName() }}
@@ -340,7 +340,7 @@
                         </div>
                     @enderror
                     @if($departments->isEmpty())
-                        <p class="text-danger small mt-2 mb-0">No departments are available yet. Ask the super admin to add department accounts first.</p>
+                        <p class="text-danger small mt-2 mb-0">No schools or departments are available yet. Please contact an administrator.</p>
                     @endif
                 </div>
 
@@ -409,7 +409,7 @@
 
                 <!-- Submit Button -->
                 <button type="submit" class="btn btn-register w-100" @if($departments->isEmpty()) disabled @endif>
-                    <i class="fas fa-user-plus"></i> Register organization
+                    <i class="fas fa-user-plus"></i> Request account
                 </button>
             </form>
 

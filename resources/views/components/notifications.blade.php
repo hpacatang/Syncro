@@ -2,7 +2,7 @@
 
 @auth
     @php
-        $notifListRoute = auth()->user()->canSubmitPosts() ? route('org.notifications') : route('dashboard.notifications');
+        $notifListRoute = auth()->user()->isOrg() ? route('org.notifications') : route('dashboard.notifications');
         $initialUnread = auth()->user()->unreadNotifications()->count();
     @endphp
 

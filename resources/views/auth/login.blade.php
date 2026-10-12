@@ -251,6 +251,10 @@
             <form method="POST" action="/authenticate" class="auth-form">
                 @csrf
 
+                @if(session('info'))
+                    <div class="alert alert-info" role="status">{{ session('info') }}</div>
+                @endif
+
                 <!-- Username -->
                 <div class="form-group">
                     <label for="name" class="form-label">

@@ -19,8 +19,9 @@ class SubmissionPolicy
         }
 
         if ($user->isDepartment()) {
-            return $user->department_id !== null
-                && (int) $submission->review_department_id === (int) $user->department_id;
+            return (int) $submission->user_id === (int) $user->id
+                || ($user->department_id !== null
+                    && (int) $submission->review_department_id === (int) $user->department_id);
         }
 
         return $user->canSubmitPosts() && (int) $submission->user_id === (int) $user->id;
@@ -43,12 +44,17 @@ class SubmissionPolicy
 
     public function transition(User $user, Submission $submission): bool
     {
-        return $user->isStaffReviewer() && $this->view($user, $submission);
+        return $this->reviewAsStaff($user, $submission);
     }
 
     public function reviewAsStaff(User $user, Submission $submission): bool
     {
-        return $user->isStaffReviewer() && $this->view($user, $submission);
+        if ($user->isDepartment()) {
+            return $user->department_id !== null
+                && (int) $submission->review_department_id === (int) $user->department_id;
+        }
+
+        return ($user->isAdmin() || $user->isPair()) && $this->view($user, $submission);
     }
 
     public function reviewAsOrg(User $user, Submission $submission): bool

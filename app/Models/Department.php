@@ -20,6 +20,16 @@ class Department extends Model
         return $this->hasMany(User::class, 'department_id');
     }
 
+    public function departmentAccounts(): HasMany
+    {
+        return $this->users()->where('role', 'department');
+    }
+
+    public function students(): HasMany
+    {
+        return $this->users()->where('role', 'org');
+    }
+
     public function reviewedSubmissions(): HasMany
     {
         return $this->hasMany(Submission::class, 'review_department_id');

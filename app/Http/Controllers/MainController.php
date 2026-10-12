@@ -105,7 +105,7 @@ class MainController extends Controller
     {
         $query = Submission::with('user');
 
-        if ($request->user()->canSubmitPosts()) {
+        if ($request->user()->isOrg()) {
             $query->where('user_id', $request->user()->id);
         }
 

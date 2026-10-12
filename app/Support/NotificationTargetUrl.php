@@ -18,7 +18,7 @@ class NotificationTargetUrl
         if ($submissionId) {
             $submission = Submission::find($submissionId);
             if ($submission) {
-                if ($user->canSubmitPosts()) {
+                if ($user->isOrg()) {
                     return route('org.submissions.review', $submission);
                 }
 
@@ -41,7 +41,7 @@ class NotificationTargetUrl
             return $data['url'];
         }
 
-        return $user->canSubmitPosts()
+        return $user->isOrg()
             ? route('org.notifications')
             : route('dashboard.notifications');
     }
