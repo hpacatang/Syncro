@@ -15,6 +15,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'profile_name',
+        'profile_photo_path',
         'email',
         'password',
         'role',
@@ -46,6 +47,13 @@ class User extends Authenticatable
     public function displayName(): string
     {
         return $this->profile_name ?: $this->name;
+    }
+
+    public function profilePhotoUrl(): ?string
+    {
+        return $this->profile_photo_path
+            ? \App\Support\SubmissionMedia::url($this->profile_photo_path)
+            : null;
     }
 
     public function roleLabel(): string

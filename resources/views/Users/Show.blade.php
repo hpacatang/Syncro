@@ -27,7 +27,7 @@
                         <p>{{ $user->department->displayName() }}</p>
                     @endif
                     @if($user->role === 'department' && $user->organizations->isNotEmpty())
-                        <h6 class="text-muted">Registered organizations</h6>
+                        <h6 class="text-muted">Registered students</h6>
                         <ul class="mb-0">
                             @foreach($user->organizations as $org)
                                 <li>{{ $org->displayName() }}</li>

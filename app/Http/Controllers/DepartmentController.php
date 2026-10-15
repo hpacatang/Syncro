@@ -8,8 +8,17 @@ use App\Models\User;
 use app\Services\AuditLogService;
 class DepartmentController extends Controller
 {
-    public function index(){
-        $departments = Department::orderBy('department_name')->paginate(10);
+    public function index(Request $request){
+        $query = Department::orderBy('department_name');
+        if ($request->filled('search')) {
+            $search = $request->string('search')->trim()->toString();
+            $query->where(function ($departmentQuery) use ($search) {
+                $departmentQuery->where('department_name', 'like', "%{$search}%")
+                    ->orWhere('department_short_name', 'like', "%{$search}%");
+            });
+        }
+
+        $departments = $query->paginate(10)->withQueryString();
         return view('departments.index', compact('departments'));
     }
 

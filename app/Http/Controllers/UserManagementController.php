@@ -77,7 +77,7 @@ class UserManagementController extends Controller
             $query->where('role', $request->role);
         }
 
-        $users = $query->paginate(20);
+        $users = $query->paginate(20)->withQueryString();
 
         if ($request->wantsJson()) {
             return response()->json($users);

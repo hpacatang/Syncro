@@ -24,7 +24,7 @@
     }
 @endphp
 
-<form method="GET" action="{{ $action }}" class="submission-filters {{ $compact ? 'submission-filters--compact' : '' }}">
+<form method="GET" action="{{ $action }}" class="submission-filters {{ $compact ? 'submission-filters--compact' : '' }}" data-debounce-search="450">
     <div class="row g-2 align-items-end">
         <div class="{{ $showSort ? 'col-md-3' : 'col-md-4' }} col-sm-6">
             <label for="filter-status" class="form-label small text-muted mb-1">Status</label>
@@ -37,7 +37,7 @@
         <div class="{{ $showSort ? 'col-md-3' : 'col-md-5' }} col-sm-6">
             <label for="filter-search" class="form-label small text-muted mb-1">Search</label>
             <input type="search" name="q" id="filter-search" class="form-control form-control-sm"
-                value="{{ $currentSearch }}" placeholder="{{ $isOrg ? 'Search captions…' : 'Org name or caption…' }}">
+                value="{{ $currentSearch }}" data-debounce-search-field data-submitted-value="{{ $currentSearch }}" placeholder="{{ $isOrg ? 'Search captions…' : 'Org name or caption…' }}">
         </div>
         @if($showSort)
             <div class="col-md-2 col-sm-6">

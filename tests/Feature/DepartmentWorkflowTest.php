@@ -146,6 +146,7 @@ class DepartmentWorkflowTest extends TestCase
         $this->actingAs($manager)
             ->get(route('department.users.index'))
             ->assertOk()
+            ->assertSee('data-debounce-search-field', false)
             ->assertSee($student->name)
             ->assertDontSee($otherStudent->name);
 
@@ -177,6 +178,25 @@ class DepartmentWorkflowTest extends TestCase
         $created = User::where('name', 'new-engineering-student')->firstOrFail();
         $this->assertSame('org', $created->role);
         $this->assertSame($department->id, $created->department_id);
+    }
+
+    public function test_super_admin_can_search_departments_by_name_or_short_name(): void
+    {
+        $this->createDepartment('School of Engineering');
+        $this->createDepartment('School of Business');
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+
+        $this->actingAs($superAdmin)
+            ->get(route('departments.index', ['search' => 'Engineering']))
+            ->assertOk()
+            ->assertSee('School of Engineering')
+            ->assertDontSee('School of Business');
+
+        $this->actingAs($superAdmin)
+            ->get(route('departments.index', ['search' => 'SB']))
+            ->assertOk()
+            ->assertSee('School of Business')
+            ->assertDontSee('School of Engineering');
     }
 
     private function createDepartment(string $name): Department

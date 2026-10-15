@@ -18,6 +18,7 @@ class DefenseReadinessTest extends TestCase
         $submission = Submission::factory()->submitted()->create(['user_id' => $org->id]);
 
         $this->actingAs($admin)->get(route('dashboard'))->assertOk();
+        $this->actingAs($admin)->get(route('profile'))->assertOk();
         $this->actingAs($admin)->get(route('dashboard.submissions'))->assertOk();
         $this->actingAs($admin)->get(route('dashboard.notifications'))->assertOk();
         $this->actingAs($admin)->get(route('staff.media-gallery'))->assertOk();

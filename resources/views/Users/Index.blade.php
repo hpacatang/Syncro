@@ -14,10 +14,10 @@
 
     <div class="card mb-4">
         <div class="card-body">
-            <form method="GET" class="row g-3">
+            <form method="GET" class="row g-3" data-debounce-search="450">
                 <div class="col-md-6">
                     <label for="search" class="form-label">Search</label>
-                    <input type="text" name="search" id="search" class="form-control" placeholder="Name, profile, or email" value="{{ request('search') }}">
+                    <input type="search" name="search" id="search" class="form-control" placeholder="Name, profile, or email" value="{{ request('search') }}" data-debounce-search-field data-submitted-value="{{ request('search') }}">
                 </div>
                 <div class="col-md-4">
                     <label for="role" class="form-label">Role</label>
@@ -25,7 +25,7 @@
                         <option value="">All roles</option>
                         <option value="department" {{ request('role') === 'department' ? 'selected' : '' }}>Department</option>
                         <option value="pair" {{ request('role') === 'pair' ? 'selected' : '' }}>PAIR</option>
-                        <option value="org" {{ request('role') === 'org' ? 'selected' : '' }}>Organization</option>
+                        <option value="org" {{ request('role') === 'org' ? 'selected' : '' }}>Student</option>
                         <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>Admin</option>
                         <option value="super_admin" {{ request('role') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
                     </select>

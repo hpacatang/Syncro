@@ -16,10 +16,10 @@
 
     <div class="card mb-4">
         <div class="card-body">
-            <form method="GET" class="row g-3">
+            <form method="GET" class="row g-3" data-debounce-search="450">
                 <div class="col-md-8">
                     <label for="search" class="form-label">Search</label>
-                    <input type="text" name="search" id="search" class="form-control" placeholder="Department name or short name" value="{{ request('search') }}">
+                    <input type="search" name="search" id="search" class="form-control" placeholder="Department name or short name" value="{{ request('search') }}" data-debounce-search-field data-submitted-value="{{ request('search') }}">
                 </div>
                 <div class="col-md-4 d-flex align-items-end gap-2">
                     <button type="submit" class="btn btn-primary w-100">Search</button>
@@ -36,7 +36,7 @@
                     <tr>
                         <th>Department name</th>
                         <th>Short name</th>
-                        <th>Organizations</th>
+                        <th>Users</th>
                         <th>Created</th>
                         <th></th>
                     </tr>

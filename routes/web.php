@@ -26,6 +26,9 @@ Route::post('store', [UserController::class, 'store'])->name('store');
 Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/profile', [UserController::class, 'profile'])->name('profile');
+    Route::put('/profile', [UserController::class, 'updateProfile'])->name('profile.update');
+
     Route::get('/submission-media/{path}', [SubmissionMediaController::class, 'show'])
         ->where('path', '.*')
         ->name('submission.media');
