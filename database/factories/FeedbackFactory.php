@@ -47,7 +47,7 @@ class FeedbackFactory extends Factory
     public function fromPair(): static
     {
         return $this->state(fn (array $attributes) => [
-            'user_id' => User::factory()->create(['role' => 'pair']),
+            'user_id' => User::factory()->pair(),
         ]);
     }
 
@@ -57,7 +57,14 @@ class FeedbackFactory extends Factory
     public function fromOrg(): static
     {
         return $this->state(fn (array $attributes) => [
-            'user_id' => User::factory()->create(['role' => 'org']),
+            'user_id' => User::factory()->org(),
+        ]);
+    }
+
+    public function fromDepartment(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => User::factory()->department(),
         ]);
     }
 }

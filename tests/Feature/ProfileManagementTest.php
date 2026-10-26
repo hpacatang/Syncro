@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Department;
+use App\Models\Media;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -50,6 +51,11 @@ class ProfileManagementTest extends TestCase
         $this->assertSame($department->id, $user->department_id);
         Storage::disk('public')->assertExists($user->profile_photo_path);
         $this->assertStringContainsString('submission-media', $user->profilePhotoUrl());
+        $this->assertDatabaseHas('media', [
+            'uploaded_by' => $user->id,
+            'purpose' => 'profile_photo',
+            'path' => $user->profile_photo_path,
+        ]);
 
         $oldPhotoPath = $user->profile_photo_path;
         $this->actingAs($user)
@@ -63,6 +69,10 @@ class ProfileManagementTest extends TestCase
 
         $this->assertNull($user->fresh()->profile_photo_path);
         Storage::disk('public')->assertMissing($oldPhotoPath);
+        $this->assertFalse(Media::where('uploaded_by', $user->id)
+            ->where('purpose', 'profile_photo')
+            ->where('path', $oldPhotoPath)
+            ->exists());
     }
 
     public function test_password_change_requires_the_current_password(): void

@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Department;
 use App\Models\Feedback;
 use App\Models\Submission;
 use App\Models\User;
-use App\Models\Department;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -16,27 +16,32 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        User::create([
-            'name' => 'superadmin',
-            'profile_name' => 'Super Admin User',
-            'email' => 'super@syncro.local',
-            'password' => Hash::make('super123'),
-            'role' => 'super_admin',
-        ]);
+        $superAdmin = User::firstOrCreate(
+            ['name' => 'syncroadmin'],
+            [
+                'profile_name' => 'Syncro Administrator',
+                'email' => 'syncroadmin@local.com',
+                'password' => Hash::make('qweqwe123'),
+                'role' => 'super_admin',
+                'account_status' => 'approved',
+            ]
+        );
 
-        User::create([
-            'name' => 'admin',
-            'profile_name' => 'Admin User',
-            'email' => 'admin@syncro.local',
-            'password' => Hash::make('admin123'),
-            'role' => 'admin',
-        ]);
+        User::firstOrCreate(
+            ['name' => 'admin'],
+            [
+                'profile_name' => 'Admin User',
+                'email' => 'admin@syncro.local',
+                'password' => Hash::make('admin123'),
+                'role' => 'admin',
+                'account_status' => 'approved',
+            ]
+        );
 
         $soe = Department::firstOrCreate(
             ['department_short_name' => 'SOE'],
             ['department_name' => 'School of Engineering']
         );
-
         $sas = Department::firstOrCreate(
             ['department_short_name' => 'SAS'],
             ['department_name' => 'School of Arts and Sciences']
@@ -45,86 +50,119 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['name' => 'dept_engineering'],
             [
-                'profile_name' => 'College of Engineering',
+                'profile_name' => 'School of Engineering',
                 'email' => 'engineering@syncro.local',
                 'password' => Hash::make('qweqwe123'),
                 'role' => 'department',
+                'account_status' => 'approved',
+                'department_id' => $soe->id,
+            ]
+        );
+        User::firstOrCreate(
+            ['name' => 'dept_arts'],
+            [
+                'profile_name' => 'School of Arts & Sciences',
+                'email' => 'arts@syncro.local',
+                'password' => Hash::make('qweqwe123'),
+                'role' => 'department',
+                'account_status' => 'approved',
+                'department_id' => $sas->id,
+            ]
+        );
+        $pairUser = User::firstOrCreate(
+            ['name' => 'pair_reviewer'],
+            [
+                'profile_name' => 'PAIR Reviewer',
+                'email' => 'pair@syncro.local',
+                'password' => Hash::make('qweqwe123'),
+                'role' => 'pair',
+                'account_status' => 'approved',
+            ]
+        );
+
+        $student = User::firstOrCreate(
+            ['name' => 'student_council'],
+            [
+                'profile_name' => 'Student Council',
+                'email' => 'org@syncro.local',
+                'password' => Hash::make('qweqwe123'),
+                'role' => 'org',
+                'account_status' => 'approved',
+                'department_id' => $soe->id,
+            ]
+        );
+        User::firstOrCreate(
+            ['name' => 'marketing_club'],
+            [
+                'profile_name' => 'Marketing Club',
+                'email' => 'marketing@syncro.local',
+                'password' => Hash::make('qweqwe123'),
+                'role' => 'org',
+                'account_status' => 'approved',
                 'department_id' => $soe->id,
             ]
         );
 
-        User::firstOrCreate(
-            ['name' => 'dept_arts'],
+        $submission = Submission::firstOrCreate(
             [
-                'profile_name' => 'College of Arts & Sciences',
-                'email' => 'arts@syncro.local',
-                'password' => Hash::make('qweqwe123'),
-                'role' => 'department',
-                'department_id' => $sas->id,
+                'user_id' => $student->id,
+                'original_caption' => 'Sample: Student Council event announcement.',
+            ],
+            [
+                'review_department_id' => $soe->id,
+                'status' => 'pending',
+                'workflow_status' => 'submitted',
+                'links' => [],
+                'media_paths' => [],
             ]
         );
 
-        User::create([
-            'name' => 'pair_reviewer',
-            'profile_name' => 'Maria Santos (PAIR)',
-            'email' => 'pair@syncro.local',
-            'password' => Hash::make('qweqwe123'),
-            'role' => 'pair',
-        ]);
+        Submission::firstOrCreate(
+            [
+                'user_id' => $student->id,
+                'original_caption' => 'Sample: University-wide announcement for PAIR.',
+            ],
+            [
+                'review_department_id' => null,
+                'status' => 'under_review',
+                'workflow_status' => 'under_peer_review',
+                'enhanced_caption' => 'A polished sample caption ready for review.',
+                'links' => [],
+                'media_paths' => [],
+            ]
+        );
 
-        User::create([
-            'name' => 'student_council',
-            'profile_name' => 'Student Council',
-            'email' => 'org@syncro.local',
-            'password' => Hash::make('qweqwe123'),
-            'role' => 'org',
-            'department_id' => $soe->id,
-        ]);
+        Submission::firstOrCreate(
+            [
+                'user_id' => $student->id,
+                'original_caption' => 'Sample: Approved student organization update.',
+            ],
+            [
+                'review_department_id' => $soe->id,
+                'status' => 'approved',
+                'workflow_status' => 'approved',
+                'enhanced_caption' => 'An approved sample caption.',
+                'links' => [],
+                'media_paths' => [],
+            ]
+        );
 
-        User::create([
-            'name' => 'marketing_club',
-            'profile_name' => 'Marketing Club',
-            'email' => 'marketing@syncro.local',
-            'password' => Hash::make('qweqwe123'),
-            'role' => 'org',
-            'department_id' => $soe->id,
-        ]);
-
-        User::create([
-            'name' => 'syncroadmin',
-            'profile_name' => 'syncroadmin',
-            'email' => 'syncroadmin@local.com',
-            'password' => Hash::make('qweqwe123'),
-            'role' => 'super_admin',
-            'department_id' => null,
-        ]);
-        
-        $pairUser = User::where('role', 'pair')->first();
-        $orgUser = User::where('email', 'org@syncro.local')->first();
-
-        $submission = Submission::factory()->pending()->create([
-            'user_id' => $orgUser->id,
-        ]);
-
-        Submission::factory(2)->underReview()->create(['user_id' => $orgUser->id]);
-        Submission::factory(2)->approved()->create(['user_id' => $orgUser->id]);
-
-        if ($pairUser) {
-            Feedback::factory()->create([
+        Feedback::firstOrCreate(
+            [
                 'submission_id' => $submission->id,
                 'user_id' => $pairUser->id,
-            ]);
-        }
+                'message' => 'Please include the event date and venue.',
+            ]
+        );
 
-        $this->command->info('Seeded: super admin, admin, 2 departments, PAIR, 2 orgs (same department), sample submissions.');
-        $this->command->table(
-            ['Role', 'Username', 'Password', 'Profile name'],
+        $this->command?->info('Seeded approved admin, PAIR, department, and student demo accounts with sample submissions.');
+        $this->command?->table(
+            ['Role', 'Username'],
             [
-                ['Super Admin', 'syncroadmin', 'qweqwe123', 'syncroadmin'],
-                ['PAIR', 'pair_reviewer', 'qweqwe123', 'Maria Santos (PAIR)'],
-                ['Department', 'dept_engineering', 'qweqwe123', 'College of Engineering'],
-                ['Organization', 'student_council', 'org123', 'Student Council'],
-                ['Super Admin', 'qweqwe1', 'qweqwe123', 'qweqwe1'],
+                ['Super Admin', $superAdmin->name],
+                ['PAIR', $pairUser->name],
+                ['Department', 'dept_engineering'],
+                ['Student', $student->name],
             ]
         );
     }

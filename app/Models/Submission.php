@@ -6,6 +6,7 @@ use App\Submission\Enums\SubmissionLifecycleStatus;
 use App\Models\Scopes\OrgOwnedSubmissionScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Submission extends Model
 {
@@ -60,6 +61,11 @@ class Submission extends Model
     public function feedback()
     {
         return $this->hasMany(Feedback::class);
+    }
+
+    public function media(): HasMany
+    {
+        return $this->hasMany(Media::class);
     }
 
     public function lifecycle(): SubmissionLifecycleStatus

@@ -29,6 +29,7 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'password' => static::$password ??= Hash::make('password'),
             'role' => 'org',
+            'account_status' => 'approved',
         ];
     }
 
@@ -49,6 +50,29 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role' => 'org',
+            'account_status' => 'approved',
+            'department_id' => \App\Models\Department::factory(),
+        ]);
+    }
+
+    public function studentInDepartment(): static
+    {
+        return $this->org();
+    }
+
+    public function pending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'org',
+            'account_status' => 'pending',
+        ]);
+    }
+
+    public function rejected(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'org',
+            'account_status' => 'rejected',
         ]);
     }
 
@@ -62,10 +86,20 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function superAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'super_admin',
+            'department_id' => null,
+        ]);
+    }
+
     public function department(): static
     {
         return $this->state(fn (array $attributes) => [
             'role' => 'department',
+            'account_status' => 'approved',
+            'department_id' => \App\Models\Department::factory(),
         ]);
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 class DepartmentWorkflowTest extends TestCase
@@ -197,6 +198,40 @@ class DepartmentWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('School of Business')
             ->assertDontSee('School of Engineering');
+    }
+
+    public function test_database_seeder_is_repeatable_and_seeds_approved_account_roles(): void
+    {
+        $departmentCount = Department::count();
+        $userCount = User::count();
+        $submissionCount = Submission::count();
+
+        Artisan::call('db:seed');
+        $countsAfterFirstSeed = [
+            Department::count(),
+            User::count(),
+            Submission::count(),
+        ];
+        Artisan::call('db:seed');
+
+        $this->assertSame($countsAfterFirstSeed, [
+            Department::count(),
+            User::count(),
+            Submission::count(),
+        ]);
+        $this->assertGreaterThanOrEqual($departmentCount, Department::count());
+        $this->assertGreaterThanOrEqual($userCount + 7, User::count());
+        $this->assertGreaterThanOrEqual($submissionCount + 3, Submission::count());
+        $this->assertDatabaseHas('users', [
+            'name' => 'dept_engineering',
+            'role' => 'department',
+            'account_status' => 'approved',
+        ]);
+        $this->assertDatabaseHas('users', [
+            'name' => 'student_council',
+            'role' => 'org',
+            'account_status' => 'approved',
+        ]);
     }
 
     private function createDepartment(string $name): Department

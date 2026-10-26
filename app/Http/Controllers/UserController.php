@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\Media;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Support\SubmissionMedia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -96,6 +98,7 @@ class UserController extends Controller
             }
         }
 
+        $newPhotoMetadata = null;
         if ($request->hasFile('profile_photo')) {
             $photoDisk = config('filesystems.disks.supabase.key') ? 'supabase' : 'public';
             $newPhotoPath = $request->file('profile_photo')->store('profile-photos', $photoDisk);
@@ -107,6 +110,15 @@ class UserController extends Controller
 
             $oldPhotoPath = $user->profile_photo_path;
             $user->profile_photo_path = $newPhotoPath;
+            $newPhotoMetadata = [
+                'uploaded_by' => $user->id,
+                'purpose' => 'profile_photo',
+                'storage_disk' => $photoDisk,
+                'path' => $newPhotoPath,
+                'original_name' => $request->file('profile_photo')->getClientOriginalName(),
+                'mime_type' => $request->file('profile_photo')->getMimeType(),
+                'size' => $request->file('profile_photo')->getSize(),
+            ];
             $changes['profile_photo_path'] = ['old' => $oldPhotoPath, 'new' => $newPhotoPath];
         } elseif ($request->boolean('remove_profile_photo') && $user->profile_photo_path) {
             $oldPhotoPath = $user->profile_photo_path;
@@ -123,12 +135,23 @@ class UserController extends Controller
             $changes['password'] = ['old' => '****', 'new' => '****'];
         }
 
-        $user->save();
+        DB::transaction(function () use ($user, $newPhotoMetadata): void {
+            $user->save();
+            if ($newPhotoMetadata !== null) {
+                Media::create($newPhotoMetadata);
+            }
+        });
 
         if (isset($oldPhotoPath) && $oldPhotoPath !== $user->profile_photo_path) {
             $oldPhoto = SubmissionMedia::resolve($oldPhotoPath);
             if ($oldPhoto !== null && ! Storage::disk($oldPhoto['disk'])->delete($oldPhoto['path'])) {
                 report(new \RuntimeException('Unable to remove the replaced profile photo.'));
+            } else {
+                Media::query()
+                    ->where('uploaded_by', $user->id)
+                    ->where('purpose', 'profile_photo')
+                    ->where('path', $oldPhotoPath)
+                    ->delete();
             }
         }
 

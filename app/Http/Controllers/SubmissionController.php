@@ -10,6 +10,7 @@ use App\Notifications\EnhancementReadyForOrg;
 use App\Notifications\SubmissionApproved;
 use App\Notifications\SubmissionQueuedForReview;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\File;
@@ -43,7 +44,16 @@ class SubmissionController extends Controller
                 ], 422);
             }
 
+            $user = $request->user();
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated. Please log in first.',
+                ], 401);
+            }
+
             $mediaPaths = [];
+            $mediaFiles = [];
             $mediaDisk = config('filesystems.disks.supabase.key')
                 ? 'supabase'
                 : 'public';
@@ -51,29 +61,51 @@ class SubmissionController extends Controller
             if ($request->hasFile('media')) {
                 foreach ($request->file('media') as $file) {
                     $path = $file->store('submissions/media', $mediaDisk);
+                    if (! $path) {
+                        throw new \RuntimeException('A submission attachment could not be stored.');
+                    }
+
                     $mediaPaths[] = $path;
+                    $mediaFiles[] = [
+                        'path' => $path,
+                        'original_name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                    ];
                 }
             }
 
-            $userId = auth()->id();
-            if (! $userId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not authenticated. Please log in first.',
-                ], 401);
-            }
+            $submission = DB::transaction(function () use (
+                $user,
+                $reviewDestination,
+                $validated,
+                $mediaPaths,
+                $mediaFiles,
+                $mediaDisk
+            ): Submission {
+                $submission = Submission::create([
+                    'user_id' => $user->id,
+                    'review_department_id' => $reviewDestination === 'pair'
+                        ? null
+                        : $user->department_id,
+                    'original_caption' => $validated['original_caption'],
+                    'links' => $validated['links'] ?? [],
+                    'media_paths' => $mediaPaths,
+                    'status' => 'pending',
+                    'workflow_status' => 'submitted',
+                ]);
 
-            $submission = Submission::create([
-                'user_id' => $userId,
-                'review_department_id' => $reviewDestination === 'pair'
-                    ? null
-                    : $request->user()->department_id,
-                'original_caption' => $validated['original_caption'],
-                'links' => $validated['links'] ?? [],
-                'media_paths' => $mediaPaths,
-                'status' => 'pending',
-                'workflow_status' => 'submitted'
-            ]);
+                foreach ($mediaFiles as $mediaFile) {
+                    $submission->media()->create([
+                        'uploaded_by' => $user->id,
+                        'purpose' => 'submission',
+                        'storage_disk' => $mediaDisk,
+                        ...$mediaFile,
+                    ]);
+                }
+
+                return $submission;
+            });
 
             $reviewers = User::query()->whereIn('role', ['super_admin', 'admin']);
             if ($submission->review_department_id === null) {

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
-use App\Models\Submission;
+use App\Models\Media;
 use App\Support\SubmissionMedia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -15,34 +15,22 @@ class StaffToolsController extends Controller
 {
     public function mediaGallery(): View
     {
-        $assets = [];
-
-        $submissions = Submission::query()
-            ->with('user:id,name')
-            ->whereNotNull('media_paths')
-            ->orderByDesc('created_at')
-            ->get();
-
-        foreach ($submissions as $submission) {
-            $paths = $submission->media_paths ?? [];
-            if (! is_array($paths)) {
-                continue;
-            }
-            foreach ($paths as $path) {
-                if (! $path || SubmissionMedia::resolve($path) === null) {
-                    continue;
-                }
-                $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-                $assets[] = [
-                    'url' => SubmissionMedia::url($path),
-                    'name' => basename($path),
-                    'ext' => $ext,
-                    'submission_id' => $submission->id,
-                    'org' => $submission->user?->displayName(),
-                    'created_at' => $submission->created_at,
-                ];
-            }
-        }
+        $assets = Media::query()
+            ->with(['uploader:id,name,profile_name', 'submission:id,user_id,created_at'])
+            ->where('purpose', 'submission')
+            ->whereNotNull('path')
+            ->latest()
+            ->get()
+            ->filter(fn (Media $media) => SubmissionMedia::resolve($media->path) !== null)
+            ->map(fn (Media $media) => [
+                'url' => SubmissionMedia::url($media->path),
+                'name' => $media->original_name ?: basename($media->path),
+                'ext' => strtolower(pathinfo($media->path, PATHINFO_EXTENSION)),
+                'submission_id' => $media->submission_id,
+                'org' => $media->uploader?->displayName(),
+                'created_at' => $media->created_at,
+            ])
+            ->values();
 
         return view('main.media-gallery', ['assets' => $assets]);
     }

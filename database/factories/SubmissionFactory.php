@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Submission;
+use App\Models\Department;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -83,6 +84,26 @@ class SubmissionFactory extends Factory
             'workflow_status' => 'under_peer_review',
             'status' => 'under_review',
             'enhanced_caption' => $this->faker->paragraphs(2, true),
+        ]);
+    }
+
+    public function routedToDepartment(?Department $department = null): static
+    {
+        $department ??= Department::factory()->create();
+        $student = User::factory()->studentInDepartment()->create([
+            'department_id' => $department->id,
+        ]);
+
+        return $this->state(fn (array $attributes) => [
+            'user_id' => $student->id,
+            'review_department_id' => $department->id,
+        ]);
+    }
+
+    public function routedToPair(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'review_department_id' => null,
         ]);
     }
 }
