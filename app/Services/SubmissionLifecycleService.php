@@ -19,24 +19,23 @@ class SubmissionLifecycleService
      */
     private const TRANSITIONS = [
         'submitted'          => ['dept_approved', 'under_peer_review', 'rejected'],
-        'dept_approved'      => ['under_peer_review'],
-        'under_peer_review'  => ['approved', 'revised'],
+        'dept_approved'      => ['under_peer_review', 'rejected'],
+        'under_peer_review'  => ['approved', 'revised', 'rejected'],
         'revised'            => ['under_peer_review', 'rejected'],
-        'approved'           => ['posted', 'revised'],
-        'rejected'           => ['under_peer_review', 'revised'],
+        'approved'           => ['posted', 'revised', 'rejected'],
+        'rejected'           => [], // Once rejected, it cannot be undone
         'posted'             => [],
     ];
 
     /**
      * Allowed target statuses per role.
-     *
-     * PAIR does NOT have 'rejected' — exclusive reject right sits with Department.
+     * All roles (admins, pair, department, and org) have reject capability.
      */
     private const ROLE_TARGETS = [
         'admin'      => ['dept_approved', 'approved', 'rejected', 'revised', 'posted'],
-        'pair'       => ['approved', 'revised', 'posted'],
+        'pair'       => ['approved', 'rejected', 'revised', 'posted'],
         'department' => ['dept_approved', 'approved', 'rejected', 'revised', 'posted'],
-        'org'        => ['approved', 'revised'],
+        'org'        => ['approved', 'rejected', 'revised'],
     ];
 
     public function current(Submission $submission): SubmissionLifecycleStatus
@@ -155,11 +154,6 @@ class SubmissionLifecycleService
         }
 
         if ($actor->isPair()) {
-            // PAIR cannot reject — exclusive right of Department panel
-            if ($target === SubmissionLifecycleStatus::Rejected) {
-                return false;
-            }
-
             return in_array($target->value, self::ROLE_TARGETS['pair'], true);
         }
 

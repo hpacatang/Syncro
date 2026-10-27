@@ -303,21 +303,27 @@
                     </div>
                     <div class="mb-3">
                         <input type="radio" id="rejectRadio" name="decision" value="reject">
-                        <label for="rejectRadio" class="form-label">
+                        <label for="rejectRadio" class="form-label mb-3">
                             <strong class="text-warning">⟲ Request Revisions</strong><br>
                             <small class="text-muted">Send back to the review team with feedback for improvements.</small>
                         </label>
                     </div>
+                    <div class="mb-3">
+                        <input type="radio" id="permanentRejectRadio" name="decision" value="permanent_reject">
+                        <label for="permanentRejectRadio" class="form-label">
+                            <strong class="text-danger">✗ Reject</strong><br>
+                            <small class="text-muted">Reject this submission permanently. This action cannot be undone.</small>
+                        </label>
+                    </div>
 
-                    
                     <div id="rejectionNotes" style="display: none;" class="mt-3">
-                        <label for="revisionNotes" class="form-label">What needs improvement?</label>
+                        <label for="revisionNotes" class="form-label" id="revisionNotesLabel">What needs improvement?</label>
                         <textarea id="revisionNotes" class="form-control" rows="3" 
-                                  placeholder="Provide specific feedback for the review team..."></textarea>
+                                  placeholder="Provide specific details..."></textarea>
                         <div class="invalid-feedback">
                             Feedback is required and must be at least 10 characters long.
                         </div>
-                        <small class="text-muted d-block mt-1">Be specific about what changes you'd like.</small>
+                        <small class="text-muted d-block mt-1">Be specific about what changes or why it is rejected.</small>
                     </div>
                 </div>
             </div>
@@ -328,6 +334,9 @@
                 </button>
                 <button type="button" class="btn btn-warning" style="display: none;" id="rejectBtn">
                     <i class="fas fa-redo"></i> Send Back for Revision
+                </button>
+                <button type="button" class="btn btn-danger" style="display: none;" id="permRejectBtn">
+                    <i class="fas fa-times-circle"></i> Reject (Cannot be undone)
                 </button>
             </div>
         </div>
@@ -422,6 +431,11 @@ document.addEventListener('DOMContentLoaded', function() {
         rejectBtn.addEventListener('click', submitRejection);
     }
 
+    const permRejectBtn = document.getElementById('permRejectBtn');
+    if (permRejectBtn) {
+        permRejectBtn.addEventListener('click', submitRejection);
+    }
+
     const revisionNotesEl = document.getElementById('revisionNotes');
     if (revisionNotesEl) {
         revisionNotesEl.addEventListener('input', function() {
@@ -436,15 +450,26 @@ document.addEventListener('change', function(e) {
     if (e.target.name === 'decision') {
         const rejectionNotesDiv = document.getElementById('rejectionNotes');
         const rejectBtn = document.getElementById('rejectBtn');
+        const permRejectBtn = document.getElementById('permRejectBtn');
         const approveBtn = document.getElementById('approveBtn');
+        const label = document.getElementById('revisionNotesLabel');
         
         if (e.target.value === 'reject') {
             rejectionNotesDiv.style.display = 'block';
             rejectBtn.style.display = 'block';
+            if (permRejectBtn) permRejectBtn.style.display = 'none';
             approveBtn.style.display = 'none';
+            if (label) label.textContent = 'What needs improvement?';
+        } else if (e.target.value === 'permanent_reject') {
+            rejectionNotesDiv.style.display = 'block';
+            rejectBtn.style.display = 'none';
+            if (permRejectBtn) permRejectBtn.style.display = 'block';
+            approveBtn.style.display = 'none';
+            if (label) label.textContent = 'Reason for rejection (cannot be undone):';
         } else {
             rejectionNotesDiv.style.display = 'none';
             rejectBtn.style.display = 'none';
+            if (permRejectBtn) permRejectBtn.style.display = 'none';
             approveBtn.style.display = 'block';
         }
     }
@@ -511,10 +536,17 @@ async function submitRejection() {
     }
 
     inputEl.classList.remove('is-invalid');
+
+    const isPermanent = document.getElementById('permanentRejectRadio')?.checked;
+    if (isPermanent && !confirm('⚠️ WARNING: Once rejected, this submission CANNOT BE UNDONE.\n\nAre you sure you want to permanently reject this submission?')) {
+        return;
+    }
     
-    const btn = document.getElementById('rejectBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    const activeBtn = isPermanent ? document.getElementById('permRejectBtn') : document.getElementById('rejectBtn');
+    if (activeBtn) {
+        activeBtn.disabled = true;
+        activeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    }
     
     try {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -530,25 +562,34 @@ async function submitRejection() {
                 'X-CSRF-TOKEN': csrfToken
             },
             body: JSON.stringify({
-                notes: notes
+                notes: notes,
+                action: isPermanent ? 'reject' : 'revision'
             })
         });
 
         const data = await response.json();
 
         if (data.success) {
-            alert('Feedback sent to the review team for further updates.');
+            alert(data.message || (isPermanent ? 'Submission permanently rejected.' : 'Feedback sent to the review team.'));
             location.reload();
         } else {
             alert('Error: ' + data.message);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-redo"></i> Send Back for Revision';
+            if (activeBtn) {
+                activeBtn.disabled = false;
+                activeBtn.innerHTML = isPermanent 
+                    ? '<i class="fas fa-times-circle"></i> Reject (Cannot be undone)'
+                    : '<i class="fas fa-redo"></i> Send Back for Revision';
+            }
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error submitting feedback: ' + error.message);
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-redo"></i> Send Back for Revision';
+        alert('Error submitting decision: ' + error.message);
+        if (activeBtn) {
+            activeBtn.disabled = false;
+            activeBtn.innerHTML = isPermanent 
+                ? '<i class="fas fa-times-circle"></i> Reject (Cannot be undone)'
+                : '<i class="fas fa-redo"></i> Send Back for Revision';
+        }
     }
 }
 </script>

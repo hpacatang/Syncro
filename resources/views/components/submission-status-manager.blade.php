@@ -10,7 +10,7 @@
     // Separate into ordered groups for consistent button layout
     $primaryActions = array_filter($allowed, fn($s) => in_array($s->value, ['approved', 'posted', 'under_peer_review', 'dept_approved'], true));
     $revisionAction = array_filter($allowed, fn($s) => $s->value === 'revised');
-    $rejectAction   = array_filter($allowed, fn($s) => $s->value === 'rejected' && ! $isPair);
+    $rejectAction   = array_filter($allowed, fn($s) => $s->value === 'rejected');
 @endphp
 
 <div class="card syncro-card-elevated border-0" {{ $attributes }}>
@@ -188,7 +188,7 @@
                         modalTitle.classList.add('text-danger');
                         modalTitle.classList.remove('text-warning');
                     }
-                    if (modalDesc) modalDesc.textContent = 'Are you sure you want to reject this submission? This action will notify the organization and halt the review process.';
+                    if (modalDesc) modalDesc.textContent = 'Are you sure you want to reject this submission? Once rejected, this action CANNOT BE UNDONE.';
                     if (notesLabel) notesLabel.textContent = 'Rejection reason';
                     if (notesInput) notesInput.placeholder = 'Provide a clear explanation of what needs to change so the organization understands what to fix…';
                     if (confirmBtn) {

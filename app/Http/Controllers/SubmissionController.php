@@ -424,23 +424,30 @@ class SubmissionController extends Controller
         try {
             $request->validate([
                 'notes' => 'required|string|min:10',
+                'action' => 'nullable|string|in:revision,reject',
             ]);
 
             $submission = Submission::findOrFail($id);
             $this->authorize('reviewAsOrg', $submission);
 
+            $isPermanentReject = $request->input('action') === 'reject' || $request->boolean('is_permanent');
+            $status = $isPermanentReject ? 'rejected' : 'revised';
+            $legacyStatus = $isPermanentReject ? 'rejected' : 'under_review';
+
             $submission->update([
-                'workflow_status' => 'revised',
+                'workflow_status' => $status,
                 'org_review_notes' => $request->notes,
-                'status' => 'under_review'
+                'status' => $legacyStatus
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Feedback sent to the review team for further updates.',
+                'message' => $isPermanentReject
+                    ? 'Submission has been permanently rejected. This cannot be undone.'
+                    : 'Feedback sent to the review team for further updates.',
                 'data' => [
                     'submission_id' => $submission->id,
-                    'workflow_status' => 'revised',
+                    'workflow_status' => $status,
                     'feedback' => $request->notes
                 ]
             ]);

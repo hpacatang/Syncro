@@ -36,18 +36,6 @@
             title="Generate AI caption evaluation">
             <i class="bi bi-magic" aria-hidden="true"></i>
             <span class="syncro-queue-actions__label">Evaluate</span>
-        </button>
-        <button
-            type="button"
-            class="btn btn-sm btn-outline-danger syncro-queue-actions__btn lifecycle-inline-step"
-            data-submission-id="{{ $submission->id }}"
-            data-status="rejected"
-            data-needs-notes="1"
-            @disabled(! $canReject)
-            title="{{ $canReject ? 'Reject post' : 'Reject is not available for this submission status' }}">
-            <i class="bi bi-x-lg" aria-hidden="true"></i>
-            <span class="syncro-queue-actions__label">Reject</span>
-        </button>
     </div>
     <span class="lifecycle-inline-msg syncro-queue-actions__msg" role="status"></span>
 </div>

@@ -357,12 +357,16 @@
                     </div>
                 </form>
             </div>
-            <div class="modal-footer border-top bg-light">
+            <div class="modal-footer border-top bg-light d-flex justify-content-between align-items-center w-100">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                
-                <button type="button" class="btn btn-success" id="approveBtn" onclick="approveFinalCaption()">
-                    <i class="fas fa-check"></i> Approve & Update
-                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-danger" id="modalRejectBtn" onclick="rejectCaptionFromModal()">
+                        <i class="fas fa-times-circle"></i> Reject
+                    </button>
+                    <button type="button" class="btn btn-success" id="approveBtn" onclick="approveFinalCaption()">
+                        <i class="fas fa-check"></i> Approve & Update
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -379,6 +383,8 @@ function setupEnhanceModal(submissionId, caption, enhancedCaption) {
     document.getElementById('pairFeedback').value = '';
     document.getElementById('generateBtn').disabled = false;
     document.getElementById('approveBtn').disabled = false;
+    const modalRejectBtn = document.getElementById('modalRejectBtn');
+    if (modalRejectBtn) modalRejectBtn.disabled = false;
     document.getElementById('generatingAlert').classList.add('d-none');
 }
 
@@ -541,6 +547,88 @@ async function approveFinalCaption() {
         generatingAlert.className = 'alert alert-danger';
         generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${error.message}`;
         approveBtn.disabled = false;
+    }
+}
+
+async function rejectCaptionFromModal() {
+    if (!currentSubmissionId) {
+        alert('Error: Submission ID not found. Please close and try again.');
+        return;
+    }
+
+    const pairFeedbackEl = document.getElementById('pairFeedback');
+    let notes = pairFeedbackEl ? pairFeedbackEl.value.trim() : '';
+
+    if (notes.length < 10) {
+        const promptNotes = prompt('Rejecting this submission cannot be undone.\nPlease provide a reason for rejection (minimum 10 characters):', notes);
+        if (promptNotes === null) {
+            return; // User cancelled
+        }
+        notes = promptNotes.trim();
+        if (notes.length < 10) {
+            alert('Rejection reason is required and must be at least 10 characters long.');
+            if (pairFeedbackEl) {
+                pairFeedbackEl.focus();
+            }
+            return;
+        }
+        if (pairFeedbackEl) {
+            pairFeedbackEl.value = notes;
+        }
+    }
+
+    const confirmed = confirm('⚠️ WARNING: Once rejected, this submission CANNOT BE UNDONE.\n\nAre you sure you want to permanently reject submission #' + currentSubmissionId + '?');
+    if (!confirmed) {
+        return;
+    }
+
+    const approveBtn = document.getElementById('approveBtn');
+    const rejectBtn = document.getElementById('modalRejectBtn');
+    const generatingAlert = document.getElementById('generatingAlert');
+
+    if (approveBtn) approveBtn.disabled = true;
+    if (rejectBtn) rejectBtn.disabled = true;
+
+    generatingAlert.classList.remove('d-none');
+    generatingAlert.className = 'alert alert-danger';
+    generatingAlert.innerHTML = '<div class="spinner-border spinner-border-sm me-2" role="status"><span class="visually-hidden">Loading...</span></div><strong>Rejecting submission (cannot be undone)…</strong>';
+
+    try {
+        const response = await fetch(`/api/submissions/${currentSubmissionId}/transition`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                status: 'rejected',
+                notes: notes
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            generatingAlert.className = 'alert alert-danger';
+            generatingAlert.innerHTML = '<i class="fas fa-check-circle"></i> <strong>Rejected!</strong> Submission #' + currentSubmissionId + ' has been permanently rejected. Refreshing…';
+
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('generateModal'));
+                if (modal) modal.hide();
+                window.location.reload();
+            }, 900);
+        } else {
+            generatingAlert.className = 'alert alert-danger';
+            generatingAlert.innerHTML = `<i class="fas fa-exclamation-circle"></i> <strong>Error:</strong> ${data.message || 'Failed to reject submission'}`;
+            if (approveBtn) approveBtn.disabled = false;
+            if (rejectBtn) rejectBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error rejecting submission:', error);
+        generatingAlert.className = 'alert alert-danger';
+        generatingAlert.innerHTML = `<i class="fas fa-exclamation-circle"></i> <strong>Error:</strong> ${error.message}`;
+        if (approveBtn) approveBtn.disabled = false;
+        if (rejectBtn) rejectBtn.disabled = false;
     }
 }
 

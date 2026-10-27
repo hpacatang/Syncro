@@ -106,4 +106,12 @@ class SubmissionFactory extends Factory
             'review_department_id' => null,
         ]);
     }
+
+    public function rejected(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'workflow_status' => 'rejected',
+            'status' => 'rejected',
+        ]);
+    }
 }

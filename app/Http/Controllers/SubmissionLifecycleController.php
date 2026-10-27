@@ -37,13 +37,6 @@ class SubmissionLifecycleController extends Controller
             $request->validate(['notes' => 'required|string|min:10']);
         }
 
-        // Exclusive reject right: only Department and Admin roles may reject a posting.
-        if ($target === SubmissionLifecycleStatus::Rejected && $request->user()->isPair()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'PAIR reviewers are not permitted to reject submissions. Only Department accounts may reject.',
-            ], 403);
-        }
 
         try {
             $context = [];
