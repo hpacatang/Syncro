@@ -13,13 +13,16 @@
     $isOrg = $variant === 'org';
     $statusOptions = [
         'all' => 'All statuses',
-        'pending' => 'Pending review',
         'submitted' => 'Submitted',
         'under_peer_review' => 'Under review',
+        'revised' => 'Revised',
         'approved' => 'Approved',
+        'rejected' => 'Rejected',
         'posted' => 'Posted',
     ];
-    if ($isOrg) {
+    if (! $isOrg) {
+        $statusOptions = ['all' => 'All statuses', 'pending' => 'Pending queue only'] + $statusOptions;
+    } else {
         unset($statusOptions['posted']);
     }
 @endphp

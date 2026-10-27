@@ -84,13 +84,15 @@ class MainController extends Controller
             'pending_submission' => Submission::whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
             'pending_pair_review' => Submission::whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
             'approved' => Submission::where('workflow_status', 'approved')->count(),
+            'rejected' => Submission::where('workflow_status', 'rejected')->count(),
+            'posted' => Submission::where('workflow_status', 'posted')->count(),
             'pending' => Submission::whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
             'under_review' => Submission::whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
         ];
 
         $query = Submission::with(['user.department', 'reviewDepartment']);
-        $filter = $this->applySubmissionFilters($query, $request, 'pending');
-        $recentSubmissions = $query->limit(10)->get();
+        $filter = $this->applySubmissionFilters($query, $request, 'all');
+        $recentSubmissions = $query->limit(25)->get();
 
         return view('main.dashboard', [
             'stats' => $stats,

@@ -25,21 +25,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted small mb-1">To Review</p>
-                            <h3 class="fw-bold text-secondary">{{ ($stats['pending_submission'] ?? 0) + ($stats['pending_pair_review'] ?? 0) }}</h3>
-                        </div>
-                        <i class="fas fa-inbox text-secondary"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card syncro-stat-card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
                             <p class="text-muted small mb-1">In Review</p>
-                            <h3 class="fw-bold text-warning">{{ $stats['pending_pair_review'] ?? 0 }}</h3>
+                            <h3 class="fw-bold text-warning">{{ ($stats['pending_submission'] ?? 0) + ($stats['pending_pair_review'] ?? 0) }}</h3>
                         </div>
                         <i class="fas fa-hourglass-half text-warning"></i>
                     </div>
@@ -55,6 +42,19 @@
                             <h3 class="fw-bold text-success">{{ $stats['approved'] ?? 0 }}</h3>
                         </div>
                         <i class="fas fa-check-circle text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card syncro-stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Rejected</p>
+                            <h3 class="fw-bold text-danger">{{ $stats['rejected'] ?? 0 }}</h3>
+                        </div>
+                        <i class="fas fa-times-circle text-danger"></i>
                     </div>
                 </div>
             </div>
