@@ -119,7 +119,7 @@ class User extends Authenticatable
 
     public function canSubmitPosts(): bool
     {
-        return $this->isOrg() || $this->isDepartment() || $this->isPair();
+        return $this->isOrg() || $this->isDepartment();
     }
 
     public function isStaffReviewer(): bool
@@ -129,20 +129,16 @@ class User extends Authenticatable
 
     public function homeRoute(): string
     {
-        if ($this->isDepartment()) {
-            return 'dashboard';
-        }
-
-        if ($this->canSubmitPosts()) {
-            return 'org.dashboard';
-        }
-
         if ($this->isSuperAdmin()) {
             return 'users.index';
         }
 
         if ($this->isStaffReviewer()) {
             return 'dashboard';
+        }
+
+        if ($this->isOrg()) {
+            return 'org.dashboard';
         }
 
         return 'dashboard';

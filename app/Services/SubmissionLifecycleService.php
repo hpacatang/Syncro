@@ -33,9 +33,9 @@ class SubmissionLifecycleService
      * PAIR does NOT have 'rejected' — exclusive reject right sits with Department.
      */
     private const ROLE_TARGETS = [
-        'admin'      => ['dept_approved', 'approved', 'rejected', 'revised', 'posted', 'under_peer_review'],
-        'pair'       => ['approved', 'revised', 'posted', 'under_peer_review'],
-        'department' => ['dept_approved', 'rejected', 'under_peer_review', 'revised'],
+        'admin'      => ['dept_approved', 'approved', 'rejected', 'revised', 'posted'],
+        'pair'       => ['approved', 'revised', 'posted'],
+        'department' => ['dept_approved', 'approved', 'rejected', 'revised', 'posted'],
         'org'        => ['approved', 'revised'],
     ];
 

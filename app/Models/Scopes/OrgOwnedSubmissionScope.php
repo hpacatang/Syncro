@@ -21,7 +21,7 @@ class OrgOwnedSubmissionScope implements Scope
             } else {
                 $builder->whereRaw('1 = 0');
             }
-        } elseif ($user && $user->canSubmitPosts()) {
+        } elseif ($user && $user->isOrg()) {
             $builder->where($model->getTable().'.user_id', $user->id);
         }
     }
