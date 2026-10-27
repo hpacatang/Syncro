@@ -27,8 +27,20 @@ class SubmissionPolicy
         return $user->canSubmitPosts() && (int) $submission->user_id === (int) $user->id;
     }
 
+    /**
+     * PAIR role is explicitly granted create permission per panel feedback §2.2.
+     * Department accounts must additionally be approved before posting.
+     */
     public function create(User $user): bool
     {
+        if ($user->isPair()) {
+            return true;
+        }
+
+        if ($user->isDepartment()) {
+            return $user->account_status === 'approved';
+        }
+
         return $user->canSubmitPosts();
     }
 

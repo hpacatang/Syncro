@@ -22,9 +22,10 @@ class SubmissionController extends Controller
         $this->authorize('create', Submission::class);
 
         $validated = $request->validate([
-            'original_caption' => 'required|string',
+            'original_caption' => 'required|string|min:10|max:2200',
             'review_destination' => 'nullable|in:pair,department',
-            'links' => 'nullable|array',
+            'links' => 'nullable|array|max:10',
+            'links.*' => 'url|max:500',
             'media' => 'nullable|array',
             'media.*' => [
                 'file',
@@ -299,8 +300,8 @@ class SubmissionController extends Controller
             $this->authorize('reviewAsStaff', $submission);
 
             $request->validate([
-                'manual_caption' => 'required|string|min:10',
-                'pair_feedback' => 'nullable|string'
+                'manual_caption' => 'required|string|min:10|max:2200',
+                'pair_feedback' => 'nullable|string|max:5000',
             ]);
 
             $actor = auth()->user();

@@ -74,7 +74,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/org/notifications', [NotificationController::class, 'index'])->name('org.notifications');
     });
 
-    Route::middleware('role:department')->group(function () {
+    Route::middleware(['role:department', 'dept.approved'])->group(function () {
         Route::get('/department/submit', function () {
             return view('Submission.OrgSubmit');
         })->name('department.submit');
@@ -87,7 +87,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('api')->group(function () {
-        Route::middleware('role:org,department')->group(function () {
+        Route::middleware(['role:org,department', 'dept.approved'])->group(function () {
             Route::post('/submissions', [SubmissionController::class, 'store']);
             Route::post('/submissions/{id}/org-review/approve', [SubmissionController::class, 'orgApproveEnhancement']);
             Route::post('/submissions/{id}/org-review/reject', [SubmissionController::class, 'orgRejectEnhancement']);

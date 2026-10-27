@@ -119,7 +119,7 @@ class User extends Authenticatable
 
     public function canSubmitPosts(): bool
     {
-        return $this->isOrg() || $this->isDepartment();
+        return $this->isOrg() || $this->isDepartment() || $this->isPair();
     }
 
     public function isStaffReviewer(): bool

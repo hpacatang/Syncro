@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckRole::class,
             'api.role' => \App\Http\Middleware\CheckApiRole::class,
             'isAdmin' => \App\Http\Middleware\EnsureIsAdmin::class,
+            'dept.approved' => \App\Http\Middleware\EnforceDepartmentApproved::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

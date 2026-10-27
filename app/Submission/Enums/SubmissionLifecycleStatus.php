@@ -4,47 +4,50 @@ namespace App\Submission\Enums;
 
 enum SubmissionLifecycleStatus: string
 {
-    case Submitted = 'submitted';
+    case Submitted       = 'submitted';
+    case DeptApproved    = 'dept_approved';
     case UnderPeerReview = 'under_peer_review';
-    case Approved = 'approved';
-    case Rejected = 'rejected';
-    case Revised = 'revised';
-    case Posted = 'posted';
+    case Approved        = 'approved';
+    case Rejected        = 'rejected';
+    case Revised         = 'revised';
+    case Posted          = 'posted';
 
     public function label(): string
     {
         return match ($this) {
-            self::Submitted => 'Submitted',
+            self::Submitted       => 'Submitted',
+            self::DeptApproved    => 'Dept. Approved',
             self::UnderPeerReview => 'Under Review',
-            self::Approved => 'Approved',
-            self::Rejected => 'Rejected',
-            self::Revised => 'Revised',
-            self::Posted => 'Posted',
+            self::Approved        => 'Approved',
+            self::Rejected        => 'Rejected',
+            self::Revised         => 'Revised',
+            self::Posted          => 'Posted',
         };
     }
 
-    
     public function actionLabel(): string
     {
         return match ($this) {
+            self::DeptApproved    => 'Department approve',
             self::UnderPeerReview => 'Start review',
-            self::Approved => 'Approve post',
-            self::Rejected => 'Reject post',
-            self::Revised => 'Send back for revision',
-            self::Posted => 'Mark as posted',
-            default => $this->label(),
+            self::Approved        => 'Approve post',
+            self::Rejected        => 'Reject post',
+            self::Revised         => 'Send back for revision',
+            self::Posted          => 'Mark as posted',
+            default               => $this->label(),
         };
     }
 
     public function badgeClass(): string
     {
         return match ($this) {
-            self::Submitted => 'info',
-            self::UnderPeerReview => 'warning',
-            self::Approved => 'success',
-            self::Rejected => 'danger',
-            self::Revised => 'warning',
-            self::Posted => 'dark',
+            self::Submitted       => 'badge bg-secondary',
+            self::DeptApproved    => 'badge bg-info text-dark',
+            self::UnderPeerReview => 'badge bg-warning text-dark',
+            self::Approved        => 'badge bg-success',
+            self::Rejected        => 'badge bg-danger',
+            self::Revised         => 'badge bg-revision text-dark',
+            self::Posted          => 'badge bg-primary',
         };
     }
 
@@ -56,25 +59,26 @@ enum SubmissionLifecycleStatus: string
     public function progressColor(): string
     {
         return match ($this) {
-            self::Submitted => '#22c55e',
+            self::Submitted       => '#22c55e',
+            self::DeptApproved    => '#06b6d4',
             self::UnderPeerReview => '#f97316',
-            self::Approved => '#2563eb',
-            self::Rejected => '#ef4444',
-            self::Revised => '#f97316',
-            self::Posted => '#7c3aed',
+            self::Approved        => '#2563eb',
+            self::Rejected        => '#ef4444',
+            self::Revised         => '#f97316',
+            self::Posted          => '#7c3aed',
         };
     }
 
-    
     public function progressGlowRgb(): string
     {
         return match ($this) {
-            self::Submitted => '34, 197, 94',
+            self::Submitted       => '34, 197, 94',
+            self::DeptApproved    => '6, 182, 212',
             self::UnderPeerReview => '249, 115, 22',
-            self::Approved => '37, 99, 235',
-            self::Rejected => '239, 68, 68',
-            self::Revised => '249, 115, 22',
-            self::Posted => '124, 58, 237',
+            self::Approved        => '37, 99, 235',
+            self::Rejected        => '239, 68, 68',
+            self::Revised         => '249, 115, 22',
+            self::Posted          => '124, 58, 237',
         };
     }
 
@@ -91,34 +95,36 @@ enum SubmissionLifecycleStatus: string
     public function progressIndex(): int
     {
         $steps = self::progressSteps();
-        $idx = array_search($this, $steps, true);
+        $idx   = array_search($this, $steps, true);
 
         if ($idx !== false) {
             return (int) $idx;
         }
 
         return match ($this) {
-            self::Revised => 1,
-            self::Rejected => -1,
-            default => 0,
+            self::DeptApproved => 1,
+            self::Revised      => 1,
+            self::Rejected     => -1,
+            default            => 0,
         };
     }
 
     public static function fromLegacy(?string $value): self
     {
         return match ($value) {
-            'pending_submission' => self::Submitted,
-            'pending_pair_review' => self::UnderPeerReview,
-            'pending_org_approval' => self::UnderPeerReview,
-            'approved' => self::Approved,
-            'rejected' => self::Rejected,
-            'posted' => self::Posted,
-            'pending' => self::Submitted,
-            'submitted' => self::Submitted,
-            'under_peer_review' => self::UnderPeerReview,
-            'awaiting_org_approval' => self::UnderPeerReview,
-            'revised' => self::Revised,
-            default => self::Submitted,
+            'pending_submission'     => self::Submitted,
+            'pending_pair_review'    => self::UnderPeerReview,
+            'pending_org_approval'   => self::UnderPeerReview,
+            'approved'               => self::Approved,
+            'rejected'               => self::Rejected,
+            'posted'                 => self::Posted,
+            'pending'                => self::Submitted,
+            'submitted'              => self::Submitted,
+            'dept_approved'          => self::DeptApproved,
+            'under_peer_review'      => self::UnderPeerReview,
+            'awaiting_org_approval'  => self::UnderPeerReview,
+            'revised'                => self::Revised,
+            default                  => self::Submitted,
         };
     }
 

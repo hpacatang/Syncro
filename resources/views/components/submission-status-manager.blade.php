@@ -3,8 +3,14 @@
 @php
     use App\Services\SubmissionLifecycleService;
 
-    $isStaff = auth()->user()->isStaffReviewer();
-    $allowed = $isStaff ? app(SubmissionLifecycleService::class)->allowedTransitions($submission, auth()->user()) : [];
+    $isStaff  = auth()->user()->isStaffReviewer();
+    $isPair   = auth()->user()->isPair();
+    $allowed  = $isStaff ? app(SubmissionLifecycleService::class)->allowedTransitions($submission, auth()->user()) : [];
+
+    // Separate into ordered groups for consistent button layout
+    $primaryActions = array_filter($allowed, fn($s) => in_array($s->value, ['approved', 'posted', 'under_peer_review', 'dept_approved'], true));
+    $revisionAction = array_filter($allowed, fn($s) => $s->value === 'revised');
+    $rejectAction   = array_filter($allowed, fn($s) => $s->value === 'rejected' && ! $isPair);
 @endphp
 
 <div class="card syncro-card-elevated border-0" {{ $attributes }}>
@@ -18,15 +24,16 @@
 
         @if($isStaff && count($allowed) > 0)
             <p class="small text-muted mb-2">Click the button for each finished step.</p>
-            <div class="d-flex flex-wrap gap-2 mb-2" id="lifecycleSteps-{{ $submission->id }}">
-                @foreach($allowed as $status)
+            <div class="d-flex align-items-center flex-wrap gap-2 mb-2" id="lifecycleSteps-{{ $submission->id }}">
+
+                {{-- Primary actions: Approve, Post, Start Review, Dept Approve --}}
+                @foreach($primaryActions as $status)
                     @php
                         $btnClass = match ($status->value) {
-                            'approved' => 'btn-outline-success',
-                            'rejected' => 'btn-outline-danger',
-                            'revised'  => 'btn-outline-warning',
-                            'posted'   => 'btn-outline-primary',
-                            default    => 'btn-outline-secondary',
+                            'approved'      => 'btn-outline-success',
+                            'posted'        => 'btn-outline-primary',
+                            'dept_approved' => 'btn-outline-info',
+                            default         => 'btn-outline-secondary',
                         };
                     @endphp
                     <button
@@ -34,11 +41,38 @@
                         class="btn btn-sm {{ $btnClass }} lifecycle-step-btn"
                         data-submission-id="{{ $submission->id }}"
                         data-status="{{ $status->value }}"
-                        data-needs-notes="{{ in_array($status->value, ['revised', 'rejected'], true) ? '1' : '0' }}"
-                        data-is-rejection="{{ $status->value === 'rejected' ? '1' : '0' }}">
+                        data-needs-notes="0"
+                        data-is-rejection="0">
                         {{ $status->actionLabel() }}
                     </button>
                 @endforeach
+
+                {{-- Revision action --}}
+                @foreach($revisionAction as $status)
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-warning lifecycle-step-btn"
+                        data-submission-id="{{ $submission->id }}"
+                        data-status="{{ $status->value }}"
+                        data-needs-notes="1"
+                        data-is-rejection="0">
+                        {{ $status->actionLabel() }}
+                    </button>
+                @endforeach
+
+                {{-- Reject action — inline, adjacent to other buttons, hidden for PAIR --}}
+                @foreach($rejectAction as $status)
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger lifecycle-step-btn"
+                        data-submission-id="{{ $submission->id }}"
+                        data-status="{{ $status->value }}"
+                        data-needs-notes="1"
+                        data-is-rejection="1">
+                        {{ $status->actionLabel() }}
+                    </button>
+                @endforeach
+
             </div>
             <div id="lifecycleMessage-{{ $submission->id }}" class="small"></div>
         @else

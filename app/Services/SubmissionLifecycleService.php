@@ -10,22 +10,33 @@ use Illuminate\Support\Facades\Log;
 
 class SubmissionLifecycleService
 {
-    
+    /**
+     * Valid state transitions.
+     *
+     * Department-routed submissions must be approved by the Department Head
+     * (dept_approved) before moving to PAIR (under_peer_review).
+     * Only the Department panel may Reject; PAIR is revision-only.
+     */
     private const TRANSITIONS = [
-        'submitted' => ['under_peer_review', 'rejected'],
-        'under_peer_review' => ['approved', 'rejected', 'revised'],
-        'revised' => ['under_peer_review', 'rejected'],
-        'approved' => ['posted', 'revised'],
-        'rejected' => ['under_peer_review', 'revised'],
-        'posted' => [],
+        'submitted'          => ['dept_approved', 'under_peer_review', 'rejected'],
+        'dept_approved'      => ['under_peer_review'],
+        'under_peer_review'  => ['approved', 'revised'],
+        'revised'            => ['under_peer_review', 'rejected'],
+        'approved'           => ['posted', 'revised'],
+        'rejected'           => ['under_peer_review', 'revised'],
+        'posted'             => [],
     ];
 
-    
+    /**
+     * Allowed target statuses per role.
+     *
+     * PAIR does NOT have 'rejected' — exclusive reject right sits with Department.
+     */
     private const ROLE_TARGETS = [
-        'admin' => ['approved', 'rejected', 'revised', 'posted'],
-        'pair' => ['approved', 'rejected', 'revised', 'posted'],
-        'department' => ['approved', 'rejected', 'revised', 'posted'],
-        'org' => ['approved', 'revised'],
+        'admin'      => ['dept_approved', 'approved', 'rejected', 'revised', 'posted', 'under_peer_review'],
+        'pair'       => ['approved', 'revised', 'posted', 'under_peer_review'],
+        'department' => ['dept_approved', 'rejected', 'under_peer_review', 'revised'],
+        'org'        => ['approved', 'revised'],
     ];
 
     public function current(Submission $submission): SubmissionLifecycleStatus
@@ -33,7 +44,6 @@ class SubmissionLifecycleService
         return SubmissionLifecycleStatus::fromLegacy($submission->workflow_status);
     }
 
-    
     public function allowedTransitions(Submission $submission, User $actor): array
     {
         $current = $this->current($submission);
@@ -88,7 +98,7 @@ class SubmissionLifecycleService
         }
 
         $submission->workflow_status = $target->value;
-        $submission->status = $this->legacyStatusFor($target);
+        $submission->status          = $this->legacyStatusFor($target);
 
         if (isset($context['org_review_notes'])) {
             $submission->org_review_notes = $context['org_review_notes'];
@@ -102,19 +112,18 @@ class SubmissionLifecycleService
 
         Log::info('Submission lifecycle transition', [
             'submission_id' => $submission->id,
-            'from' => $from->value,
-            'to' => $target->value,
-            'actor_id' => $actor->id,
-            'actor_role' => $actor->role,
+            'from'          => $from->value,
+            'to'            => $target->value,
+            'actor_id'      => $actor->id,
+            'actor_role'    => $actor->role,
         ]);
 
         return $submission->fresh();
     }
 
-    
     public function systemTransition(Submission $submission, SubmissionLifecycleStatus $target, array $context = []): Submission
     {
-        $from = $this->current($submission);
+        $from    = $this->current($submission);
         $allowed = self::TRANSITIONS[$from->value] ?? [];
 
         if (! in_array($target->value, $allowed, true) && $from !== $target) {
@@ -124,7 +133,7 @@ class SubmissionLifecycleService
         }
 
         $submission->workflow_status = $target->value;
-        $submission->status = $this->legacyStatusFor($target);
+        $submission->status          = $this->legacyStatusFor($target);
 
         if (isset($context['org_review_notes'])) {
             $submission->org_review_notes = $context['org_review_notes'];
@@ -141,10 +150,17 @@ class SubmissionLifecycleService
 
     private function actorMaySet(Submission $submission, User $actor, SubmissionLifecycleStatus $target): bool
     {
-        if ($actor->isAdmin() || $actor->isPair()) {
-            $staffTargets = self::ROLE_TARGETS['admin'];
+        if ($actor->isAdmin()) {
+            return in_array($target->value, self::ROLE_TARGETS['admin'], true);
+        }
 
-            return in_array($target->value, $staffTargets, true);
+        if ($actor->isPair()) {
+            // PAIR cannot reject — exclusive right of Department panel
+            if ($target === SubmissionLifecycleStatus::Rejected) {
+                return false;
+            }
+
+            return in_array($target->value, self::ROLE_TARGETS['pair'], true);
         }
 
         if ($actor->isDepartment()) {
@@ -171,10 +187,11 @@ class SubmissionLifecycleService
     {
         return match ($status) {
             SubmissionLifecycleStatus::Approved,
-            SubmissionLifecycleStatus::Posted => 'approved',
+            SubmissionLifecycleStatus::Posted        => 'approved',
+            SubmissionLifecycleStatus::DeptApproved,
             SubmissionLifecycleStatus::UnderPeerReview,
-            SubmissionLifecycleStatus::Revised => 'under_review',
-            default => 'pending',
+            SubmissionLifecycleStatus::Revised       => 'under_review',
+            default                                  => 'pending',
         };
     }
 }

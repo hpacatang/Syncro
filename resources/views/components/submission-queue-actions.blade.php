@@ -3,15 +3,18 @@
 @php
     use App\Services\SubmissionLifecycleService;
 
-    $allowed = auth()->user()->isStaffReviewer()
+    $isPair   = auth()->user()->isPair();
+    $allowed  = auth()->user()->isStaffReviewer()
         ? app(SubmissionLifecycleService::class)->allowedTransitions($submission, auth()->user())
         : [];
 
     $canReject = false;
-    foreach ($allowed as $status) {
-        if ($status->value === 'rejected') {
-            $canReject = true;
-            break;
+    if (! $isPair) {
+        foreach ($allowed as $status) {
+            if ($status->value === 'rejected') {
+                $canReject = true;
+                break;
+            }
         }
     }
 @endphp
