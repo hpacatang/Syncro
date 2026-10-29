@@ -128,6 +128,11 @@
                         </div>
                     @endif
                 </div>
+                @if(isset($submissions) && $submissions instanceof \Illuminate\Contracts\Pagination\Paginator && $submissions->hasPages())
+                    <div class="card-footer bg-white border-top py-3 px-3">
+                        {{ $submissions->links() }}
+                    </div>
+                @endif
             </div>
         </div>
 

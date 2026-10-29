@@ -18,7 +18,7 @@ class UserManagementController extends Controller
         $users = User::with('department')
             ->where('account_status', 'pending')
             ->orderBy('created_at')
-            ->paginate(20);
+            ->paginate(10);
 
         return view('Users.AccountRequests', ['users' => $users]);
     }
@@ -77,7 +77,7 @@ class UserManagementController extends Controller
             $query->where('role', $request->role);
         }
 
-        $users = $query->paginate(20)->withQueryString();
+        $users = $query->paginate(10)->withQueryString();
 
         if ($request->wantsJson()) {
             return response()->json($users);

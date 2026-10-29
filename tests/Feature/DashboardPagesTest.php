@@ -182,5 +182,39 @@ class DashboardPagesTest extends TestCase
             ->assertSee('Rejected')
             ->assertDontSee('bi-x-circle');
     }
+
+    public function test_staff_dashboard_paginates_at_ten_items(): void
+    {
+        $pair = User::factory()->create(['role' => 'pair']);
+        $org = User::factory()->create(['role' => 'org']);
+        Submission::factory()->count(12)->create(['user_id' => $org->id]);
+
+        $response = $this->actingAs($pair)
+            ->get(route('dashboard'))
+            ->assertOk();
+
+        $paginated = $response->viewData('submissions');
+        $this->assertEquals(10, $paginated->perPage());
+        $this->assertEquals(12, $paginated->total());
+        $this->assertTrue($paginated->hasPages());
+        $response->assertSee('page=2', false);
+    }
+
+    public function test_org_dashboard_paginates_at_ten_items(): void
+    {
+        $org = User::factory()->create(['role' => 'org']);
+        Submission::factory()->count(12)->create(['user_id' => $org->id]);
+
+        $response = $this->actingAs($org)
+            ->get(route('org.dashboard'))
+            ->assertOk();
+
+        $paginated = $response->viewData('submissions');
+        $this->assertEquals(10, $paginated->perPage());
+        $this->assertEquals(12, $paginated->total());
+        $this->assertTrue($paginated->hasPages());
+        $response->assertSee('page=2', false);
+    }
 }
+
 

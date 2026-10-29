@@ -92,11 +92,11 @@ class MainController extends Controller
 
         $query = Submission::with(['user.department', 'reviewDepartment']);
         $filter = $this->applySubmissionFilters($query, $request, 'all');
-        $recentSubmissions = $query->limit(25)->get();
+        $submissions = $query->paginate(10)->withQueryString();
 
         return view('main.dashboard', [
             'stats' => $stats,
-            'submissions' => $recentSubmissions,
+            'submissions' => $submissions,
             'currentFilter' => $filter,
             'currentSearch' => trim((string) $request->get('q', '')),
             'defaultCaptionTone' => AppSetting::get('caption_tone', 'formal'),
@@ -155,13 +155,14 @@ class MainController extends Controller
             }]);
 
         $filter = $this->applySubmissionFilters($query, $request, 'all');
-        $submissions = $query->get();
 
         $showAwaitingSection = in_array($filter, ['all', 'ready_for_review', 'under_peer_review'], true);
         $awaitingApproval = $showAwaitingSection
-            ? $submissions->filter(fn ($s) => $s->enhanced_caption
+            ? (clone $query)->get()->filter(fn ($s) => $s->enhanced_caption
                 && SubmissionWorkflowGroups::matches($s->workflow_status, SubmissionWorkflowGroups::READY_FOR_ORG_REVIEW))->values()
             : collect();
+
+        $submissions = $query->paginate(10)->withQueryString();
 
         $feedback = Feedback::whereIn('submission_id', function ($query) use ($userId) {
             $query->select('id')->from('submissions')->where('user_id', $userId);
