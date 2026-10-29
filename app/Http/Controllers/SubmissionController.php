@@ -550,7 +550,7 @@ class SubmissionController extends Controller
                     ['role' => 'user', 'content' => $caption],
                 ],
                 'temperature' => 0.3,
-                'max_tokens' => $maxTokens,
+                'max_completion_tokens' => $maxTokens,
             ]),
             fn ($response) => $response->json('choices.0.message.content'),
             'OpenAI'

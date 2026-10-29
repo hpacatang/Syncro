@@ -95,6 +95,14 @@ class DepartmentWorkflowTest extends TestCase
             ->assertOk();
 
         $this->actingAs($reviewer)
+            ->get(route('dashboard.submissions.evaluate', $submission))
+            ->assertOk()
+            ->assertSee('Submitted source')
+            ->assertSee('Prepare reviewed draft')
+            ->assertSee('id="saveButton"', false)
+            ->assertDontSee('id="generateModal"', false);
+
+        $this->actingAs($reviewer)
             ->get(route('dashboard.submissions'))
             ->assertOk()
             ->assertSee('Department queue caption');
@@ -106,6 +114,10 @@ class DepartmentWorkflowTest extends TestCase
 
         $this->actingAs($reviewer)
             ->get(route('dashboard.submissions.review', $otherSubmission))
+            ->assertNotFound();
+
+        $this->actingAs($reviewer)
+            ->get(route('dashboard.submissions.evaluate', $otherSubmission))
             ->assertNotFound();
 
         $this->actingAs($reviewer)
@@ -134,6 +146,11 @@ class DepartmentWorkflowTest extends TestCase
         $this->actingAs($pair)
             ->get(route('dashboard.submissions.review', $pairSubmission))
             ->assertOk();
+
+        $this->actingAs($pair)
+            ->get(route('dashboard.submissions.evaluate', $pairSubmission))
+            ->assertOk()
+            ->assertDontSee('id="rejectButton"', false);
     }
 
     public function test_department_manager_can_manage_only_student_accounts_in_their_department(): void

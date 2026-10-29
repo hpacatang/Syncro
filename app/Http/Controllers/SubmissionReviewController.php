@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Submission;
+use App\Models\AppSetting;
 use App\Notifications\SubmissionUnderReview;
 use App\Services\SubmissionLifecycleService;
 use App\Submission\Enums\SubmissionLifecycleStatus;
@@ -28,28 +29,57 @@ class SubmissionReviewController extends Controller
             return redirect()->route($user->homeRoute());
         }
 
-        
-        
-        if ($user->isStaffReviewer()
-            && Gate::allows('reviewAsStaff', $submission)
-            && $submission->workflow_status === SubmissionLifecycleStatus::Submitted->value) {
-            try {
-                $submission = $lifecycle->systemTransition($submission, SubmissionLifecycleStatus::UnderPeerReview);
-
-                
-                $orgUser = $submission->user;
-                if ($orgUser) {
-                    $orgUser->notify(new SubmissionUnderReview($submission));
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed auto-transitioning submission #' . $submission->id . ' to under_peer_review: ' . $e->getMessage());
-            }
-        }
+        $submission = $this->beginStaffReview($submission, $user->isStaffReviewer(), $lifecycle);
 
         $submission->load(['user', 'enhancer', 'feedback.user']);
 
         return view('Submission.ReviewFeatures', [
             'submission' => $submission,
         ]);
+    }
+
+    public function evaluate(Request $request, Submission $submission, SubmissionLifecycleService $lifecycle): View
+    {
+        abort_unless(
+            $request->user()->isStaffReviewer() && Gate::allows('reviewAsStaff', $submission),
+            403
+        );
+
+        $submission = $this->beginStaffReview($submission, true, $lifecycle);
+        $submission->load(['user', 'reviewDepartment', 'media', 'enhancer']);
+
+        return view('Submission.Evaluate', [
+            'submission' => $submission,
+            'configuredProviders' => [
+                'openai' => (bool) config('services.openai.key'),
+                'gemini' => (bool) config('services.gemini.key'),
+                'deepseek' => (bool) config('services.deepseek.key'),
+            ],
+            'defaultTone' => AppSetting::get('caption_tone', 'formal'),
+        ]);
+    }
+
+    private function beginStaffReview(
+        Submission $submission,
+        bool $isStaffReviewer,
+        SubmissionLifecycleService $lifecycle
+    ): Submission {
+        if (! $isStaffReviewer
+            || ! Gate::allows('reviewAsStaff', $submission)
+            || $submission->workflow_status !== SubmissionLifecycleStatus::Submitted->value) {
+            return $submission;
+        }
+
+        try {
+            $submission = $lifecycle->systemTransition($submission, SubmissionLifecycleStatus::UnderPeerReview);
+            $submission->user?->notify(new SubmissionUnderReview($submission));
+        } catch (\Exception $e) {
+            Log::error('Failed auto-transitioning submission to under_peer_review.', [
+                'submission_id' => $submission->id,
+                'exception' => $e::class,
+            ]);
+        }
+
+        return $submission;
     }
 }

@@ -82,10 +82,17 @@ class SubmissionContentEvaluationTest extends TestCase
             ->assertSee('USJR website article');
 
         $this->actingAs($reviewer)
+            ->get(route('dashboard.submissions.evaluate', $submission))
+            ->assertOk()
+            ->assertSee('Reviewed headline')
+            ->assertSee('Reviewed article body')
+            ->assertSee('Verify names, dates, and claims');
+
+        $this->actingAs($reviewer)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('data-submission-type="website_article"', false)
-            ->assertSee('Reviewed article headline');
+            ->assertSee('href="'.route('dashboard.submissions.evaluate', $submission).'"', false)
+            ->assertSee('Evaluate');
     }
 
     public function test_manual_article_review_saves_an_edited_headline_and_body(): void
@@ -187,7 +194,8 @@ class SubmissionContentEvaluationTest extends TestCase
                 && str_contains($systemPrompt, 'Do not invent facts')
                 && str_contains($systemPrompt, 'untrusted source material')
                 && str_contains($userContent, 'Headline (keep unchanged):')
-                && str_contains($userContent, 'Article body:');
+                && str_contains($userContent, 'Article body:')
+                && ($request->data()['max_completion_tokens'] ?? null) === 3000;
         });
     }
 

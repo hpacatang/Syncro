@@ -38,6 +38,10 @@ class BackNavigation
                 'href' => route('dashboard.submissions'),
                 'label' => 'Back to submissions',
             ],
+            'dashboard.submissions.evaluate' => [
+                'href' => route('dashboard.submissions'),
+                'label' => 'Back to submissions',
+            ],
             'org.submissions.review' => [
                 'href' => route('org.submissions'),
                 'label' => 'Back to submissions',

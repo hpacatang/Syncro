@@ -25,20 +25,13 @@
             <i class="bi bi-eye" aria-hidden="true"></i>
             <span class="syncro-queue-actions__label">Review</span>
         </a>
-        <button
-            type="button"
-            class="btn btn-sm btn-outline-primary syncro-queue-actions__btn generate-btn"
-            data-bs-toggle="modal"
-            data-bs-target="#generateModal"
-            data-submission-id="{{ $submission->id }}"
-            data-caption="{{ $submission->original_caption }}"
-            data-enhanced-caption="{{ $submission->enhanced_caption ?? '' }}"
-            data-submission-type="{{ $submission->submission_type }}"
-            data-article-title="{{ $submission->article_title ?? '' }}"
-            data-enhanced-title="{{ $submission->enhanced_title ?? '' }}"
+        <a
+            href="{{ route('dashboard.submissions.evaluate', $submission) }}"
+            class="btn btn-sm btn-outline-primary syncro-queue-actions__btn"
             title="Evaluate and enhance submission">
             <i class="bi bi-magic" aria-hidden="true"></i>
             <span class="syncro-queue-actions__label">Evaluate</span>
+        </a>
     </div>
     <span class="lifecycle-inline-msg syncro-queue-actions__msg" role="status"></span>
 </div>

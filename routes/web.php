@@ -43,6 +43,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard/submissions', [MainController::class, 'submissions'])->name('dashboard.submissions');
         Route::get('/dashboard/submissions/{submission}/review', [SubmissionReviewController::class, 'show'])
             ->name('dashboard.submissions.review');
+        Route::get('/dashboard/submissions/{submission}/evaluate', [SubmissionReviewController::class, 'evaluate'])
+            ->name('dashboard.submissions.evaluate');
         Route::get('/dashboard/notifications', [NotificationController::class, 'index'])->name('dashboard.notifications');
     });
 
