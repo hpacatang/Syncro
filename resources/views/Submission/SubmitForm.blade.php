@@ -80,12 +80,12 @@
                 </table>
             </div>
         </div>
+        @if(isset($submissions) && $submissions instanceof \Illuminate\Contracts\Pagination\Paginator && $submissions->hasPages())
+            <div class="card-footer bg-white border-top py-3">
+                {{ $submissions->links() }}
+            </div>
+        @endif
     </div>
-    @if(isset($submissions) && $submissions instanceof \Illuminate\Contracts\Pagination\Paginator && $submissions->hasPages())
-        <div class="d-flex justify-content-center mt-3">
-            {{ $submissions->links() }}
-        </div>
-    @endif
 
     @if(isset($submissions) && $submissions->count() > 0)
         <x-submission-lifecycle-poll :submission-ids="collect($submissions->items())->pluck('id')->implode(',')" />

@@ -83,10 +83,34 @@
     border-color: var(--syncro-primary);
 }
 
+.syncro-app .card-footer nav {
+    width: 100%;
+}
+
+.syncro-app .card-footer nav .justify-content-sm-between {
+    gap: 1rem;
+}
+
+.syncro-app .pagination {
+    margin-bottom: 0;
+}
+
+.syncro-app .pagination .page-link {
+    color: var(--syncro-primary);
+    box-shadow: none;
+}
+
+.syncro-app .pagination .page-link:hover {
+    color: var(--syncro-primary);
+    background-color: rgba(var(--syncro-primary-rgb), 0.08);
+}
+
 .syncro-app .pagination .page-item.active .page-link {
     background-color: var(--syncro-primary);
     border-color: var(--syncro-primary);
+    color: #fff;
 }
+
 
 .syncro-app .form-check-input:checked {
     background-color: var(--syncro-highlight);
