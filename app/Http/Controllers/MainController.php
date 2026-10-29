@@ -112,7 +112,7 @@ class MainController extends Controller
         }
 
         $filter = $this->applySubmissionFilters($query, $request, 'all');
-        $submissions = $query->paginate(15)->withQueryString();
+        $submissions = $query->paginate(10)->withQueryString();
 
         return view('Submission.SubmitForm', [
             'submissions' => $submissions,

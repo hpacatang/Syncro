@@ -41,7 +41,7 @@
     @if($isRejected)
         <div class="lifecycle-progress__rejected d-flex flex-column align-items-center justify-content-center {{ $compact ? 'py-1' : 'py-3' }} text-center">
             <span class="badge bg-danger {{ $compact ? 'px-2 py-1' : 'fs-6 px-3 py-2 mb-2' }}">
-                <i class="bi bi-x-circle me-1"></i> Rejected
+                Rejected
             </span>
             @if(! $compact)
                 <p class="text-danger small mb-0 fw-semibold">

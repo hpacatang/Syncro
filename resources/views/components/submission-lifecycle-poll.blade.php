@@ -47,7 +47,7 @@
                 if (!rejBlock) {
                     rejBlock = document.createElement('div');
                     rejBlock.className = 'lifecycle-progress__rejected d-flex flex-column align-items-center justify-content-center ' + (isCompact ? 'py-1' : 'py-3') + ' text-center';
-                    rejBlock.innerHTML = '<span class="badge bg-danger ' + (isCompact ? 'px-2 py-1' : 'fs-6 px-3 py-2 mb-2') + '"><i class="bi bi-x-circle me-1"></i> Rejected</span>' +
+                    rejBlock.innerHTML = '<span class="badge bg-danger ' + (isCompact ? 'px-2 py-1' : 'fs-6 px-3 py-2 mb-2') + '">Rejected</span>' +
                         (isCompact ? '' : '<p class="text-danger small mb-0 fw-semibold">This submission was rejected and will not proceed.</p>');
                     root.appendChild(rejBlock);
                 } else {

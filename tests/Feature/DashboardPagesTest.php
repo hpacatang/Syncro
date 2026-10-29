@@ -148,4 +148,39 @@ class DashboardPagesTest extends TestCase
             ->get(SubmissionMedia::url('submissions/media/photo.jpg'))
             ->assertOk();
     }
+
+    public function test_submissions_table_paginates_at_ten_items(): void
+    {
+        $pair = User::factory()->create(['role' => 'pair']);
+        $org = User::factory()->create(['role' => 'org']);
+        Submission::factory()->count(12)->create(['user_id' => $org->id]);
+
+        $response = $this->actingAs($pair)
+            ->get(route('dashboard.submissions'))
+            ->assertOk();
+
+        // Verifies view receives paginated submissions with 10 per page
+        $paginated = $response->viewData('submissions');
+        $this->assertEquals(10, $paginated->perPage());
+        $this->assertEquals(12, $paginated->total());
+        $this->assertEquals(2, $paginated->lastPage());
+        $this->assertTrue($paginated->hasPages());
+
+        // Verifies page link is present in the rendered HTML
+        $response->assertSee('page=2', false);
+    }
+
+    public function test_rejected_badge_renders_text_without_x_icon(): void
+    {
+        $pair = User::factory()->create(['role' => 'pair']);
+        $org = User::factory()->create(['role' => 'org']);
+        $rejected = Submission::factory()->rejected()->create(['user_id' => $org->id]);
+
+        $this->actingAs($pair)
+            ->get(route('dashboard.submissions'))
+            ->assertOk()
+            ->assertSee('Rejected')
+            ->assertDontSee('bi-x-circle');
+    }
 }
+
