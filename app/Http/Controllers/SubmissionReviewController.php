@@ -38,12 +38,19 @@ class SubmissionReviewController extends Controller
         ]);
     }
 
-    public function evaluate(Request $request, Submission $submission, SubmissionLifecycleService $lifecycle): View
+    public function evaluate(Request $request, Submission $submission, SubmissionLifecycleService $lifecycle): View|RedirectResponse
     {
         abort_unless(
             $request->user()->isStaffReviewer() && Gate::allows('reviewAsStaff', $submission),
             403
         );
+
+        // A rejection is final: show the content read-only instead of the editing workspace.
+        if ($submission->workflow_status === SubmissionLifecycleStatus::Rejected->value) {
+            return redirect()
+                ->route('dashboard.submissions.review', $submission)
+                ->with('error', 'This submission was rejected and can only be viewed.');
+        }
 
         $submission = $this->beginStaffReview($submission, true, $lifecycle);
         $submission->load(['user', 'reviewDepartment', 'media', 'enhancer']);

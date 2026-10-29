@@ -63,7 +63,7 @@ class SubmissionLifecycleServiceTest extends TestCase
         $service->transition($submission, SubmissionLifecycleStatus::UnderPeerReview, $admin);
     }
 
-    public function test_all_account_roles_can_reject_submissions(): void
+    public function test_all_account_roles_except_org_can_reject_submissions(): void
     {
         $service = app(SubmissionLifecycleService::class);
 
@@ -80,6 +80,6 @@ class SubmissionLifecycleServiceTest extends TestCase
         $this->assertTrue($service->canTransition($subAdmin, $admin, SubmissionLifecycleStatus::Rejected));
         $this->assertTrue($service->canTransition($subPair, $pair, SubmissionLifecycleStatus::Rejected));
         $this->assertTrue($service->canTransition($subDept, $dept, SubmissionLifecycleStatus::Rejected));
-        $this->assertTrue($service->canTransition($subOrg, $org, SubmissionLifecycleStatus::Rejected));
+        $this->assertFalse($service->canTransition($subOrg, $org, SubmissionLifecycleStatus::Rejected));
     }
 }

@@ -12,6 +12,7 @@ use App\Http\Controllers\StaffToolsController;
 use App\Http\Controllers\SubmissionLifecycleController;
 use App\Http\Controllers\SubmissionMediaController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\ResolutionLetterController;
 
 Route::get('/', function () {
     return redirect('login');
@@ -46,6 +47,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard/submissions/{submission}/evaluate', [SubmissionReviewController::class, 'evaluate'])
             ->name('dashboard.submissions.evaluate');
         Route::get('/dashboard/notifications', [NotificationController::class, 'index'])->name('dashboard.notifications');
+        Route::get('/dashboard/submissions/{submission}/resolution-letter', [ResolutionLetterController::class, 'show'])
+            ->name('dashboard.submissions.resolution-letter');
     });
 
     Route::middleware('role:super_admin')->group(function () {

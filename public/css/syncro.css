@@ -103,6 +103,30 @@
     color: var(--syncro-highlight);
 }
 
+/* Status badge overrides — Rejected & Revision distinct visual states (feedback §3.2) */
+.bg-revision {
+    background-color: #f97316 !important;  /* amber-orange for "Revised" */
+    color: #fff !important;
+}
+
+.badge.bg-revision {
+    background-color: #f97316 !important;
+    color: #fff !important;
+}
+
+/* Clear "Rejected" badge — deep crimson to distinguish from warning amber */
+.badge.bg-danger,
+.bg-danger.badge {
+    background-color: #dc2626 !important;
+}
+
+/* Revised status indicator in tables and lists */
+[data-lifecycle-badge][style*="f97316"],
+.badge[style*="f97316"] {
+    font-weight: 600;
+}
+
+
 .syncro-app {
     margin: 0;
     min-height: 100vh;
@@ -799,33 +823,47 @@ body.syncro-nav-open {
 }
 
 .syncro-queue-actions__group {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
     gap: 0.35rem;
     width: 100%;
 }
 
-.syncro-queue-actions__btn {
+/* Center the Actions column header over the centered buttons */
+.syncro-queue__head > span:last-child {
+    text-align: center;
+}
+
+.syncro-queue-actions__btn,
+.syncro-btn-compact {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.25rem;
-    font-size: 0.75rem;
-    padding: 0.3rem 0.4rem;
-    line-height: 1.25;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 550;
+    padding: 0.22rem 0.55rem;
+    line-height: 1.2;
     white-space: nowrap;
-    min-height: 1.875rem;
-    width: 100%;
+    min-height: 1.65rem;
+    flex: 0 0 auto;
+    width: auto;
+    border-radius: 0.3rem;
 }
 
-.syncro-queue-actions__btn .bi {
-    font-size: 0.8rem;
+.syncro-queue-actions__btn .bi,
+.syncro-btn-compact .bi {
+    font-size: 0.78rem;
+    line-height: 1;
     flex-shrink: 0;
 }
 
 .syncro-queue-actions__label {
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .syncro-queue-actions__btn:disabled,
@@ -847,7 +885,7 @@ body.syncro-nav-open {
 .syncro-queue-actions__msg {
     font-size: 0.6875rem;
     line-height: 1.2;
-    text-align: right;
+    text-align: center;
 }
 
 .syncro-queue-actions__msg:empty {

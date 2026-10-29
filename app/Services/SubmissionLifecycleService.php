@@ -15,7 +15,7 @@ class SubmissionLifecycleService
      *
      * Department-routed submissions must be approved by the Department Head
      * (dept_approved) before moving to PAIR (under_peer_review).
-     * Only the Department panel may Reject; PAIR is revision-only.
+     * Admin, PAIR and Department may Reject; a rejection is final (no further transitions).
      */
     private const TRANSITIONS = [
         'submitted'          => ['dept_approved', 'under_peer_review', 'rejected'],
@@ -29,13 +29,13 @@ class SubmissionLifecycleService
 
     /**
      * Allowed target statuses per role.
-     * All roles (admins, pair, department, and org) have reject capability.
+     * Admin, PAIR and Department can reject; org users can only approve or request revisions.
      */
     private const ROLE_TARGETS = [
         'admin'      => ['dept_approved', 'approved', 'rejected', 'revised', 'posted'],
         'pair'       => ['approved', 'rejected', 'revised', 'posted'],
         'department' => ['dept_approved', 'approved', 'rejected', 'revised', 'posted'],
-        'org'        => ['approved', 'rejected', 'revised'],
+        'org'        => ['approved', 'revised'],
     ];
 
     public function current(Submission $submission): SubmissionLifecycleStatus

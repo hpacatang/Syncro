@@ -5,9 +5,21 @@
     <div class="mb-4">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
             <h1 class="h3 fw-bold mb-0">Review submission #{{ $submission->id }}</h1>
-            <a href="{{ route(auth()->user()->isOrg() ? 'org.dashboard' : 'dashboard') }}" class="btn btn-outline-secondary btn-sm">
-                ← Back to Queue
-            </a>
+            <div class="d-flex flex-wrap gap-2">
+                @if(auth()->user()->isStaffReviewer() && $submission->workflow_status !== 'rejected')
+                    <a href="{{ route('dashboard.submissions.evaluate', $submission) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-magic me-1"></i> Evaluate &amp; edit
+                    </a>
+                @endif
+                @if(auth()->user()->isStaffReviewer())
+                    <a href="{{ route('dashboard.submissions.resolution-letter', $submission) }}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener">
+                        <i class="bi bi-file-earmark-text me-1"></i> Resolution letter
+                    </a>
+                @endif
+                <a href="{{ route(auth()->user()->isOrg() ? 'org.dashboard' : 'dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                    ← Back to Queue
+                </a>
+            </div>
         </div>
         @if($submission->user)
             <p class="text-muted mb-3">

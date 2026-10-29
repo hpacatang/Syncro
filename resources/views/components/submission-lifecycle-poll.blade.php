@@ -35,16 +35,35 @@
             root.setAttribute('data-workflow-status', status);
             root.setAttribute('data-progress-index', String(progressIndex));
 
+            const isCompact = root.classList.contains('submission-lifecycle-progress--compact');
+            const track = root.querySelector('.lifecycle-progress__track');
+            const badgeWrap = root.querySelector('.lifecycle-progress__badge-wrap');
+            let rejBlock = root.querySelector('.lifecycle-progress__rejected');
+
+            if (status === 'rejected') {
+                if (track) track.style.display = 'none';
+                if (badgeWrap) badgeWrap.style.display = 'none';
+
+                if (!rejBlock) {
+                    rejBlock = document.createElement('div');
+                    rejBlock.className = 'lifecycle-progress__rejected d-flex flex-column align-items-center justify-content-center ' + (isCompact ? 'py-1' : 'py-3') + ' text-center';
+                    rejBlock.innerHTML = '<span class="badge bg-danger ' + (isCompact ? 'px-2 py-1' : 'fs-6 px-3 py-2 mb-2') + '"><i class="bi bi-x-circle me-1"></i> Rejected</span>' +
+                        (isCompact ? '' : '<p class="text-danger small mb-0 fw-semibold">This submission was rejected and will not proceed.</p>');
+                    root.appendChild(rejBlock);
+                } else {
+                    rejBlock.style.display = '';
+                }
+                return;
+            }
+
+            if (rejBlock) rejBlock.style.display = 'none';
+            if (track) track.style.display = '';
+            if (badgeWrap) badgeWrap.style.display = '';
+
             const steps = root.querySelectorAll('.lifecycle-step');
             steps.forEach(function (stepEl, index) {
-                const stepKey = stepEl.getAttribute('data-step');
                 stepEl.classList.remove('is-done', 'is-active', 'is-upcoming');
-                if (status === 'rejected') {
-                    stepEl.classList.add('is-upcoming');
-                    if (stepKey === 'rejected' || index === 0) {
-                        stepEl.classList.add('is-active');
-                    }
-                } else if (progressIndex > index) {
+                if (progressIndex > index) {
                     stepEl.classList.add('is-done');
                 } else if (progressIndex === index) {
                     stepEl.classList.add('is-active');

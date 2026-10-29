@@ -32,7 +32,10 @@ class AuditLogController extends Controller
 
         $auditLogs = $query->paginate(50);
         $actionTypes = AuditLog::distinct()->pluck('action_type');
-        $users = \App\Models\User::orderBy('name')->get();
+
+        // Limit users list to only those who appear in audit logs to prevent full-table scans
+        $auditUserIds = AuditLog::distinct()->whereNotNull('user_id')->pluck('user_id');
+        $users = \App\Models\User::whereIn('id', $auditUserIds)->orderBy('name')->get(['id', 'name', 'profile_name']);
 
         if ($request->wantsJson()) {
             return response()->json($auditLogs);

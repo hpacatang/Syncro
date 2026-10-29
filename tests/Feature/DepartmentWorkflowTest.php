@@ -150,7 +150,7 @@ class DepartmentWorkflowTest extends TestCase
         $this->actingAs($pair)
             ->get(route('dashboard.submissions.evaluate', $pairSubmission))
             ->assertOk()
-            ->assertDontSee('id="rejectButton"', false);
+            ->assertSee('id="rejectButton"', false);
     }
 
     public function test_department_manager_can_manage_only_student_accounts_in_their_department(): void

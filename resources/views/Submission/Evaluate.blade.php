@@ -8,9 +8,8 @@
     use App\Services\SubmissionLifecycleService;
 
     $isArticle = $submission->isWebsiteArticle();
-    $canReject = ! auth()->user()->isPair()
-        && collect(app(SubmissionLifecycleService::class)->allowedTransitions($submission, auth()->user()))
-            ->contains(fn ($status) => $status->value === 'rejected');
+    $canReject = collect(app(SubmissionLifecycleService::class)->allowedTransitions($submission, auth()->user()))
+        ->contains(fn ($status) => $status->value === 'rejected');
 @endphp
 
 <div class="container-fluid px-0">
@@ -29,9 +28,14 @@
                 · Routed to {{ $submission->reviewOwnerLabel() }}
             </p>
         </div>
-        <a href="{{ route('dashboard.submissions') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Back to queue
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('dashboard.submissions.resolution-letter', $submission) }}" class="btn btn-outline-primary" id="resolutionLetterLink" target="_blank" rel="noopener">
+                <i class="bi bi-file-earmark-text me-1"></i> Resolution letter
+            </a>
+            <a href="{{ route('dashboard.submissions') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to queue
+            </a>
+        </div>
     </div>
 
     <div class="row g-4 align-items-start">
@@ -157,23 +161,62 @@
                     </div>
 
                     <div id="evaluationMessage" class="alert d-none" role="status" aria-live="polite"></div>
-                    <div class="d-flex flex-wrap justify-content-between gap-2 border-top pt-3">
-                        @if($canReject)
-                            <button type="button" class="btn btn-outline-danger" id="rejectButton">
-                                <i class="bi bi-x-circle me-1"></i> Reject submission
-                            </button>
-                        @else
-                            <span></span>
-                        @endif
+                    <div class="d-flex flex-wrap gap-2 border-top pt-3">
                         <button type="button" class="btn btn-success" id="saveButton">
                             <i class="bi bi-send-check me-1"></i> Save & send for review
                         </button>
+                        @if($canReject)
+                            <button type="button" class="btn btn-outline-danger" id="rejectButton" data-bs-toggle="modal" data-bs-target="#evaluateRejectModal">
+                                <i class="bi bi-x-circle me-1"></i> Reject submission
+                            </button>
+                        @endif
                     </div>
                 </div>
             </section>
         </div>
     </div>
 </div>
+
+@if($canReject)
+<div class="modal fade" id="evaluateRejectModal" tabindex="-1" aria-labelledby="evaluateRejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden; border: 1.5px solid #143a22;">
+            <div class="modal-header border-0" style="background-color: #143a22; padding: 1.1rem 1.4rem;">
+                <h5 class="modal-title fw-bold text-white mb-0" id="evaluateRejectModalLabel" style="font-size: 1.25rem;">
+                    Reject Submission #{{ $submission->id }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-white" style="padding: 1.4rem 1.4rem 1.2rem 1.4rem;">
+                <p class="text-secondary mb-3" style="font-size: 0.96rem; line-height: 1.45;">
+                    Are you sure you want to reject this submission? Once rejected, this action CANNOT BE UNDONE.
+                </p>
+                <label for="evaluateRejectReason" class="form-label fw-bold text-dark mb-2" style="font-size: 1.05rem;">
+                    Rejection reason
+                </label>
+                <textarea
+                    id="evaluateRejectReason"
+                    class="form-control"
+                    rows="4"
+                    placeholder="Provide a clear explanation of why it is rejected..."
+                    style="border: 1.5px solid #28a745; border-radius: 8px; padding: 0.75rem; box-shadow: none; font-size: 0.95rem;"
+                    maxlength="5000"></textarea>
+                <div id="evaluateRejectReasonError" class="text-danger small mt-2 fw-semibold" style="display:none;">
+                    A rejection reason of at least 10 characters is required.
+                </div>
+            </div>
+            <div class="modal-footer border-0" style="background-color: #143a22; padding: 0.9rem 1.4rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn" data-bs-dismiss="modal" style="background: transparent; border: 1.5px solid #2f6b43; color: #ffffff; border-radius: 6px; padding: 0.42rem 1.35rem; font-weight: 500;">
+                    Cancel
+                </button>
+                <button type="button" class="btn" id="evaluateConfirmRejectBtn" style="background-color: #dc3545; border: none; color: #ffffff; border-radius: 6px; padding: 0.42rem 1.35rem; font-weight: 500;">
+                    Confirm Rejection
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 
 <script>
 (() => {
@@ -185,6 +228,11 @@
     const message = document.getElementById('evaluationMessage');
     const saveButton = document.getElementById('saveButton');
     const generateButton = document.getElementById('generateButton');
+    const rejectButton = document.getElementById('rejectButton');
+    const rejectModalEl = document.getElementById('evaluateRejectModal');
+    const rejectReasonInput = document.getElementById('evaluateRejectReason');
+    const rejectReasonError = document.getElementById('evaluateRejectReasonError');
+    const confirmRejectBtn = document.getElementById('evaluateConfirmRejectBtn');
     const minimum = isArticle ? 100 : 10;
     const maximum = isArticle ? 12000 : 2200;
 
@@ -203,6 +251,18 @@
             throw new Error(Object.values(data.errors).flat().join(' '));
         }
         return data;
+    }
+
+    function getRejectModal() {
+        if (!rejectModalEl) return null;
+        if (typeof bootstrap !== 'undefined' && bootstrap && bootstrap.Modal) {
+            try {
+                return bootstrap.Modal.getOrCreateInstance(rejectModalEl);
+            } catch (e) {
+                return null;
+            }
+        }
+        return null;
     }
 
     body.addEventListener('input', updateCount);
@@ -292,42 +352,128 @@
         }
     });
 
-    const rejectButton = document.getElementById('rejectButton');
+    function showRejectModal() {
+        if (rejectReasonInput) rejectReasonInput.value = '';
+        if (rejectReasonError) rejectReasonError.style.display = 'none';
+        if (confirmRejectBtn) {
+            confirmRejectBtn.disabled = false;
+            confirmRejectBtn.textContent = 'Confirm Rejection';
+        }
+
+        const bsModal = getRejectModal();
+        if (bsModal) {
+            bsModal.show();
+            return;
+        }
+
+        // Direct DOM fallback if bootstrap modal instance cannot be initialized
+        if (rejectModalEl) {
+            rejectModalEl.classList.add('show');
+            rejectModalEl.style.display = 'block';
+            rejectModalEl.removeAttribute('aria-hidden');
+            rejectModalEl.setAttribute('aria-modal', 'true');
+            document.body.classList.add('modal-open');
+
+            let backdrop = document.getElementById('evaluateRejectBackdrop');
+            if (!backdrop) {
+                backdrop = document.createElement('div');
+                backdrop.id = 'evaluateRejectBackdrop';
+                backdrop.className = 'modal-backdrop fade show';
+                document.body.appendChild(backdrop);
+                backdrop.addEventListener('click', hideRejectModal);
+            }
+        }
+    }
+
+    function hideRejectModal() {
+        const bsModal = getRejectModal();
+        if (bsModal) {
+            try { bsModal.hide(); } catch (e) {}
+        }
+        if (rejectModalEl) {
+            rejectModalEl.classList.remove('show');
+            rejectModalEl.style.display = 'none';
+            rejectModalEl.setAttribute('aria-hidden', 'true');
+            rejectModalEl.removeAttribute('aria-modal');
+        }
+        document.body.classList.remove('modal-open');
+        const backdrop = document.getElementById('evaluateRejectBackdrop');
+        if (backdrop) backdrop.remove();
+    }
+
+    if (rejectModalEl) {
+        rejectModalEl.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {
+            btn.addEventListener('click', hideRejectModal);
+        });
+    }
+
     if (rejectButton) {
-        rejectButton.addEventListener('click', async () => {
-            const notes = window.prompt('Provide a reason for rejecting this submission (at least 10 characters):');
-            if (notes === null) return;
-            if (notes.trim().length < 10) {
-                showMessage('danger', 'A rejection reason of at least 10 characters is required.');
+        rejectButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            showRejectModal();
+        });
+    }
+
+    if (confirmRejectBtn) {
+        confirmRejectBtn.addEventListener('click', () => {
+            const notes = rejectReasonInput ? rejectReasonInput.value.trim() : '';
+            if (notes.length < 10) {
+                if (rejectReasonError) rejectReasonError.style.display = 'block';
+                if (rejectReasonInput) rejectReasonInput.focus();
                 return;
             }
-            if (!window.confirm('Reject this submission permanently? This action cannot be undone.')) return;
 
-            rejectButton.disabled = true;
-            try {
-                const response = await fetch(`/api/submissions/${submissionId}/transition`, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrf,
-                    },
-                    body: JSON.stringify({ status: 'rejected', notes: notes.trim() }),
-                });
-                const data = await readResponse(response);
+            if (rejectReasonError) rejectReasonError.style.display = 'none';
+            confirmRejectBtn.disabled = true;
+            confirmRejectBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Submitting…';
 
-                if (!data.success) {
-                    throw new Error(data.message || 'The submission could not be rejected.');
-                }
-
-                showMessage('success', 'Submission rejected.');
-                window.setTimeout(() => window.location.assign(@json(route('dashboard.submissions'))), 900);
-            } catch (error) {
-                showMessage('danger', error.message || 'The submission could not be rejected.');
-                rejectButton.disabled = false;
-            }
+            hideRejectModal();
+            executeRejection(notes);
         });
+
+        if (rejectReasonInput) {
+            rejectReasonInput.addEventListener('input', function () {
+                if (this.value.trim().length >= 10) {
+                    if (rejectReasonError) rejectReasonError.style.display = 'none';
+                }
+            });
+        }
+    }
+
+    async function executeRejection(notes) {
+        if (rejectButton) rejectButton.disabled = true;
+        if (saveButton) saveButton.disabled = true;
+
+        showMessage('info', 'Submitting rejection…');
+
+        try {
+            const response = await fetch(`/api/submissions/${submissionId}/transition`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                },
+                body: JSON.stringify({ status: 'rejected', notes: notes }),
+            });
+            const data = await readResponse(response);
+
+            if (!data.success) {
+                throw new Error(data.message || 'The submission could not be rejected.');
+            }
+
+            showMessage('success', 'Submission rejected.');
+            window.setTimeout(() => window.location.assign(@json(route('dashboard.submissions'))), 800);
+        } catch (error) {
+            showMessage('danger', error.message || 'The submission could not be rejected.');
+            if (rejectButton) rejectButton.disabled = false;
+            if (saveButton) saveButton.disabled = false;
+            if (confirmRejectBtn) {
+                confirmRejectBtn.disabled = false;
+                confirmRejectBtn.textContent = 'Confirm Rejection';
+            }
+        }
     }
 })();
 </script>

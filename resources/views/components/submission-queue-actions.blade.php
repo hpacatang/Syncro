@@ -8,13 +8,13 @@
         ? app(SubmissionLifecycleService::class)->allowedTransitions($submission, auth()->user())
         : [];
 
+    $isRejected = $submission->workflow_status === 'rejected';
+
     $canReject = false;
-    if (! $isPair) {
-        foreach ($allowed as $status) {
-            if ($status->value === 'rejected') {
-                $canReject = true;
-                break;
-            }
+    foreach ($allowed as $status) {
+        if ($status->value === 'rejected') {
+            $canReject = true;
+            break;
         }
     }
 @endphp
@@ -23,8 +23,9 @@
     <div class="syncro-queue-actions__group" role="group" aria-label="Submission actions">
         <a href="{{ route('dashboard.submissions.review', $submission) }}" class="btn btn-sm btn-primary syncro-queue-actions__btn" title="Review submission details">
             <i class="bi bi-eye" aria-hidden="true"></i>
-            <span class="syncro-queue-actions__label">Review</span>
+            <span class="syncro-queue-actions__label">{{ $isRejected ? 'View' : 'Review' }}</span>
         </a>
+        @unless($isRejected)
         <a
             href="{{ route('dashboard.submissions.evaluate', $submission) }}"
             class="btn btn-sm btn-outline-primary syncro-queue-actions__btn"
@@ -32,6 +33,7 @@
             <i class="bi bi-magic" aria-hidden="true"></i>
             <span class="syncro-queue-actions__label">Evaluate</span>
         </a>
+        @endunless
     </div>
     <span class="lifecycle-inline-msg syncro-queue-actions__msg" role="status"></span>
 </div>

@@ -334,13 +334,6 @@
                             <small class="text-muted">Send back to the review team with feedback for improvements.</small>
                         </label>
                     </div>
-                    <div class="mb-3">
-                        <input type="radio" id="permanentRejectRadio" name="decision" value="permanent_reject">
-                        <label for="permanentRejectRadio" class="form-label">
-                            <strong class="text-danger">✗ Reject</strong><br>
-                            <small class="text-muted">Reject this submission permanently. This action cannot be undone.</small>
-                        </label>
-                    </div>
 
                     <div id="rejectionNotes" style="display: none;" class="mt-3">
                         <label for="revisionNotes" class="form-label" id="revisionNotesLabel">What needs improvement?</label>
@@ -360,9 +353,6 @@
                 </button>
                 <button type="button" class="btn btn-warning" style="display: none;" id="rejectBtn">
                     <i class="fas fa-redo"></i> Send Back for Revision
-                </button>
-                <button type="button" class="btn btn-danger" style="display: none;" id="permRejectBtn">
-                    <i class="fas fa-times-circle"></i> Reject (Cannot be undone)
                 </button>
             </div>
         </div>

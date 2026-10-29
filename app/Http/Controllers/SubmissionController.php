@@ -219,6 +219,10 @@ class SubmissionController extends Controller
         $submission = Submission::findOrFail($id);
         $this->authorize('reviewAsStaff', $submission);
 
+        if ($locked = $this->rejectedLockResponse($submission)) {
+            return $locked;
+        }
+
         try {
             $provider = $validated['llm_provider'] ?? 'openai';
             $tone = $validated['tone'] ?? AppSetting::get('caption_tone', 'formal');
@@ -303,6 +307,11 @@ class SubmissionController extends Controller
         try {
             $submission = Submission::findOrFail($id);
             $this->authorize('reviewAsStaff', $submission);
+
+            if ($locked = $this->rejectedLockResponse($submission)) {
+                return $locked;
+            }
+
             $submission->update(['status' => 'approved']);
 
             $user = User::find($submission->user_id);
@@ -329,6 +338,10 @@ class SubmissionController extends Controller
     {
         $submission = Submission::findOrFail($id);
         $this->authorize('reviewAsStaff', $submission);
+
+        if ($locked = $this->rejectedLockResponse($submission)) {
+            return $locked;
+        }
 
         $isArticle = $submission->isWebsiteArticle();
         $contentMin = $isArticle ? Submission::WEBSITE_ARTICLE_CONTENT_MIN : 10;
@@ -397,6 +410,10 @@ class SubmissionController extends Controller
             $submission = Submission::findOrFail($id);
             $this->authorize('update', $submission);
 
+            if ($locked = $this->rejectedLockResponse($submission)) {
+                return $locked;
+            }
+
             $request->validate([
                 'status' => 'in:pending,under_review,approved'
             ]);
@@ -442,6 +459,10 @@ class SubmissionController extends Controller
             $submission = Submission::findOrFail($id);
             $this->authorize('reviewAsOrg', $submission);
 
+            if ($locked = $this->rejectedLockResponse($submission)) {
+                return $locked;
+            }
+
             $submission->update([
                 'status' => 'approved',
                 'workflow_status' => 'approved',
@@ -477,9 +498,20 @@ class SubmissionController extends Controller
             $submission = Submission::findOrFail($id);
             $this->authorize('reviewAsOrg', $submission);
 
+            if ($locked = $this->rejectedLockResponse($submission)) {
+                return $locked;
+            }
+
             $isPermanentReject = $request->input('action') === 'reject' || $request->boolean('is_permanent');
-            $status = $isPermanentReject ? 'rejected' : 'revised';
-            $legacyStatus = $isPermanentReject ? 'rejected' : 'under_review';
+            if ($isPermanentReject) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only the Department panel can reject a submission. Please request revisions instead.',
+                ], 403);
+            }
+
+            $status = 'revised';
+            $legacyStatus = 'under_review';
 
             $submission->update([
                 'workflow_status' => $status,
@@ -506,6 +538,21 @@ class SubmissionController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * A rejected submission is final: no endpoint may edit, approve, or reopen it.
+     */
+    private function rejectedLockResponse(Submission $submission): ?\Illuminate\Http\JsonResponse
+    {
+        if ($submission->workflow_status !== 'rejected') {
+            return null;
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'This submission has been rejected. A rejection is final and cannot be undone.',
+        ], 422);
     }
 
     private function enhancementPrompt(Submission $submission, string $tone): string

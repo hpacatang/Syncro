@@ -103,11 +103,8 @@
             @elseif($wfStatus === 'rejected')
                 <div class="alert alert-danger py-2 mb-3">
                     <i class="bi bi-x-circle-fill me-1"></i>
-                    This submission was <strong>not approved</strong>. You may resubmit with changes.
+                    This submission was <strong>not approved</strong>. A rejection is final — this record is view only.
                 </div>
-                <a href="{{ route(auth()->user()->isOrg() ? 'org.submit' : 'department.submit') }}" class="btn btn-primary btn-sm w-100 mb-2">
-                    <i class="bi bi-plus me-1"></i> New Submission
-                </a>
             @elseif($wfStatus === 'revised')
                 <div class="alert alert-info py-2 mb-3">
                     <i class="bi bi-arrow-repeat me-1"></i>
@@ -125,6 +122,11 @@
                 <i class="bi bi-arrow-up-right-square me-1"></i> Open Full Review Page
             </a>
 
+        @elseif($isStaff && $wfStatus === 'rejected')
+            <div class="alert alert-danger py-2 mb-0">
+                <i class="bi bi-x-circle-fill me-1"></i>
+                This submission was <strong>rejected</strong>. A rejection is final — this record is view only.
+            </div>
         @elseif($isStaff)
             <p class="text-muted small mb-3">Open the Enhance Caption workspace for this submission, or return to the queue.</p>
             <a href="{{ route('dashboard', ['enhance' => $submission->id]) }}" class="btn btn-primary btn-sm w-100 mb-2">

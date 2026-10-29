@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Syncro')</title>
     <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}">
+    <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
     @vite(['resources/css/vendor-icons.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="{{ asset('css/syncro.css') }}">
 </head>
@@ -194,6 +195,7 @@
     }, true);
 })();
 </script>
+<script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
 @stack('scripts')
 </body>
 </html>

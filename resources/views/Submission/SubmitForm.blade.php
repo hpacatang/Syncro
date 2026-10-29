@@ -36,7 +36,7 @@
                             <th>Submission</th>
                             <th>Status</th>
                             <th>Submitted At</th>
-                            <th class="pe-4 text-end">Review</th>
+                            <th class="pe-4 text-center" style="width: 1%;">Review</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -55,12 +55,17 @@
                                 <x-submission-lifecycle-progress :submission="$sub" :compact="true" />
                             </td>
                             <td><x-formatted-date :at="$sub->created_at" format="M d, Y h:i A" /></td>
-                            <td class="pe-4 text-end">
-                                @if(auth()->user()->isOrg())
-                                    <a href="{{ route('org.submissions.review', $sub) }}" class="btn btn-sm btn-primary"><i class="bi bi-eye me-1"></i> Review</a>
-                                @else
-                                    <a href="{{ route('dashboard.submissions.review', $sub) }}" class="btn btn-sm btn-primary"><i class="bi bi-eye me-1"></i> Review</a>
-                                @endif
+                            <td class="pe-4 text-center text-nowrap">
+                                @php
+                                    $isRejected = $sub->workflow_status === 'rejected';
+                                    $reviewRoute = auth()->user()->isOrg()
+                                        ? route('org.submissions.review', $sub)
+                                        : route('dashboard.submissions.review', $sub);
+                                @endphp
+                                <a href="{{ $reviewRoute }}" class="btn btn-sm btn-primary syncro-btn-compact text-nowrap" title="{{ $isRejected ? 'View submission' : 'Review submission' }}">
+                                    <i class="bi bi-eye"></i>
+                                    <span>{{ $isRejected ? 'View' : 'Review' }}</span>
+                                </a>
                             </td>
                         </tr>
                         @empty
