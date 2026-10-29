@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Media;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\SubmissionMedia;
@@ -31,6 +32,36 @@ class DashboardPagesTest extends TestCase
             ->assertSee('Content Queue', false);
     }
 
+    public function test_staff_dashboard_does_not_check_remote_storage_while_rendering_media_previews(): void
+    {
+        $pair = User::factory()->create(['role' => 'pair']);
+        $org = User::factory()->create(['role' => 'org']);
+        Submission::factory()->submitted()->create([
+            'user_id' => $org->id,
+            'media_paths' => ['submissions/media/remote-photo.jpg'],
+        ]);
+        Storage::shouldReceive('disk')->never();
+
+        $this->actingAs($pair)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('submission-media/submissions/media/remote-photo.jpg', false);
+    }
+
+    public function test_media_gallery_does_not_check_remote_storage_for_every_record(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $org = User::factory()->create(['role' => 'org']);
+        $submission = Submission::factory()->submitted()->create(['user_id' => $org->id]);
+        Media::factory()->submissionAttachment($submission)->create();
+        Storage::shouldReceive('disk')->never();
+
+        $this->actingAs($admin)
+            ->get(route('staff.media-gallery'))
+            ->assertOk()
+            ->assertSee('Media gallery', false);
+    }
+
     public function test_org_dashboard_renders_with_null_timestamps(): void
     {
         $org = User::factory()->create(['role' => 'org']);
@@ -45,6 +76,18 @@ class DashboardPagesTest extends TestCase
             ->get(route('org.dashboard'))
             ->assertOk()
             ->assertSee('Your Submissions', false);
+    }
+
+    public function test_guest_auth_pages_use_built_local_assets_instead_of_cdns(): void
+    {
+        foreach ([route('login'), route('register')] as $route) {
+            $this->get($route)
+                ->assertOk()
+                ->assertSee('/build/assets/vendor-icons-', false)
+                ->assertSee('/build/assets/app-', false)
+                ->assertDontSee('cdnjs.cloudflare.com')
+                ->assertDontSee('cdn.jsdelivr.net');
+        }
     }
 
     public function test_lifecycle_updates_route_is_not_shadowed_by_submission_show(): void

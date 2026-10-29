@@ -31,6 +31,19 @@ Configure provider credentials in the server environment using `OPEN_AI_KEY`, `G
 
 This workflow only stores and reviews content. Direct publishing to the USJR website or social-media networks is not implemented; approval does not publish a submission.
 
+## Local frontend assets and storage troubleshooting
+
+Bootstrap CSS is served from `public/css`, while Bootstrap JavaScript, Bootstrap Icons, and Font Awesome are bundled locally. After checkout or changing frontend assets, run `npm ci` and `npm run build`; deployments must include the resulting `public/build` assets and manifest. The application views no longer require icon stylesheets from jsDelivr or cdnjs.
+
+The staff dashboard and media gallery must not query Supabase Storage to check each object while rendering HTML. Media object reads happen only when the browser requests a media URL. A PHP fatal error in Guzzle's `CurlMultiHandler` indicates a stalled outbound HTTP request, not by itself a PostgreSQL failure; this app's S3-compatible Supabase Storage adapter also uses Guzzle. A read-only database check and storage-object check can be run separately with Laravel Tinker:
+
+```powershell
+php artisan tinker --execute="DB::select('select 1');"
+php artisan tinker --execute="Storage::disk('supabase')->exists(DB::table('media')->whereNotNull('path')->value('path'));"
+```
+
+The storage check requires at least one media row with a path. Avoid logging or sharing `.env` values, authorization headers, signed URLs, or full exception request options when diagnosing connectivity.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.

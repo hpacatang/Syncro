@@ -5,7 +5,7 @@
     <title>Syncro - Register</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    @vite(['resources/css/vendor-icons.css', 'resources/js/app.js'])
     <style>
         * {
             margin: 0;
@@ -434,6 +434,5 @@
     </div>
 </div>
 
-<script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
 </body>
 </html>

@@ -21,7 +21,6 @@ class StaffToolsController extends Controller
             ->whereNotNull('path')
             ->latest()
             ->get()
-            ->filter(fn (Media $media) => SubmissionMedia::resolve($media->path) !== null)
             ->map(fn (Media $media) => [
                 'url' => SubmissionMedia::url($media->path),
                 'name' => $media->original_name ?: basename($media->path),

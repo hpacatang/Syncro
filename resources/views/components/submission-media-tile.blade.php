@@ -3,12 +3,11 @@
 @php
     use App\Support\SubmissionMedia;
 
-    $resolved = SubmissionMedia::resolve($path);
-    $mediaUrl = $resolved ? SubmissionMedia::url($path) : null;
-    $isImage = $resolved && SubmissionMedia::isImage($path);
+    $mediaUrl = SubmissionMedia::url($path);
+    $isImage = SubmissionMedia::isImage($path);
 @endphp
 
-@if($resolved && $mediaUrl)
+@if($path && $mediaUrl)
     <div {{ $attributes->merge(['class' => 'syncro-media-tile']) }}>
         @if($isImage)
             <a href="{{ $mediaUrl }}" target="_blank" rel="noopener" class="d-block">

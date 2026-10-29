@@ -68,6 +68,10 @@ return [
             'bucket' => env('SUPABASE_BUCKET'),
             'endpoint' => env('SUPABASE_S3_ENDPOINT'),
             'use_path_style_endpoint' => true,
+            'http' => [
+                'connect_timeout' => 5,
+                'timeout' => 20,
+            ],
             'public_url' => env('SUPABASE_PUBLIC_BASE_URL'),
             'throw' => true,
             'report' => true,
