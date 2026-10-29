@@ -37,10 +37,17 @@ return [
 
     'openai' => [
         'key' => env('OPEN_AI_KEY'),
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
     ],
 
     'gemini' => [
         'key' => env('GEMINI_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.0-flash'),
+    ],
+
+    'deepseek' => [
+        'key' => env('DEEPSEEK_KEY'),
+        'model' => env('DEEPSEEK_MODEL', 'deepseek-chat'),
     ],
 
 ];

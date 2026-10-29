@@ -23,6 +23,9 @@ class SubmissionFactory extends Factory
         
         return [
             'user_id' => User::factory(),
+            'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
+            'article_title' => null,
+            'enhanced_title' => null,
             'original_caption' => $this->faker->paragraphs(2, true),
             'enhanced_caption' => $this->faker->boolean(70) ? $this->faker->paragraphs(2, true) : null,
             'links' => $this->faker->boolean(60) ? [
@@ -112,6 +115,25 @@ class SubmissionFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'workflow_status' => 'rejected',
             'status' => 'rejected',
+        ]);
+    }
+
+    public function websiteArticle(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'submission_type' => Submission::TYPE_WEBSITE_ARTICLE,
+            'article_title' => $this->faker->sentence(),
+            'enhanced_title' => null,
+            'original_caption' => $this->faker->paragraphs(5, true),
+        ]);
+    }
+
+    public function socialMediaPost(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
+            'article_title' => null,
+            'enhanced_title' => null,
         ]);
     }
 }

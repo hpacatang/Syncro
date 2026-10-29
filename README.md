@@ -21,6 +21,16 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Submission content and AI review
+
+Submissions support two types: `social_media` posts (up to 2,200 characters) and `website_article` drafts (a headline and 100–12,000-character body). Existing clients that omit `submission_type` continue to create social-media submissions.
+
+Reviewers can edit drafts manually or request an AI-generated draft. AI output is not saved or sent to submitters until a reviewer edits or confirms it with **Save & Send for Review**. Reviewers remain responsible for checking facts; prompts direct providers to preserve source facts and not invent details. Missing or expired provider keys leave manual review available.
+
+Configure provider credentials in the server environment using `OPEN_AI_KEY`, `GEMINI_KEY`, or `DEEPSEEK_KEY`. Optional model overrides are `OPENAI_MODEL`, `GEMINI_MODEL`, and `DEEPSEEK_MODEL`. After changing environment values on a server with cached configuration, run `php artisan config:clear` and rebuild the config cache as part of deployment. Keep credentials server-side; do not put them in browser code.
+
+This workflow only stores and reviews content. Direct publishing to the USJR website or social-media networks is not implemented; approval does not publish a submission.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.

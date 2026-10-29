@@ -34,16 +34,22 @@
                 
                 <div class="alert alert-warning py-2 mb-3">
                     <i class="bi bi-bell-fill me-1"></i>
-                    <strong>Action required:</strong> The review team has updated your caption. Please review and decide below.
+                    <strong>Action required:</strong> The review team has updated your content. Please review and decide below.
                 </div>
 
                 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold small text-muted text-uppercase">Original Caption</label>
+                    <label class="form-label fw-semibold small text-muted text-uppercase">Original {{ $submission->isWebsiteArticle() ? 'article body' : 'social media post' }}</label>
+                    @if($submission->isWebsiteArticle())
+                        <div class="bg-light p-2 rounded fw-semibold mb-2">{{ $submission->article_title }}</div>
+                    @endif
                     <div class="bg-light p-2 rounded small">{{ $submission->original_caption }}</div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-semibold small text-success text-uppercase">Enhanced Caption</label>
+                    <label class="form-label fw-semibold small text-success text-uppercase">Reviewed {{ $submission->isWebsiteArticle() ? 'article body' : 'social media post' }}</label>
+                    @if($submission->isWebsiteArticle())
+                        <div class="bg-light p-2 rounded fw-semibold mb-2">{{ $submission->enhanced_title ?: $submission->article_title }}</div>
+                    @endif
                     <div class="bg-light p-2 rounded small">{{ $submission->enhanced_caption }}</div>
                 </div>
 
@@ -54,7 +60,7 @@
                             <input class="form-check-input" type="radio" name="orgDecision-{{ $submission->id }}"
                                 id="orgApprove-{{ $submission->id }}" value="approve" checked>
                             <label class="form-check-label text-success fw-semibold" for="orgApprove-{{ $submission->id }}">
-                                ✓ Approve — caption is ready to post
+                                ✓ Approve — content is ready for the next workflow step
                             </label>
                         </div>
                         <div class="form-check mt-1">
@@ -87,7 +93,7 @@
             @elseif($wfStatus === 'approved')
                 <div class="alert alert-success py-2 mb-3">
                     <i class="bi bi-check-circle-fill me-1"></i>
-                    Your caption has been <strong>approved</strong> and is ready to post!
+                    Your content has been <strong>approved</strong>. Publishing is not automated.
                 </div>
             @elseif($wfStatus === 'posted')
                 <div class="alert alert-primary py-2 mb-3">

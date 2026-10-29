@@ -12,8 +12,15 @@ class Submission extends Model
 {
     use HasFactory;
 
+    public const TYPE_SOCIAL_MEDIA = 'social_media';
+    public const TYPE_WEBSITE_ARTICLE = 'website_article';
+    public const SOCIAL_MEDIA_CONTENT_MAX = 2200;
+    public const WEBSITE_ARTICLE_CONTENT_MIN = 100;
+    public const WEBSITE_ARTICLE_CONTENT_MAX = 12000;
+
     protected $fillable = [
-        'user_id', 'review_department_id', 'original_caption', 'enhanced_caption', 'links', 'media_paths', 'status',
+        'user_id', 'review_department_id', 'submission_type', 'article_title', 'enhanced_title',
+        'original_caption', 'enhanced_caption', 'links', 'media_paths', 'status',
         'enhanced_by', 'enhanced_at', 'workflow_status', 'org_review_notes', 'pair_feedback'
     ];
 
@@ -51,6 +58,16 @@ class Submission extends Model
         return $this->review_department_id === null
             ? 'PAIR'
             : ($this->reviewDepartment?->displayName() ?? 'PAIR');
+    }
+
+    public function isWebsiteArticle(): bool
+    {
+        return $this->submission_type === self::TYPE_WEBSITE_ARTICLE;
+    }
+
+    public function contentTypeLabel(): string
+    {
+        return $this->isWebsiteArticle() ? 'USJR website article' : 'Social media post';
     }
 
     public function enhancer()

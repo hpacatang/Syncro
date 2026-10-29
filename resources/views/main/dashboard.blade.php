@@ -87,7 +87,7 @@
                         <div class="syncro-queue">
                             <div class="syncro-queue__head" aria-hidden="true">
                                 <span>Organization</span>
-                                <span>Title / Caption</span>
+                                <span>Content preview</span>
                                 <span>Status</span>
                                 <span>Date</span>
                                 <span>Actions</span>
@@ -106,8 +106,12 @@
                                             @endif
                                             <span class="syncro-queue__org-dept">For {{ $submission->reviewOwnerLabel() }}</span>
                                         </div>
-                                        <p class="syncro-queue__caption" title="{{ $submission->original_caption }}">
-                                            {{ $submission->original_caption }}
+                                        <p class="syncro-queue__caption" title="{{ Str::limit($submission->original_caption, 500) }}">
+                                            <span class="badge bg-light text-dark border">{{ $submission->contentTypeLabel() }}</span>
+                                            @if($submission->isWebsiteArticle())
+                                                <strong>{{ $submission->enhanced_title ?: $submission->article_title }}</strong><br>
+                                            @endif
+                                            {{ Str::limit($submission->original_caption, 180) }}
                                         </p>
                                         <div class="syncro-queue__status">
                                             <x-submission-workflow-badge :submission="$submission" size="sm" />
@@ -252,7 +256,7 @@
             <div class="modal-header bg-light border-bottom">
                 <div>
                     <h5 class="modal-title fw-bold">
-                        <i class="fas fa-pen-fancy text-primary"></i> Enhance Caption
+                        <i class="fas fa-pen-fancy text-primary"></i> Evaluate & Enhance
                     </h5>
                     <small class="text-muted">Choose AI-assisted or manual enhancement</small>
                 </div>
@@ -261,8 +265,9 @@
             <div class="modal-body">
                 <form id="generateForm">
                     <div class="mb-4">
-                        <label class="form-label fw-bold">Original Caption</label>
+                        <label class="form-label fw-bold" id="originalContentLabel">Original Submission</label>
                         <div class="alert alert-light border">
+                            <p id="originalArticleTitle" class="fw-semibold mb-2 d-none"></p>
                             <p id="originalCaption" class="mb-0" style="max-height: 100px; overflow-y: auto;"></p>
                         </div>
                     </div>
@@ -270,7 +275,7 @@
                     <div class="row g-4">
                         <div class="col-md-6">
                             <h6 class="fw-bold mb-3">
-                                <i class="fas fa-wand-magic-sparkles text-primary"></i> AI-Assisted
+                                <i class="fas fa-wand-magic-sparkles text-primary"></i> AI-Assisted draft
                             </h6>
                             
                             <div class="mb-3">
@@ -306,7 +311,7 @@
                             </div>
 
                             <button type="button" class="btn btn-primary btn-sm w-100 mb-3" id="generateBtn" onclick="generateCaption()">
-                                <i class="fas fa-wand-magic-sparkles"></i> Generate with AI
+                                <i class="fas fa-wand-magic-sparkles"></i> Draft with AI
                             </button>
 
                             <div id="generatingAlert" class="alert alert-info d-none mb-0 py-2" role="alert" style="font-size: 0.85rem;">
@@ -322,16 +327,20 @@
                                 <i class="fas fa-pen-fancy text-info"></i> Manual Input
                             </h6>
                             
-                            <label class="form-label fw-bold small">Enhanced Caption</label>
+                            <div id="manualTitleGroup" class="mb-3 d-none">
+                                <label for="manualTitle" class="form-label fw-bold small">Reviewed article headline</label>
+                                <input id="manualTitle" class="form-control form-control-sm" type="text" maxlength="255">
+                            </div>
+                            <label class="form-label fw-bold small" id="manualContentLabel">Enhanced social media post</label>
                             <textarea 
                                 id="manualCaption" 
                                 class="form-control form-control-sm" 
-                                rows="8" 
-                                placeholder="Type your enhanced caption here. Make it engaging, professional, and grammatically correct."
-                                minlength="10">
-                            </textarea>
-                            <small class="text-muted d-block mt-2">
-                                <i class="fas fa-info-circle"></i> Minimum 10 characters
+                                rows="8"
+                                maxlength="2200"
+                                placeholder="Edit the post for clarity, accuracy, and an appropriate university tone."
+                                minlength="10"></textarea>
+                            <small class="text-muted d-block mt-2" id="manualContentHelp">
+                                <i class="fas fa-info-circle"></i> 10 to 2,200 characters. Verify all facts before sending for organization review.
                             </small>
                         </div>
                     </div>
@@ -364,7 +373,7 @@
                         <i class="fas fa-times-circle"></i> Reject
                     </button>
                     <button type="button" class="btn btn-success" id="approveBtn" onclick="approveFinalCaption()">
-                        <i class="fas fa-check"></i> Approve & Update
+                        <i class="fas fa-check"></i> Save & Send for Review
                     </button>
                 </div>
             </div>
@@ -374,12 +383,47 @@
 
 <script>
 let currentSubmissionId = null;
+let currentSubmissionType = 'social_media';
 const dashboardUrl = @json(route('dashboard'));
 
-function setupEnhanceModal(submissionId, caption, enhancedCaption) {
+function showEnhancementMessage(alertClass, message) {
+    const alert = document.getElementById('generatingAlert');
+    alert.className = 'alert ' + alertClass;
+    alert.textContent = message;
+}
+
+function updateEnhanceModalType(submissionType, articleTitle, enhancedTitle) {
+    currentSubmissionType = submissionType === 'website_article' ? 'website_article' : 'social_media';
+    const isArticle = currentSubmissionType === 'website_article';
+    const originalTitle = document.getElementById('originalArticleTitle');
+    const manualTitleGroup = document.getElementById('manualTitleGroup');
+    const manualTitle = document.getElementById('manualTitle');
+    const content = document.getElementById('manualCaption');
+
+    originalTitle.textContent = articleTitle || '';
+    originalTitle.classList.toggle('d-none', !isArticle);
+    manualTitleGroup.classList.toggle('d-none', !isArticle);
+    manualTitle.disabled = !isArticle;
+    manualTitle.required = isArticle;
+    manualTitle.value = isArticle ? (enhancedTitle || articleTitle || '') : '';
+    document.getElementById('originalContentLabel').textContent = isArticle ? 'Original article' : 'Original social media post';
+    document.getElementById('manualContentLabel').textContent = isArticle ? 'Reviewed article body' : 'Enhanced social media post';
+    document.getElementById('manualContentHelp').innerHTML = isArticle
+        ? '<i class="fas fa-info-circle"></i> 100 to 12,000 characters. Verify all facts before sending for organization review.'
+        : '<i class="fas fa-info-circle"></i> 10 to 2,200 characters. Verify all facts before sending for organization review.';
+    content.minLength = isArticle ? 100 : 10;
+    content.maxLength = isArticle ? 12000 : 2200;
+    content.rows = isArticle ? 16 : 8;
+    content.placeholder = isArticle
+        ? 'Edit the article body for accuracy, structure, completeness, and a clear university-news style.'
+        : 'Edit the post for clarity, accuracy, and an appropriate university tone.';
+}
+
+function setupEnhanceModal(submissionId, caption, enhancedCaption, submissionType, articleTitle, enhancedTitle) {
     currentSubmissionId = submissionId;
     document.getElementById('originalCaption').textContent = caption || 'No caption provided';
     document.getElementById('manualCaption').value = enhancedCaption || '';
+    updateEnhanceModalType(submissionType, articleTitle, enhancedTitle);
     document.getElementById('pairFeedback').value = '';
     document.getElementById('generateBtn').disabled = false;
     document.getElementById('approveBtn').disabled = false;
@@ -388,8 +432,8 @@ function setupEnhanceModal(submissionId, caption, enhancedCaption) {
     document.getElementById('generatingAlert').classList.add('d-none');
 }
 
-function openEnhanceModal(submissionId, caption, enhancedCaption) {
-    setupEnhanceModal(submissionId, caption, enhancedCaption);
+function openEnhanceModal(submissionId, caption, enhancedCaption, submissionType, articleTitle, enhancedTitle) {
+    setupEnhanceModal(submissionId, caption, enhancedCaption, submissionType, articleTitle, enhancedTitle);
     const el = document.getElementById('generateModal');
     bootstrap.Modal.getOrCreateInstance(el).show();
 }
@@ -400,7 +444,10 @@ document.getElementById('generateModal').addEventListener('show.bs.modal', funct
         setupEnhanceModal(
             button.getAttribute('data-submission-id'),
             button.getAttribute('data-caption'),
-            button.getAttribute('data-enhanced-caption') || ''
+            button.getAttribute('data-enhanced-caption') || '',
+            button.getAttribute('data-submission-type'),
+            button.getAttribute('data-article-title'),
+            button.getAttribute('data-enhanced-title')
         );
     }
 });
@@ -420,7 +467,10 @@ document.addEventListener('DOMContentLoaded', async function () {
             openEnhanceModal(
                 enhanceId,
                 data.data.original_caption,
-                data.data.enhanced_caption || ''
+                data.data.enhanced_caption || '',
+                data.data.submission_type,
+                data.data.article_title || '',
+                data.data.enhanced_title || ''
             );
         }
     } catch (err) {
@@ -465,19 +515,21 @@ async function generateCaption() {
 
         if (data.success) {
             document.getElementById('manualCaption').value = data.data.enhanced_caption;
+            if (data.data.enhanced_title) {
+                document.getElementById('manualTitle').value = data.data.enhanced_title;
+            }
             generatingAlert.className = 'alert alert-success';
-            generatingAlert.innerHTML = '<i class=\"fas fa-check-circle\"></i> <strong>Success!</strong> AI-generated caption loaded. Review and click Approve to finalize.';
+            generatingAlert.innerHTML = '<i class=\"fas fa-check-circle\"></i> <strong>Draft ready.</strong> Verify the facts and edit as needed before sending it for organization review.';
         } else if (data.fallback) {
-            generatingAlert.className = 'alert alert-warning';
-            generatingAlert.innerHTML = '<i class=\"fas fa-lightbulb\"></i> <strong>AI Service Unavailable</strong> - No problem! Manually enhance the caption below and click Approve.';
+            const validationErrors = data.errors ? Object.values(data.errors).flat().join(' ') : '';
+            showEnhancementMessage('alert-warning', validationErrors || data.message || 'AI assistance is unavailable. You can continue with manual editing.');
         } else {
-            generatingAlert.className = 'alert alert-danger';
-            generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${data.message || 'Failed to generate caption'}`;
+            const validationErrors = data.errors ? Object.values(data.errors).flat().join(' ') : '';
+            showEnhancementMessage('alert-danger', validationErrors || data.message || 'Failed to generate a draft.');
         }
     } catch (error) {
         console.error('Error:', error);
-        generatingAlert.className = 'alert alert-danger';
-        generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${error.message}`;
+        showEnhancementMessage('alert-danger', error.message || 'Failed to generate a draft.');
     }
 
     generateBtn.disabled = false;
@@ -493,8 +545,16 @@ async function approveFinalCaption() {
         return;
     }
 
-    if (finalCaption.length < 10) {
-        alert('Caption must be at least 10 characters long.');
+    const minLength = currentSubmissionType === 'website_article' ? 100 : 10;
+    const maxLength = currentSubmissionType === 'website_article' ? 12000 : 2200;
+    const finalTitle = document.getElementById('manualTitle').value.trim();
+    if (finalCaption.length < minLength || finalCaption.length > maxLength) {
+        alert(`Content must be between ${minLength} and ${maxLength} characters.`);
+        return;
+    }
+
+    if (currentSubmissionType === 'website_article' && !finalTitle) {
+        alert('Please provide an article headline.');
         return;
     }
 
@@ -520,6 +580,7 @@ async function approveFinalCaption() {
             },
             body: JSON.stringify({
                 manual_caption: finalCaption,
+                manual_title: currentSubmissionType === 'website_article' ? finalTitle : null,
                 pair_feedback: pairFeedback
             })
         });
@@ -528,7 +589,7 @@ async function approveFinalCaption() {
 
         if (data.success) {
             generatingAlert.className = 'alert alert-success';
-            generatingAlert.innerHTML = '<i class=\"fas fa-check-circle\"></i> <strong>Success!</strong> Caption saved. Returning to Enhance Caption…';
+            generatingAlert.innerHTML = '<i class=\"fas fa-check-circle\"></i> <strong>Saved.</strong> The content is now waiting for organization review.';
             
             setTimeout(() => {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('generateModal'));
@@ -538,14 +599,13 @@ async function approveFinalCaption() {
                 );
             }, 800);
         } else {
-            generatingAlert.className = 'alert alert-danger';
-            generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${data.message || 'Failed to save caption'}`;
+            const validationErrors = data.errors ? Object.values(data.errors).flat().join(' ') : '';
+            showEnhancementMessage('alert-danger', validationErrors || data.message || 'Failed to save the draft.');
             approveBtn.disabled = false;
         }
     } catch (error) {
         console.error('Error:', error);
-        generatingAlert.className = 'alert alert-danger';
-        generatingAlert.innerHTML = `<i class=\"fas fa-exclamation-circle\"></i> <strong>Error:</strong> ${error.message}`;
+        showEnhancementMessage('alert-danger', error.message || 'Failed to save the draft.');
         approveBtn.disabled = false;
     }
 }

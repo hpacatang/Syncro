@@ -33,7 +33,7 @@
                         <tr>
                             <th class="ps-4">ID</th>
                             <th>Department/Org</th>
-                            <th>Original Caption</th>
+                            <th>Submission</th>
                             <th>Status</th>
                             <th>Submitted At</th>
                             <th class="pe-4 text-end">Review</th>
@@ -44,7 +44,13 @@
                         <tr>
                             <td class="ps-4">#{{ $sub->id }}</td>
                             <td>{{ $sub->user ? $sub->user->displayName() : 'Unknown' }}</td>
-                            <td>{{ \Illuminate\Support\Str::limit($sub->original_caption, 50) }}</td>
+                            <td>
+                                <span class="badge bg-light text-dark border">{{ $sub->contentTypeLabel() }}</span>
+                                @if($sub->isWebsiteArticle())
+                                    <strong class="d-block mt-1">{{ \Illuminate\Support\Str::limit($sub->article_title, 60) }}</strong>
+                                @endif
+                                {{ \Illuminate\Support\Str::limit($sub->original_caption, 50) }}
+                            </td>
                             <td style="min-width: 14rem;">
                                 <x-submission-lifecycle-progress :submission="$sub" :compact="true" />
                             </td>

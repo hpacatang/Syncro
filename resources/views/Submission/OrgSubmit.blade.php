@@ -22,7 +22,27 @@
                     <form id="submissionForm">
                         @csrf
                         
-                        
+                        <fieldset class="mb-4">
+                            <legend class="form-label fw-bold fs-6">What are you submitting?</legend>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <input class="btn-check" type="radio" name="submission_type" id="typeSocial" value="social_media" checked>
+                                    <label class="card content-type-card h-100 p-3" for="typeSocial" role="button">
+                                        <span class="fw-semibold"><i class="fas fa-share-nodes text-primary me-2"></i>Social media post</span>
+                                        <span class="small text-muted mt-2">A concise, informational post for university social channels.</span>
+                                    </label>
+                                </div>
+                                <div class="col-md-6">
+                                    <input class="btn-check" type="radio" name="submission_type" id="typeArticle" value="website_article">
+                                    <label class="card content-type-card h-100 p-3" for="typeArticle" role="button">
+                                        <span class="fw-semibold"><i class="fas fa-newspaper text-primary me-2"></i>USJR website article</span>
+                                        <span class="small text-muted mt-2">A detailed article draft for the official university website.</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-2">This submits content for review only. Publishing integrations are not enabled.</small>
+                        </fieldset>
+
                         <div class="mb-4">
                             <label class="form-label fw-bold">Send this submission to</label>
                             @if(auth()->user()->department_id && !auth()->user()->isDepartment())
@@ -47,18 +67,30 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="caption" class="form-label fw-bold">
-                                <i class="fas fa-file-alt text-primary"></i> Caption/Description
+                            <div id="articleTitleGroup" class="mb-3 d-none">
+                                <label for="articleTitle" class="form-label fw-bold">Article headline</label>
+                                <input
+                                    id="articleTitle"
+                                    name="article_title"
+                                    class="form-control"
+                                    type="text"
+                                    maxlength="255"
+                                    placeholder="Write a clear, factual headline">
+                            </div>
+                            <label for="caption" id="contentLabel" class="form-label fw-bold">
+                                <i class="fas fa-file-alt text-primary"></i> Social media post
                             </label>
                             <textarea 
                                 id="caption" 
                                 name="original_caption" 
                                 class="form-control" 
-                                rows="5" 
-                                placeholder="Write your post caption here. Be clear and descriptive..."
+                                rows="5"
+                                minlength="10"
+                                maxlength="2200"
+                                placeholder="Write a concise, informational post. Include confirmed dates, locations, and key details."
                                 required></textarea>
-                            <small class="text-muted d-block mt-2">
-                                <i class="fas fa-info-circle"></i> Your caption will be reviewed by the team you selected
+                            <small id="contentHelp" class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle"></i> Keep it concise. Maximum 2,200 characters.
                             </small>
                         </div>
 
@@ -119,6 +151,23 @@
     </div>
 </div>
 
+<style>
+    .content-type-card {
+        cursor: pointer;
+        transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    .btn-check:checked + .content-type-card {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 .15rem rgba(var(--bs-primary-rgb), .15);
+    }
+
+    .btn-check:focus-visible + .content-type-card {
+        outline: 2px solid var(--bs-primary);
+        outline-offset: 2px;
+    }
+</style>
+
 <script>
 function addLinkInput() {
     const linksContainer = document.getElementById('linksContainer') || createLinksContainer();
@@ -140,6 +189,34 @@ function createLinksContainer() {
 const dropZone = document.getElementById('dropZone');
 const mediaInput = document.getElementById('media');
 const mediaPreview = document.getElementById('mediaPreview');
+const contentTypeInputs = document.querySelectorAll('input[name="submission_type"]');
+const articleTitleGroup = document.getElementById('articleTitleGroup');
+const articleTitleInput = document.getElementById('articleTitle');
+const contentInput = document.getElementById('caption');
+const contentLabel = document.getElementById('contentLabel');
+const contentHelp = document.getElementById('contentHelp');
+
+function updateContentTypeFields() {
+    const isArticle = document.querySelector('input[name="submission_type"]:checked').value === 'website_article';
+    articleTitleGroup.classList.toggle('d-none', !isArticle);
+    articleTitleInput.disabled = !isArticle;
+    articleTitleInput.required = isArticle;
+    contentLabel.innerHTML = isArticle
+        ? '<i class="fas fa-file-alt text-primary"></i> Article body'
+        : '<i class="fas fa-file-alt text-primary"></i> Social media post';
+    contentInput.rows = isArticle ? 14 : 5;
+    contentInput.minLength = isArticle ? 100 : 10;
+    contentInput.maxLength = isArticle ? 12000 : 2200;
+    contentInput.placeholder = isArticle
+        ? 'Write the complete article body. Include confirmed context, details, and relevant links.'
+        : 'Write a concise, informational post. Include confirmed dates, locations, and key details.';
+    contentHelp.innerHTML = isArticle
+        ? '<i class="fas fa-info-circle"></i> Write a detailed article body of 100 to 12,000 characters.'
+        : '<i class="fas fa-info-circle"></i> Keep it concise. Maximum 2,200 characters.';
+}
+
+contentTypeInputs.forEach((input) => input.addEventListener('change', updateContentTypeFields));
+updateContentTypeFields();
 
 dropZone.addEventListener('click', () => mediaInput.click());
 
@@ -289,12 +366,14 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
 
             form.reset();
             mediaPreview.innerHTML = '';
+            updateContentTypeFields();
 
             setTimeout(() => {
                 window.location.href = "{{ route(auth()->user()->isDepartment() ? 'dashboard' : 'org.dashboard') }}";
             }, 2000);
         } else {
-            alert('Error: ' + data.message);
+            const validationErrors = data.errors ? Object.values(data.errors).flat().join(' ') : '';
+            alert('Error: ' + (validationErrors || data.message || 'Submission failed.'));
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit for Review';
         }

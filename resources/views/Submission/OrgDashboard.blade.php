@@ -84,7 +84,7 @@
                             <h5 class="mb-1 fw-bold">
                                 <i class="fas fa-hourglass-half text-warning"></i> Ready for Review
                             </h5>
-                            <small class="text-muted">The review team has updated these captions. Review and approve or request revisions.</small>
+                            <small class="text-muted">The review team has updated this content. Review and approve or request revisions.</small>
                         </div>
                         <span class="badge bg-warning text-dark fs-6">{{ count($awaitingApproval) }}</span>
                     </div>
@@ -94,7 +94,7 @@
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="ps-4">Original Caption</th>
+                                    <th class="ps-4">Submission</th>
                                     <th>Enhanced By</th>
                                     <th>Date</th>
                                     <th>Action</th>
@@ -103,7 +103,13 @@
                             <tbody>
                                 @foreach($awaitingApproval as $submission)
                                 <tr>
-                                    <td class="ps-4">{{ Str::limit($submission->original_caption, 40) }}</td>
+                                    <td class="ps-4">
+                                        <span class="badge bg-light text-dark border">{{ $submission->contentTypeLabel() }}</span>
+                                        @if($submission->isWebsiteArticle())
+                                            <strong class="d-block mt-1">{{ Str::limit($submission->article_title, 60) }}</strong>
+                                        @endif
+                                        {{ Str::limit($submission->original_caption, 40) }}
+                                    </td>
                                     <td>
                                         <small>{{ $submission->enhancer?->name ?? 'Review team' }}</small>
                                         <br><small class="text-muted">{{ $submission->enhanced_at?->format('M d, Y') }}</small>
@@ -116,7 +122,13 @@
                                                 title="Review & Approve/Reject" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#reviewModal"
-                                                onclick="loadReviewModal({{ $submission->id }}, '{{ htmlspecialchars($submission->original_caption, ENT_QUOTES) }}', '{{ htmlspecialchars($submission->enhanced_caption, ENT_QUOTES) }}')">
+                                                data-submission-id="{{ $submission->id }}"
+                                                data-original-caption="{{ $submission->original_caption }}"
+                                                data-enhanced-caption="{{ $submission->enhanced_caption }}"
+                                                data-submission-type="{{ $submission->submission_type }}"
+                                                data-article-title="{{ $submission->article_title }}"
+                                                data-enhanced-title="{{ $submission->enhanced_title }}"
+                                                onclick="loadReviewModal(this.dataset.submissionId, this.dataset.originalCaption, this.dataset.enhancedCaption, this.dataset.submissionType, this.dataset.articleTitle, this.dataset.enhancedTitle)">
                                                 <i class="fas fa-eye"></i> Quick review
                                             </button>
                                         </div>
@@ -164,7 +176,7 @@
                             <table class="table table-hover mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th class="ps-4">Caption Preview</th>
+                                        <th class="ps-4">Submission Preview</th>
                                         <th>Review team</th>
                                         <th>Status</th>
                                         <th>Submitted</th>
@@ -175,7 +187,13 @@
                                     @foreach($submissions as $submission)
                                         @php $needsReview = $submission->workflow_status === 'under_peer_review' && $submission->enhanced_caption; @endphp
                                         <tr data-submission-row="{{ $submission->id }}" data-workflow-status="{{ $submission->workflow_status }}">
-                                            <td class="ps-4">{{ Str::limit($submission->original_caption, 50) }}</td>
+                                            <td class="ps-4">
+                                                <span class="badge bg-light text-dark border">{{ $submission->contentTypeLabel() }}</span>
+                                                @if($submission->isWebsiteArticle())
+                                                    <strong class="d-block mt-1">{{ Str::limit($submission->article_title, 60) }}</strong>
+                                                @endif
+                                                {{ Str::limit($submission->original_caption, 50) }}
+                                            </td>
                                             <td>{{ $submission->reviewOwnerLabel() }}</td>
                                             <td style="min-width: 14rem;">
                                                 <x-submission-lifecycle-progress :submission="$submission" :compact="true" />
@@ -189,7 +207,13 @@
                                                             title="Quick Review"
                                                             data-bs-toggle="modal"
                                                             data-bs-target="#reviewModal"
-                                                            onclick="loadReviewModal({{ $submission->id }}, '{{ htmlspecialchars($submission->original_caption, ENT_QUOTES) }}', '{{ htmlspecialchars($submission->enhanced_caption, ENT_QUOTES) }}')">
+                                                            data-submission-id="{{ $submission->id }}"
+                                                            data-original-caption="{{ $submission->original_caption }}"
+                                                            data-enhanced-caption="{{ $submission->enhanced_caption }}"
+                                                            data-submission-type="{{ $submission->submission_type }}"
+                                                            data-article-title="{{ $submission->article_title }}"
+                                                            data-enhanced-title="{{ $submission->enhanced_title }}"
+                                                            onclick="loadReviewModal(this.dataset.submissionId, this.dataset.originalCaption, this.dataset.enhancedCaption, this.dataset.submissionType, this.dataset.articleTitle, this.dataset.enhancedTitle)">
                                                             <i class="fas fa-check-circle"></i> Decide
                                                         </button>
                                                     @endif
@@ -253,22 +277,24 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-light border-bottom">
-                <h5 class="modal-title fw-bold">Review Enhanced Caption</h5>
+                <h5 class="modal-title fw-bold">Review Enhanced Content</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 
                 <div class="mb-4">
-                    <label class="form-label fw-bold text-muted">Original Caption</label>
+                    <label class="form-label fw-bold text-muted" id="originalContentLabel">Original Submission</label>
                     <div class="bg-light p-3 rounded">
+                        <p class="fw-semibold mb-2 d-none" id="originalArticleTitle"></p>
                         <p class="mb-0" id="originalCaption"></p>
                     </div>
                 </div>
 
                 
                 <div class="mb-4">
-                    <label class="form-label fw-bold text-success">Enhanced Caption</label>
+                    <label class="form-label fw-bold text-success" id="enhancedContentLabel">Review Team Revision</label>
                     <div class="bg-light p-3 rounded">
+                        <p class="fw-semibold mb-2 d-none" id="enhancedArticleTitle"></p>
                         <p class="mb-0" id="enhancedCaption"></p>
                     </div>
                 </div>
@@ -298,7 +324,7 @@
                         <input type="radio" id="approveRadio" name="decision" value="approve" checked>
                         <label for="approveRadio" class="form-label mb-3">
                             <strong class="text-success">✓ Approve</strong><br>
-                            <small class="text-muted">Caption is good. Ready to post.</small>
+                            <small class="text-muted">The reviewed draft is ready to continue through the approval workflow.</small>
                         </label>
                     </div>
                     <div class="mb-3">
@@ -403,10 +429,20 @@ async function fetchSubmissionDetails(submissionId) {
     }
 }
 
-function loadReviewModal(submissionId, originalCaption, enhancedCaption) {
+function loadReviewModal(submissionId, originalCaption, enhancedCaption, submissionType, articleTitle, enhancedTitle) {
     currentSubmissionId = submissionId;
     document.getElementById('originalCaption').textContent = originalCaption;
     document.getElementById('enhancedCaption').textContent = enhancedCaption;
+    const isArticle = submissionType === 'website_article';
+    const originalTitle = document.getElementById('originalArticleTitle');
+    const enhancedArticleTitle = document.getElementById('enhancedArticleTitle');
+    originalTitle.textContent = articleTitle || '';
+    originalTitle.classList.toggle('d-none', !isArticle);
+    enhancedArticleTitle.textContent = isArticle ? (enhancedTitle || articleTitle || '') : '';
+    enhancedArticleTitle.classList.toggle('d-none', !isArticle);
+    document.getElementById('originalContentLabel').textContent = isArticle ? 'Original article body' : 'Original social media post';
+    document.getElementById('enhancedContentLabel').textContent = isArticle ? 'Reviewed article body' : 'Reviewed social media post';
+    document.querySelector('#reviewModal .modal-title').textContent = isArticle ? 'Review website article' : 'Review social media post';
     
     fetchSubmissionDetails(submissionId);
 
@@ -504,7 +540,7 @@ async function submitApproval() {
         const data = await response.json();
 
         if (data.success) {
-            alert('Caption approved! Ready to be posted.');
+            alert('Content approved and returned to the review workflow. Publishing is not automated.');
             location.reload();
         } else {
             alert('Error: ' + data.message);

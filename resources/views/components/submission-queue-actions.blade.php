@@ -31,9 +31,12 @@
             data-bs-toggle="modal"
             data-bs-target="#generateModal"
             data-submission-id="{{ $submission->id }}"
-            data-caption="{{ htmlspecialchars($submission->original_caption, ENT_QUOTES) }}"
-            data-enhanced-caption="{{ htmlspecialchars($submission->enhanced_caption ?? '', ENT_QUOTES) }}"
-            title="Generate AI caption evaluation">
+            data-caption="{{ $submission->original_caption }}"
+            data-enhanced-caption="{{ $submission->enhanced_caption ?? '' }}"
+            data-submission-type="{{ $submission->submission_type }}"
+            data-article-title="{{ $submission->article_title ?? '' }}"
+            data-enhanced-title="{{ $submission->enhanced_title ?? '' }}"
+            title="Evaluate and enhance submission">
             <i class="bi bi-magic" aria-hidden="true"></i>
             <span class="syncro-queue-actions__label">Evaluate</span>
     </div>

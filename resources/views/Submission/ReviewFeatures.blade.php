@@ -27,16 +27,28 @@
         <div class="col-lg-7">
             <div class="card syncro-card-elevated border-0 mb-4">
                 <div class="card-header bg-white border-bottom">
-                    <h5 class="mb-0 fw-bold">Captions</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <h5 class="mb-0 fw-bold">Submission content</h5>
+                        <span class="badge bg-light text-dark border">{{ $submission->contentTypeLabel() }}</span>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <h6 class="text-muted small text-uppercase">Original</h6>
-                    <p class="mb-4">{{ $submission->original_caption }}</p>
+                    @if($submission->isWebsiteArticle())
+                        <h6 class="text-muted small text-uppercase">Submitted headline</h6>
+                        <h4 class="mb-3">{{ $submission->article_title }}</h4>
+                        <h6 class="text-muted small text-uppercase">Original article body</h6>
+                    @else
+                        <h6 class="text-muted small text-uppercase">Original social media post</h6>
+                    @endif
+                    <p class="mb-4" style="white-space: pre-line">{{ $submission->original_caption }}</p>
                     @if($submission->enhanced_caption)
                         <h6 class="text-muted small text-uppercase">Review team revision</h6>
-                        <p class="mb-0">{{ $submission->enhanced_caption }}</p>
+                        @if($submission->isWebsiteArticle())
+                            <h4 class="mb-3">{{ $submission->enhanced_title ?: $submission->article_title }}</h4>
+                        @endif
+                        <p class="mb-0" style="white-space: pre-line">{{ $submission->enhanced_caption }}</p>
                     @else
-                        <p class="text-muted mb-0">No enhanced caption yet.</p>
+                        <p class="text-muted mb-0">No review draft yet.</p>
                     @endif
                 </div>
             </div>
