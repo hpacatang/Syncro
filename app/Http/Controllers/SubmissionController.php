@@ -9,6 +9,7 @@ use App\Support\PairUpdateFormatter;
 use App\Notifications\EnhancementReadyForOrg;
 use App\Notifications\SubmissionApproved;
 use App\Notifications\SubmissionQueuedForReview;
+use App\Services\ContentSimilarityChecker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -41,15 +42,37 @@ class SubmissionController extends Controller
             ],
             'original_caption' => "required|string|min:{$contentMin}|max:{$contentMax}",
             'review_destination' => 'nullable|in:pair,department',
+            'scheduled_post_at' => 'nullable|date',
             'links' => 'nullable|array|max:10',
             'links.*' => 'url|max:500',
             'media' => 'nullable|array',
             'media.*' => [
                 'file',
-                File::types(['jpg', 'jpeg', 'png', 'webp', 'gif', 'doc', 'docx', 'pdf', 'txt'])
-                    ->max(5 * 1024),
+                File::types([
+                    'jpg', 'jpeg', 'png', 'webp', 'gif',
+                    'mp4', 'mov', 'webm', 'ogg', 'avi', 'mkv',
+                    'doc', 'docx', 'pdf', 'txt'
+                ])->max(50 * 1024),
             ],
         ]);
+
+        // Duplicate and similarity checker: reject if identical or highly similar content exists
+        $similarity = ContentSimilarityChecker::check(
+            $validated['original_caption'],
+            $validated['article_title'] ?? null
+        );
+
+        if ($similarity && $similarity['should_reject']) {
+            return response()->json([
+                'success'                 => false,
+                'error'                   => 'DuplicateContentDetected',
+                'message'                 => $similarity['reason'],
+                'duplicate_submission_id' => $similarity['matched_submission_id'],
+                'duplicate_status'        => $similarity['matched_status'],
+                'similarity_percent'      => $similarity['percentage'],
+                'reason'                  => $similarity['reason'],
+            ], 422);
+        }
 
         try {
             $reviewDestination = $request->user()->isDepartment()
@@ -112,6 +135,7 @@ class SubmissionController extends Controller
                         ? $validated['article_title']
                         : null,
                     'original_caption' => $validated['original_caption'],
+                    'scheduled_post_at' => $validated['scheduled_post_at'] ?? null,
                     'links' => $validated['links'] ?? [],
                     'media_paths' => $mediaPaths,
                     'status' => 'pending',
@@ -410,14 +434,32 @@ class SubmissionController extends Controller
             $submission = Submission::findOrFail($id);
             $this->authorize('update', $submission);
 
-            if ($locked = $this->rejectedLockResponse($submission)) {
-                return $locked;
+            if ($submission->workflow_status === 'rejected') {
+                return $this->rejectedLockResponse($submission);
+            }
+
+            if ($submission->workflow_status === 'posted') {
+                if ($request->filled('status') && $request->input('status') !== 'posted') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This submission has been published and posted. It is view only and cannot be undone.',
+                    ], 422);
+                }
+
+                if ($submission->isPublicationTimeReached()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Publication date and time cannot be edited because the scheduled publication time has arrived and the post is locked.',
+                    ], 422);
+                }
             }
 
             $request->validate([
-                'status' => 'in:pending,under_review,approved'
+                'status' => 'nullable|in:pending,under_review,approved,posted',
+                'posted_at' => 'nullable|date',
+                'scheduled_post_at' => 'nullable|date',
             ]);
-            $submission->update($request->only('status'));
+            $submission->update($request->only('status', 'posted_at', 'scheduled_post_at'));
 
             return response()->json([
                 'success' => true,
@@ -438,6 +480,14 @@ class SubmissionController extends Controller
         try {
             $submission = Submission::findOrFail($id);
             $this->authorize('delete', $submission);
+
+            if (in_array($submission->workflow_status, ['posted', 'rejected'], true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This submission cannot be deleted because it is final and cannot be undone.',
+                ], 422);
+            }
+
             $submission->delete();
 
             return response()->json([
@@ -541,18 +591,25 @@ class SubmissionController extends Controller
     }
 
     /**
-     * A rejected submission is final: no endpoint may edit, approve, or reopen it.
+     * A rejected or posted submission is final: no endpoint may edit, approve, or reopen it.
      */
     private function rejectedLockResponse(Submission $submission): ?\Illuminate\Http\JsonResponse
     {
-        if ($submission->workflow_status !== 'rejected') {
-            return null;
+        if ($submission->workflow_status === 'rejected') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This submission has been rejected. A rejection is final and cannot be undone.',
+            ], 422);
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'This submission has been rejected. A rejection is final and cannot be undone.',
-        ], 422);
+        if ($submission->workflow_status === 'posted') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This submission has been published and posted. It is view only and cannot be undone.',
+            ], 422);
+        }
+
+        return null;
     }
 
     private function enhancementPrompt(Submission $submission, string $tone): string

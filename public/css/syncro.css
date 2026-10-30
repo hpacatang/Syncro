@@ -23,6 +23,18 @@
     --syncro-submitted: #22c55e;
 }
 
+body,
+.syncro-app,
+button,
+input,
+optgroup,
+select,
+textarea {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 .syncro-app {
     --bs-primary: var(--syncro-highlight);
     --bs-primary-rgb: 45, 122, 74;
@@ -724,9 +736,15 @@ body.syncro-nav-open {
 }
 
 .syncro-queue {
-    --queue-cols: minmax(10rem, 1.15fr) minmax(12rem, 2fr) minmax(9rem, max-content) minmax(6.5rem, max-content) 16.5rem;
+    --queue-cols: minmax(10rem, 1.2fr) minmax(14rem, 2.2fr) minmax(9rem, max-content) minmax(8.5rem, max-content) 7.5rem;
     font-size: 0.8125rem;
     border-top: 1px solid var(--syncro-border);
+}
+
+@media (min-width: 768px) {
+    .border-start-md {
+        border-left: 1px solid var(--syncro-border) !important;
+    }
 }
 
 .syncro-queue__head,
@@ -738,7 +756,10 @@ body.syncro-nav-open {
     padding: 0.5rem 1rem;
 }
 
-.syncro-queue__head {
+.table thead th,
+.table-light th,
+.syncro-queue__head,
+.syncro-table-head th {
     font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -748,6 +769,8 @@ body.syncro-nav-open {
     border-bottom: 1px solid var(--syncro-border);
     padding-top: 0.55rem;
     padding-bottom: 0.55rem;
+    white-space: nowrap;
+    vertical-align: middle;
 }
 
 .syncro-queue__item {

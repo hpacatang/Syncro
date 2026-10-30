@@ -3,13 +3,14 @@
 namespace App\Notifications;
 
 use App\Models\Submission;
+use App\Notifications\Concerns\EnrichesNotificationPayload;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class SubmissionApproved extends Notification
 {
-    use Queueable;
+    use Queueable, EnrichesNotificationPayload;
 
     public $submission;
 
@@ -47,13 +48,14 @@ class SubmissionApproved extends Notification
     public function toArray(object $notifiable): array
     {
         $id = $this->submission->id;
+        $approver = auth()->user();
 
-        return [
+        return $this->enrichPayload([
             'title' => 'Submission approved',
             'submission_id' => $id,
             'type' => 'submission_approved',
             'message' => 'Your submission has been approved and is ready to post.',
             'url' => route('org.submissions.review', $this->submission),
-        ];
+        ], $approver);
     }
 }

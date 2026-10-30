@@ -19,7 +19,7 @@
                 <span class="badge bg-light text-dark border">{{ $submission->contentTypeLabel() }}</span>
                 <x-submission-workflow-badge :submission="$submission" size="sm" />
             </div>
-            <h2 class="h4 fw-bold mb-1">Evaluate submission #{{ $submission->id }}</h2>
+            <h1 class="h3 fw-bold mb-0">Evaluate submission #{{ $submission->id }}</h1>
             <p class="text-muted mb-0">
                 {{ $submission->user?->displayName() ?? 'Unknown submitter' }}
                 @if($submission->user?->department)
@@ -28,13 +28,60 @@
                 · Routed to {{ $submission->reviewOwnerLabel() }}
             </p>
         </div>
-        <div class="d-flex flex-wrap gap-2">
-            <a href="{{ route('dashboard.submissions.resolution-letter', $submission) }}" class="btn btn-outline-primary" id="resolutionLetterLink" target="_blank" rel="noopener">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <a href="{{ route('dashboard.submissions.resolution-letter', $submission) }}" class="btn btn-outline-primary d-inline-flex align-items-center" id="resolutionLetterLink" target="_blank" rel="noopener">
                 <i class="bi bi-file-earmark-text me-1"></i> Resolution letter
             </a>
-            <a href="{{ route('dashboard.submissions') }}" class="btn btn-outline-secondary">
+            <a href="{{ route('dashboard.submissions') }}" class="btn btn-outline-secondary d-inline-flex align-items-center">
                 <i class="bi bi-arrow-left me-1"></i> Back to queue
             </a>
+        </div>
+    </div>
+
+    @php
+        $hasPosted = (bool) $submission->posted_at;
+        $evalColClass = $hasPosted ? 'col-lg-3 col-sm-6' : 'col-md-4 col-sm-12';
+    @endphp
+    <div class="card syncro-card-elevated border-0 mb-4 bg-light" style="border-radius: 10px;">
+        <div class="card-body py-3 px-4">
+            <div class="row g-3 align-items-center">
+                <div class="{{ $evalColClass }}">
+                    <span class="text-muted small d-block mb-1">Submitted At:</span>
+                    <div class="text-dark fw-bold d-flex align-items-center">
+                        <i class="bi bi-calendar-event text-primary me-2"></i>
+                        <x-formatted-date :at="$submission->created_at" format="M d, Y h:i A" />
+                    </div>
+                </div>
+                <div class="{{ $evalColClass }} border-start-md ps-md-3">
+                    <span class="text-muted small d-block mb-1">Desired Post Date:</span>
+                    @if($submission->scheduled_post_at)
+                        <div class="text-primary fw-bold d-flex align-items-center">
+                            <i class="bi bi-clock-history me-2"></i>
+                            <x-formatted-date :at="$submission->scheduled_post_at" format="M d, Y h:i A" />
+                        </div>
+                    @else
+                        <div class="text-muted small d-flex align-items-center">
+                            <i class="bi bi-dash-circle me-2"></i>Immediate / Not specified
+                        </div>
+                    @endif
+                </div>
+                @if($hasPosted)
+                <div class="{{ $evalColClass }} border-start-md ps-md-3">
+                    <span class="text-muted small d-block mb-1">Published At:</span>
+                    <div class="text-success fw-bold d-flex align-items-center">
+                        <i class="bi bi-calendar2-check-fill me-2"></i>
+                        <x-formatted-date :at="$submission->posted_at" format="M d, Y h:i A" />
+                    </div>
+                </div>
+                @endif
+                <div class="{{ $evalColClass }} border-start-md ps-md-3">
+                    <span class="text-muted small d-block mb-1">Review Owner:</span>
+                    <div class="text-dark fw-bold d-flex align-items-center">
+                        <i class="bi bi-building text-secondary me-2"></i>
+                        {{ $submission->reviewOwnerLabel() }}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -42,7 +89,7 @@
         <div class="col-xl-7">
             <section class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3">
-                    <h3 class="h6 fw-bold mb-0">Submitted source</h3>
+                    <h5 class="mb-0 fw-bold">Submitted source</h5>
                 </div>
                 <div class="card-body">
                     @if($isArticle)
@@ -72,7 +119,7 @@
             @if($submission->media_paths && count($submission->media_paths))
                 <section class="card border-0 shadow-sm">
                     <div class="card-header bg-white py-3">
-                        <h3 class="h6 fw-bold mb-0">Attachments</h3>
+                        <h5 class="mb-0 fw-bold">Attachments</h5>
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
@@ -90,7 +137,7 @@
         <div class="col-xl-5">
             <section class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3">
-                    <h3 class="h6 fw-bold mb-1">Prepare reviewed draft</h3>
+                    <h5 class="mb-1 fw-bold">Prepare reviewed draft</h5>
                     <p class="small text-muted mb-0">AI suggestions are drafts. Verify names, dates, and claims before saving.</p>
                 </div>
                 <div class="card-body">

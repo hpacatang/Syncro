@@ -23,6 +23,8 @@ Laravel is accessible, powerful, and provides tools required for large, robust a
 
 ## Submission content and AI review
 
+> **Architectural Constraint Notice:** Meta API and AI APIs are not integrated natively due to premium costs. AI creates the raw content offline/externally, and humans execute the review.
+
 Submissions support two types: `social_media` posts (up to 2,200 characters) and `website_article` drafts (a headline and 100–12,000-character body). Existing clients that omit `submission_type` continue to create social-media submissions.
 
 Reviewers can edit drafts manually or request an AI-generated draft. AI output is not saved or sent to submitters until a reviewer edits or confirms it with **Save & Send for Review**. Reviewers remain responsible for checking facts; prompts direct providers to preserve source facts and not invent details. Missing or expired provider keys leave manual review available.

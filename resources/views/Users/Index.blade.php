@@ -40,16 +40,16 @@
 
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light align-middle text-nowrap syncro-table-head">
                     <tr>
-                        <th>Profile name</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Department</th>
-                        <th>Created</th>
-                        <th></th>
+                        <th class="ps-3">PROFILE NAME</th>
+                        <th>USERNAME</th>
+                        <th>EMAIL</th>
+                        <th>ROLE</th>
+                        <th>DEPARTMENT</th>
+                        <th>CREATED</th>
+                        <th class="pe-3 text-end">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>

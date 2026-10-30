@@ -6,9 +6,9 @@ use App\Models\User;
 
 class PairUpdateFormatter
 {
-    public static function step(User $actor, string $stepLabel, ?string $detail = null): string
+    public static function step(User|string $actor, string $stepLabel, ?string $detail = null): string
     {
-        $who = trim((string) ($actor->profile_name ?: $actor->name));
+        $who = is_string($actor) ? $actor : trim((string) ($actor->profile_name ?: $actor->name));
         $line = '• '.$stepLabel;
         if ($detail !== null && trim($detail) !== '') {
             $line .= ': '.trim($detail);

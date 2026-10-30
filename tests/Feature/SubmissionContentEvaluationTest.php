@@ -89,10 +89,16 @@ class SubmissionContentEvaluationTest extends TestCase
             ->assertSee('Verify names, dates, and claims');
 
         $this->actingAs($reviewer)
-            ->get(route('dashboard'))
+            ->get(route('dashboard.submissions.review', $submission))
             ->assertOk()
             ->assertSee('href="'.route('dashboard.submissions.evaluate', $submission).'"', false)
             ->assertSee('Evaluate');
+
+        $this->actingAs($reviewer)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('href="'.route('dashboard.submissions.review', $submission).'"', false)
+            ->assertSee('Review');
     }
 
     public function test_manual_article_review_saves_an_edited_headline_and_body(): void

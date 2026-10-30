@@ -35,42 +35,13 @@
             root.setAttribute('data-workflow-status', status);
             root.setAttribute('data-progress-index', String(progressIndex));
 
-            const isCompact = root.classList.contains('submission-lifecycle-progress--compact');
-            const track = root.querySelector('.lifecycle-progress__track');
-            const badgeWrap = root.querySelector('.lifecycle-progress__badge-wrap');
-            let rejBlock = root.querySelector('.lifecycle-progress__rejected');
-
-            if (status === 'rejected') {
-                if (track) track.style.display = 'none';
-                if (badgeWrap) badgeWrap.style.display = 'none';
-
-                if (!rejBlock) {
-                    rejBlock = document.createElement('div');
-                    rejBlock.className = 'lifecycle-progress__rejected d-flex flex-column align-items-center justify-content-center ' + (isCompact ? 'py-1' : 'py-3') + ' text-center';
-                    rejBlock.innerHTML = '<span class="badge bg-danger ' + (isCompact ? 'px-2 py-1' : 'fs-6 px-3 py-2 mb-2') + '">Rejected</span>' +
-                        (isCompact ? '' : '<p class="text-danger small mb-0 fw-semibold">This submission was rejected and will not proceed.</p>');
-                    root.appendChild(rejBlock);
-                } else {
-                    rejBlock.style.display = '';
-                }
-                return;
+            const badge = root.querySelector('[data-lifecycle-badge]');
+            if (badge) {
+                const color = item.progress_color || stepColors[status] || '#16a34a';
+                const label = item.lifecycle_label || badgeLabel[status] || status;
+                badge.textContent = label;
+                badge.style.backgroundColor = color;
             }
-
-            if (rejBlock) rejBlock.style.display = 'none';
-            if (track) track.style.display = '';
-            if (badgeWrap) badgeWrap.style.display = '';
-
-            const steps = root.querySelectorAll('.lifecycle-step');
-            steps.forEach(function (stepEl, index) {
-                stepEl.classList.remove('is-done', 'is-active', 'is-upcoming');
-                if (progressIndex > index) {
-                    stepEl.classList.add('is-done');
-                } else if (progressIndex === index) {
-                    stepEl.classList.add('is-active');
-                } else {
-                    stepEl.classList.add('is-upcoming');
-                }
-            });
         });
     }
 
@@ -92,6 +63,24 @@
 
         document.querySelectorAll('[data-submission-row="' + item.id + '"]').forEach(function (row) {
             row.setAttribute('data-workflow-status', status);
+        });
+
+        document.querySelectorAll('.syncro-queue-actions[data-submission-id="' + item.id + '"]').forEach(function (wrap) {
+            const btn = wrap.querySelector('.syncro-queue-actions__btn');
+            const label = wrap.querySelector('.syncro-queue-actions__label');
+            if (btn && label) {
+                if (status === 'rejected') {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                    btn.title = 'View submission';
+                    label.textContent = 'View';
+                } else {
+                    btn.classList.remove('btn-outline-primary');
+                    btn.classList.add('btn-primary');
+                    btn.title = 'Review submission details';
+                    label.textContent = 'Review';
+                }
+            }
         });
 
         updateProgressBar(item);

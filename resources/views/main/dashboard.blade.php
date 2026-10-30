@@ -86,11 +86,11 @@
                     @else
                         <div class="syncro-queue">
                             <div class="syncro-queue__head" aria-hidden="true">
-                                <span>Organization</span>
-                                <span>Content preview</span>
-                                <span>Status</span>
-                                <span>Date</span>
-                                <span>Actions</span>
+                                <span>ORGANIZATION</span>
+                                <span>CONTENT PREVIEW</span>
+                                <span>STATUS</span>
+                                <span>DATE</span>
+                                <span>ACTIONS</span>
                             </div>
                             <ul class="syncro-queue__list list-unstyled mb-0">
                                 @foreach($submissions as $submission)
@@ -116,9 +116,20 @@
                                         <div class="syncro-queue__status">
                                             <x-submission-workflow-badge :submission="$submission" size="sm" />
                                         </div>
-                                        <time class="syncro-queue__date" @if($submission->created_at) datetime="{{ $submission->created_at->toIso8601String() }}" @endif>
-                                            <x-formatted-date :at="$submission->created_at" />
-                                        </time>
+                                        <div class="syncro-queue__date" @if($submission->created_at) title="Submitted: {{ $submission->created_at->format('M d, Y h:i A') }}" @endif>
+                                            <span class="d-block small text-muted">Submitted:</span>
+                                            <span class="fw-semibold text-dark"><x-formatted-date :at="$submission->created_at" format="M d, Y" /></span>
+                                            <small class="text-muted d-block"><i class="bi bi-clock me-1"></i><x-formatted-date :at="$submission->created_at" format="h:i A" /></small>
+                                            @if($submission->workflow_status === 'posted' && $submission->posted_at)
+                                                <div class="mt-1 small text-success fw-semibold" title="Published time">
+                                                    <i class="bi bi-check2-circle me-1"></i>Posted: <strong><x-formatted-date :at="$submission->posted_at" format="M d, h:i A" /></strong>
+                                                </div>
+                                            @elseif($submission->scheduled_post_at)
+                                                <div class="mt-1 small text-primary" title="Target post time">
+                                                    <i class="bi bi-calendar-check me-1"></i>Post: <strong><x-formatted-date :at="$submission->scheduled_post_at" format="M d, h:i A" /></strong>
+                                                </div>
+                                            @endif
+                                        </div>
                                         <div class="syncro-queue__actions">
                                             <x-submission-queue-actions :submission="$submission" />
                                         </div>

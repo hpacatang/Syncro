@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.role' => \App\Http\Middleware\CheckApiRole::class,
             'isAdmin' => \App\Http\Middleware\EnsureIsAdmin::class,
             'dept.approved' => \App\Http\Middleware\EnforceDepartmentApproved::class,
+            'no.duplicate' => \App\Http\Middleware\ValidateNoDuplicateSubmission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

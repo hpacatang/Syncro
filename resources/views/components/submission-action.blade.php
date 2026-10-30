@@ -98,7 +98,7 @@
             @elseif($wfStatus === 'posted')
                 <div class="alert alert-primary py-2 mb-3">
                     <i class="bi bi-megaphone-fill me-1"></i>
-                    Your content has been <strong>posted</strong>.
+                    Your content has been <strong>published &amp; posted</strong>. Once published and posted, this submission is view only and cannot be undone.
                 </div>
             @elseif($wfStatus === 'rejected')
                 <div class="alert alert-danger py-2 mb-3">
@@ -127,6 +127,14 @@
                 <i class="bi bi-x-circle-fill me-1"></i>
                 This submission was <strong>rejected</strong>. A rejection is final — this record is view only.
             </div>
+        @elseif($isStaff && $wfStatus === 'posted')
+            <div class="alert alert-primary py-2 mb-3">
+                <i class="bi bi-megaphone-fill me-1"></i>
+                This submission has been <strong>published &amp; posted</strong>. Once published and posted, this record is view only and cannot be undone.
+            </div>
+            <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary btn-sm w-100">
+                <i class="bi bi-arrow-left me-1"></i> Back to Queue
+            </a>
         @elseif($isStaff)
             <p class="text-muted small mb-3">Open the Enhance Caption workspace for this submission, or return to the queue.</p>
             <a href="{{ route('dashboard', ['enhance' => $submission->id]) }}" class="btn btn-primary btn-sm w-100 mb-2">

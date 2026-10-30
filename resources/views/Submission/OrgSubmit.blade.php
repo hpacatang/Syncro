@@ -94,7 +94,21 @@
                             </small>
                         </div>
 
-                        
+                        <div class="mb-4">
+                            <label for="scheduled_post_at" class="form-label fw-bold">
+                                <i class="fas fa-calendar-alt text-primary"></i> Desired Posting Date &amp; Time (Optional)
+                            </label>
+                            <input 
+                                type="datetime-local" 
+                                id="scheduled_post_at" 
+                                name="scheduled_post_at" 
+                                class="form-control"
+                                min="{{ now()->format('Y-m-d\TH:i') }}">
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle"></i> When would you like this post to be published once approved? Leave blank to publish immediately.
+                            </small>
+                        </div>
+
                         <div class="mb-4">
                             <label for="links" class="form-label fw-bold">
                                 <i class="fas fa-link text-primary"></i> Related Links (Optional)
@@ -113,22 +127,21 @@
                             </small>
                         </div>
 
-                        
                         <div class="mb-4">
                             <label for="media" class="form-label fw-bold">
-                                <i class="fas fa-paperclip text-primary"></i> Attach files (optional)
+                                <i class="fas fa-photo-film text-primary"></i> Upload Pictures &amp; Videos (Optional)
                             </label>
                             <div class="form-control p-3 text-center" style="border: 2px dashed #dee2e6; cursor: pointer;" id="dropZone">
-                                <i class="fas fa-cloud-upload-alt" style="font-size: 2rem;" class="text-muted"></i>
-                                <p class="text-muted mt-2 mb-0">Drag and drop files here or click to browse</p>
-                                <small class="text-muted">JPG, PNG, WebP, GIF, DOC/DOCX, PDF, TXT — max 5&nbsp;MB each</small>
+                                <i class="fas fa-cloud-upload-alt text-primary" style="font-size: 2.2rem;"></i>
+                                <p class="text-dark fw-semibold mt-2 mb-0">Drag and drop pictures or videos here, or click to browse</p>
+                                <small class="text-muted">Pictures (JPG, PNG, WebP, GIF), Videos (MP4, MOV, WebM, AVI), Docs &amp; PDF — max 50&nbsp;MB each</small>
                                 <input 
                                     type="file" 
                                     id="media" 
                                     name="media[]" 
                                     class="form-control d-none" 
                                     multiple 
-                                    accept=".jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.pdf,.txt,image/jpeg,image/png,image/webp,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
+                                    accept=".jpg,.jpeg,.png,.webp,.gif,.mp4,.mov,.webm,.ogg,.avi,.mkv,.doc,.docx,.pdf,.txt,image/*,video/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
                             </div>
                             <div id="mediaPreview" class="mt-3"></div>
                         </div>
@@ -242,8 +255,8 @@ dropZone.addEventListener('drop', (e) => {
 
 mediaInput.addEventListener('change', updateMediaPreview);
 
-const ALLOWED_MEDIA_EXT = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'doc', 'docx', 'pdf', 'txt']);
-const MAX_MEDIA_BYTES = 5 * 1024 * 1024;
+const ALLOWED_MEDIA_EXT = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'mov', 'webm', 'ogg', 'avi', 'mkv', 'doc', 'docx', 'pdf', 'txt']);
+const MAX_MEDIA_BYTES = 50 * 1024 * 1024;
 
 function fileExtension(name) {
     const i = name.lastIndexOf('.');
@@ -274,6 +287,7 @@ function updateMediaPreview() {
     preview.className = 'row g-2';
     
     const imageExts = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif']);
+    const videoExts = new Set(['mp4', 'mov', 'webm', 'ogg', 'avi', 'mkv']);
 
     Array.from(files).forEach((file, index) => {
         const col = document.createElement('div');
@@ -281,7 +295,7 @@ function updateMediaPreview() {
         const ext = fileExtension(file.name);
 
         const removeBtn = `
-            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" onclick="removeMedia(${index})">
+            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 z-3" onclick="removeMedia(${index})">
                 <i class="fas fa-times"></i>
             </button>`;
 
@@ -296,6 +310,15 @@ function updateMediaPreview() {
                 <small class="text-muted text-truncate d-block mt-1" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</small>`;
             };
             reader.readAsDataURL(file);
+        } else if (videoExts.has(ext)) {
+            const blobUrl = URL.createObjectURL(file);
+            col.innerHTML = `
+                <div class="position-relative border rounded overflow-hidden bg-dark d-flex align-items-center justify-content-center" style="height: 120px;">
+                    <video src="${blobUrl}" style="max-height: 120px; max-width: 100%; object-fit: contain;"></video>
+                    <span class="position-absolute bottom-0 start-0 m-1 badge bg-dark bg-opacity-75"><i class="fas fa-video me-1"></i>${ext.toUpperCase()}</span>
+                    ${removeBtn}
+                </div>
+                <small class="text-muted text-truncate d-block mt-1" title="${escapeHtml(file.name)}">${escapeHtml(file.name)} (${formatBytes(file.size)})</small>`;
         } else {
             col.innerHTML = `
                 <div class="position-relative border rounded p-2 bg-light d-flex flex-column justify-content-center" style="height: 120px;">
@@ -330,11 +353,11 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
     for (const f of mediaFiles) {
         const ext = fileExtension(f.name);
         if (!ALLOWED_MEDIA_EXT.has(ext)) {
-            alert('Each file must be one of: JPG, PNG, WebP, GIF, DOC, DOCX, PDF, TXT. Rejected: ' + f.name);
+            alert('Each file must be a valid picture, video, or document. Rejected: ' + f.name);
             return;
         }
         if (f.size > MAX_MEDIA_BYTES) {
-            alert('Each file must be at most 5 MB. Too large: ' + f.name + ' (' + formatBytes(f.size) + ')');
+            alert('Each file must be at most 50 MB. Too large: ' + f.name + ' (' + formatBytes(f.size) + ')');
             return;
         }
     }
@@ -372,8 +395,18 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
                 window.location.href = "{{ route(auth()->user()->isDepartment() ? 'dashboard' : 'org.dashboard') }}";
             }, 2000);
         } else {
-            const validationErrors = data.errors ? Object.values(data.errors).flat().join(' ') : '';
-            alert('Error: ' + (validationErrors || data.message || 'Submission failed.'));
+            const isDuplicate = data.error === 'DuplicateContentDetected';
+            const alertBox = document.createElement('div');
+            alertBox.className = 'alert ' + (isDuplicate ? 'alert-danger' : 'alert-warning') + ' alert-dismissible fade show';
+            alertBox.innerHTML = `
+                <i class="fas ${isDuplicate ? 'fa-ban' : 'fa-exclamation-triangle'} me-2"></i>
+                <strong>${isDuplicate ? 'Submission Rejected (Duplicate / Similar Content Detected)' : 'Error'}</strong>
+                <p class="mb-0 mt-1">${escapeHtml(data.reason || data.message || 'Submission failed.')}</p>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            form.parentElement.insertBefore(alertBox, form);
+            alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit for Review';
         }

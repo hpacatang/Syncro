@@ -196,4 +196,99 @@ class PanelFeedbackWorkflowTest extends TestCase
             ->assertDontSee('New Submission')
             ->assertDontSee('orgSubmitBtn', false);
     }
+
+    public function test_published_and_posted_submission_cannot_be_undone_by_any_endpoint(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $pair = User::factory()->pair()->create();
+        $student = User::factory()->org()->create();
+        $submission = Submission::factory()->create([
+            'user_id' => $student->id,
+            'workflow_status' => 'posted',
+            'status' => 'approved',
+            'posted_at' => now()->subDay(),
+        ]);
+
+        foreach (['approved', 'revised', 'under_peer_review', 'rejected', 'submitted'] as $status) {
+            $this->actingAs($admin)
+                ->postJson('/api/submissions/'.$submission->id.'/transition', ['status' => $status])
+                ->assertStatus(422)
+                ->assertJsonFragment([
+                    'message' => 'This submission has been published and posted. It is view only and cannot be undone.',
+                ]);
+        }
+
+        $this->actingAs($pair)
+            ->postJson('/api/submissions/'.$submission->id.'/save-manual-caption', [
+                'manual_caption' => 'Trying to edit a posted submission.',
+            ])
+            ->assertStatus(422)
+            ->assertJsonFragment([
+                'message' => 'This submission has been published and posted. It is view only and cannot be undone.',
+            ]);
+
+        $this->actingAs($admin)
+            ->putJson('/api/submissions/'.$submission->id.'/approve')
+            ->assertStatus(422);
+
+        $this->actingAs($student)
+            ->postJson('/api/submissions/'.$submission->id.'/org-review/approve', [])
+            ->assertStatus(422);
+
+        $this->actingAs($student)
+            ->postJson('/api/submissions/'.$submission->id.'/org-review/reject', [
+                'notes' => 'Requesting revisions on a posted one.',
+                'action' => 'revision',
+            ])
+            ->assertStatus(422);
+
+        $this->actingAs($admin)
+            ->deleteJson('/api/submissions/'.$submission->id)
+            ->assertStatus(422);
+
+        $this->assertSame('posted', $submission->fresh()->workflow_status);
+    }
+
+    public function test_published_and_posted_submission_is_view_only_with_no_action_buttons(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $pair = User::factory()->pair()->create();
+        $student = User::factory()->org()->create();
+        $submission = Submission::factory()->create([
+            'user_id' => $student->id,
+            'review_department_id' => null,
+            'original_caption' => 'Original caption of published content',
+            'workflow_status' => 'posted',
+            'status' => 'approved',
+            'posted_at' => now()->subHour(),
+        ]);
+
+        foreach ([$admin, $pair] as $staff) {
+            $this->actingAs($staff)
+                ->get(route('dashboard.submissions.evaluate', $submission))
+                ->assertRedirect(route('dashboard.submissions.review', $submission));
+
+            $this->actingAs($staff)
+                ->get(route('dashboard.submissions.review', $submission))
+                ->assertOk()
+                ->assertSee('Original caption of published content')
+                ->assertSee('view only')
+                ->assertDontSee('id="lifecycleSteps-'.$submission->id.'"', false)
+                ->assertDontSee('Evaluate &amp; edit', false)
+                ->assertDontSee('Enhance Caption');
+
+            $this->actingAs($staff)
+                ->get(route('dashboard.submissions'))
+                ->assertOk()
+                ->assertDontSee(route('dashboard.submissions.evaluate', $submission), false)
+                ->assertSee('View');
+        }
+
+        $this->actingAs($student)
+            ->get(route('org.submissions.review', $submission))
+            ->assertOk()
+            ->assertSee('Original caption of published content')
+            ->assertSee('view only and cannot be undone')
+            ->assertDontSee('orgSubmitBtn', false);
+    }
 }

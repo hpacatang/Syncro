@@ -18,12 +18,67 @@
                     $message = $data['message'] ?? 'You have a new notification.';
                     $targetUrl = \App\Support\NotificationTargetUrl::resolve($data, auth()->user());
                     $isUnread = $notification->read_at === null;
+
+                    // Resolve submission for full organization and date details (handles existing/older records too)
+                    $submissionId = $data['submission_id'] ?? null;
+                    $submission = $submissionId ? \App\Models\Submission::withoutGlobalScopes()->with(['user.department', 'reviewDepartment'])->find($submissionId) : null;
+
+                    $fromOrg = $data['sender_org'] ?? null;
+                    $fromName = $data['sender_name'] ?? $data['from'] ?? null;
+                    $submittedAt = $data['submitted_at'] ?? null;
+                    $scheduledPostAt = $data['scheduled_post_at'] ?? null;
+
+                    if ($submission) {
+                        $legacyOrg = $submission->user?->displayName();
+                        if ($submission->user?->department) {
+                            $legacyOrg .= ' (' . $submission->user->department->displayName() . ')';
+                        }
+                        $fromOrg ??= $legacyOrg;
+                        $fromName ??= $legacyOrg;
+                        if (!$submittedAt && $submission->created_at) {
+                            $submittedAt = $submission->created_at->format('M d, Y h:i A');
+                        }
+                        if (!$scheduledPostAt && $submission->scheduled_post_at) {
+                            $scheduledPostAt = $submission->scheduled_post_at->format('M d, Y h:i A');
+                        }
+                        if ($message === 'A new submission was added to the review queue.' && $legacyOrg) {
+                            $message = "Submitted by {$legacyOrg} on {$submittedAt} for {$submission->reviewOwnerLabel()} review.";
+                        }
+                    }
                 @endphp
                 <div class="card mb-3 syncro-card-elevated border-start border-4 {{ $isUnread ? 'border-primary syncro-notif-item--unread' : 'border-secondary' }}">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title text-primary mb-0">{{ $title }}</h5>
-                            <small class="text-muted"><x-formatted-date :at="$notification->created_at" relative /></small>
+                        <div class="d-flex justify-content-between align-items-start mb-2 gap-3">
+                            <div class="flex-grow-1" style="min-width: 0;">
+                                <h5 class="card-title text-primary mb-2 fw-bold">{{ $title }}</h5>
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    @if($fromOrg)
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                            <i class="bi bi-building me-1"></i>From Org: <strong>{{ $fromOrg }}</strong>
+                                        </span>
+                                    @elseif($fromName)
+                                        <span class="badge bg-light text-dark border px-2 py-1">
+                                            <i class="bi bi-person-circle text-primary me-1"></i>From: <strong>{{ $fromName }}</strong>
+                                        </span>
+                                    @endif
+
+                                    @if($submittedAt)
+                                        <span class="badge bg-light text-secondary border px-2 py-1" title="Submitted date and time">
+                                            <i class="bi bi-calendar-event text-secondary me-1"></i>Submitted: {{ $submittedAt }}
+                                        </span>
+                                    @endif
+
+                                    @if($scheduledPostAt)
+                                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1" title="Desired posting schedule">
+                                            <i class="bi bi-clock-history me-1"></i>Target Post: {{ $scheduledPostAt }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="text-end text-muted flex-shrink-0 text-nowrap ms-auto">
+                                <small class="d-block fw-semibold text-secondary"><x-formatted-date :at="$notification->created_at" relative /></small>
+                                <small style="font-size: 0.78rem;"><x-formatted-date :at="$notification->created_at" format="M d, Y h:i A" /></small>
+                            </div>
                         </div>
                         <p class="card-text text-secondary mb-3">{{ $message }}</p>
                         <div class="d-flex flex-wrap gap-2">

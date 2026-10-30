@@ -81,8 +81,14 @@
                             const unread = !n.read;
                             const cls = unread ? 'syncro-notif-item--unread' : '';
                             const href = n.url || '#';
-                            return '<a class="dropdown-item small ' + cls + '" href="' + href + '" data-notif-id="' + n.id + '">' +
-                                '<div class="fw-semibold">' + escapeHtml(n.title) + '</div>' +
+                            const orgBadge = n.from
+                                ? '<div class="mb-1"><span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1"><i class="bi bi-building me-1"></i>' + escapeHtml(n.from) + '</span>' +
+                                  (n.submitted_at || n.created_at_formatted ? '<span class="badge bg-light text-secondary border"><i class="bi bi-clock me-1"></i>' + escapeHtml(n.submitted_at || n.created_at_formatted) + '</span>' : '') +
+                                  '</div>'
+                                : '';
+                            return '<a class="dropdown-item small py-2 border-bottom ' + cls + '" href="' + href + '" data-notif-id="' + n.id + '">' +
+                                '<div class="fw-semibold text-primary">' + escapeHtml(n.title) + '</div>' +
+                                orgBadge +
                                 '<div class="text-muted text-truncate" style="max-width:280px">' + escapeHtml(n.message) + '</div>' +
                                 '</a>';
                         }).join('');

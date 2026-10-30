@@ -91,13 +91,13 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light align-middle text-nowrap syncro-table-head">
                                 <tr>
-                                    <th class="ps-4">Submission</th>
-                                    <th>Enhanced By</th>
-                                    <th>Date</th>
-                                    <th>Action</th>
+                                    <th class="ps-4">CONTENT PREVIEW</th>
+                                    <th>ENHANCED BY</th>
+                                    <th>DATE</th>
+                                    <th class="pe-4 text-center" style="width: 1%;">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -173,14 +173,14 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
+                            <table class="table table-hover mb-0 align-middle">
+                                <thead class="table-light align-middle text-nowrap syncro-table-head">
                                     <tr>
-                                        <th class="ps-4">Submission Preview</th>
-                                        <th>Review team</th>
-                                        <th>Status</th>
-                                        <th>Submitted</th>
-                                        <th>Action</th>
+                                        <th class="ps-4">CONTENT PREVIEW</th>
+                                        <th>REVIEW TEAM</th>
+                                        <th>STATUS</th>
+                                        <th>DATE</th>
+                                        <th class="pe-4 text-center" style="width: 1%;">ACTIONS</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -198,7 +198,13 @@
                                             <td style="min-width: 14rem;">
                                                 <x-submission-lifecycle-progress :submission="$submission" :compact="true" />
                                             </td>
-                                            <td class="text-muted small"><x-formatted-date :at="$submission->created_at" format="M d" /></td>
+                                            <td class="text-nowrap">
+                                                <div class="small fw-semibold text-dark"><x-formatted-date :at="$submission->created_at" format="M d, Y" /></div>
+                                                <small class="text-muted d-block"><i class="bi bi-clock me-1"></i><x-formatted-date :at="$submission->created_at" format="h:i A" /></small>
+                                                @if($submission->scheduled_post_at)
+                                                    <small class="text-primary d-block mt-1" title="Desired post time"><i class="bi bi-calendar-check me-1"></i>Post: <x-formatted-date :at="$submission->scheduled_post_at" format="M d, h:i A" /></small>
+                                                @endif
+                                            </td>
                                             <td>
                                                 <div class="d-flex flex-wrap gap-1">
                                                     <x-view-action-link :href="route('org.submissions.review', $submission)" :title="__('View details')" />

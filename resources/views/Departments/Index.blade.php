@@ -31,14 +31,14 @@
 
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light align-middle text-nowrap syncro-table-head">
                     <tr>
-                        <th>Department name</th>
-                        <th>Short name</th>
-                        <th>Users</th>
-                        <th>Created</th>
-                        <th></th>
+                        <th class="ps-3">DEPARTMENT NAME</th>
+                        <th>SHORT NAME</th>
+                        <th>USERS</th>
+                        <th>CREATED</th>
+                        <th class="pe-3 text-end">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>

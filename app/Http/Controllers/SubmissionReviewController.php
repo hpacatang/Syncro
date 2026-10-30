@@ -52,6 +52,13 @@ class SubmissionReviewController extends Controller
                 ->with('error', 'This submission was rejected and can only be viewed.');
         }
 
+        // Once published and posted, it is final: show the content read-only.
+        if ($submission->workflow_status === SubmissionLifecycleStatus::Posted->value) {
+            return redirect()
+                ->route('dashboard.submissions.review', $submission)
+                ->with('info', 'This submission has been published and posted. It is view only and cannot be undone.');
+        }
+
         $submission = $this->beginStaffReview($submission, true, $lifecycle);
         $submission->load(['user', 'reviewDepartment', 'media', 'enhancer']);
 

@@ -15,14 +15,14 @@
     <div class="card">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+                <thead class="table-light align-middle text-nowrap syncro-table-head">
                     <tr>
-                        <th>Applicant</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>School / Department</th>
-                        <th>Requested</th>
-                        <th class="text-end">Decision</th>
+                        <th class="ps-3">APPLICANT</th>
+                        <th>USERNAME</th>
+                        <th>EMAIL</th>
+                        <th>SCHOOL / DEPARTMENT</th>
+                        <th>REQUESTED</th>
+                        <th class="pe-3 text-end">DECISION</th>
                     </tr>
                 </thead>
                 <tbody>

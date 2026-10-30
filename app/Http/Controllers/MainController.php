@@ -105,7 +105,7 @@ class MainController extends Controller
 
     public function submissions(Request $request)
     {
-        $query = Submission::with('user');
+        $query = Submission::with(['user.department', 'reviewDepartment']);
 
         if ($request->user()->isOrg()) {
             $query->where('user_id', $request->user()->id);

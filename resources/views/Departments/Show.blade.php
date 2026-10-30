@@ -63,12 +63,12 @@
                     </h5>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light align-middle text-nowrap syncro-table-head">
                             <tr>
-                                <th>Organization</th>
-                                <th>Email</th>
-                                <th></th>
+                                <th class="ps-3">ORGANIZATION</th>
+                                <th>EMAIL</th>
+                                <th class="pe-3 text-end">ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody>

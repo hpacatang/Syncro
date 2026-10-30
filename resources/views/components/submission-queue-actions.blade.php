@@ -8,7 +8,7 @@
         ? app(SubmissionLifecycleService::class)->allowedTransitions($submission, auth()->user())
         : [];
 
-    $isRejected = $submission->workflow_status === 'rejected';
+    $isFinal = in_array($submission->workflow_status, ['rejected', 'posted'], true);
 
     $canReject = false;
     foreach ($allowed as $status) {
@@ -21,19 +21,12 @@
 
 <div class="syncro-queue-actions" data-submission-id="{{ $submission->id }}">
     <div class="syncro-queue-actions__group" role="group" aria-label="Submission actions">
-        <a href="{{ route('dashboard.submissions.review', $submission) }}" class="btn btn-sm btn-primary syncro-queue-actions__btn" title="Review submission details">
-            <i class="bi bi-eye" aria-hidden="true"></i>
-            <span class="syncro-queue-actions__label">{{ $isRejected ? 'View' : 'Review' }}</span>
+        <a href="{{ route('dashboard.submissions.review', $submission) }}"
+           class="btn btn-sm {{ $isFinal ? 'btn-outline-primary' : 'btn-primary' }} syncro-queue-actions__btn d-inline-flex align-items-center"
+           title="{{ $isFinal ? 'View submission' : 'Review submission details' }}">
+            <i class="bi bi-eye me-1" aria-hidden="true"></i>
+            <span class="syncro-queue-actions__label">{{ $isFinal ? 'View' : 'Review' }}</span>
         </a>
-        @unless($isRejected)
-        <a
-            href="{{ route('dashboard.submissions.evaluate', $submission) }}"
-            class="btn btn-sm btn-outline-primary syncro-queue-actions__btn"
-            title="Evaluate and enhance submission">
-            <i class="bi bi-magic" aria-hidden="true"></i>
-            <span class="syncro-queue-actions__label">Evaluate</span>
-        </a>
-        @endunless
     </div>
     <span class="lifecycle-inline-msg syncro-queue-actions__msg" role="status"></span>
 </div>

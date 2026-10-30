@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Storage;
 final class SubmissionMedia
 {
     private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    private const VIDEO_EXTENSIONS = ['mp4', 'mov', 'webm', 'ogg', 'avi', 'mkv', 'wmv'];
 
-    
     private const DISKS = ['supabase', 'public'];
 
     public static function isImage(string $path): bool
@@ -17,6 +17,15 @@ final class SubmissionMedia
         return in_array(
             strtolower(pathinfo($path, PATHINFO_EXTENSION)),
             self::IMAGE_EXTENSIONS,
+            true
+        );
+    }
+
+    public static function isVideo(string $path): bool
+    {
+        return in_array(
+            strtolower(pathinfo($path, PATHINFO_EXTENSION)),
+            self::VIDEO_EXTENSIONS,
             true
         );
     }

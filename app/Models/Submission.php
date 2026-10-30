@@ -20,13 +20,15 @@ class Submission extends Model
 
     protected $fillable = [
         'user_id', 'review_department_id', 'submission_type', 'article_title', 'enhanced_title',
-        'original_caption', 'enhanced_caption', 'links', 'media_paths', 'status',
+        'original_caption', 'enhanced_caption', 'links', 'media_paths', 'scheduled_post_at', 'posted_at', 'status',
         'enhanced_by', 'enhanced_at', 'workflow_status', 'org_review_notes', 'pair_feedback'
     ];
 
     protected $casts = [
         'links' => 'array',
         'media_paths' => 'array',
+        'scheduled_post_at' => 'datetime',
+        'posted_at' => 'datetime',
         'enhanced_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -88,5 +90,34 @@ class Submission extends Model
     public function lifecycle(): SubmissionLifecycleStatus
     {
         return SubmissionLifecycleStatus::fromLegacy($this->workflow_status);
+    }
+
+    public function publicationDateTime(): ?\Carbon\Carbon
+    {
+        return $this->posted_at ?? $this->scheduled_post_at;
+    }
+
+    public function isPublicationTimeReached(): bool
+    {
+        $dt = $this->publicationDateTime();
+        if (! $dt) {
+            return false;
+        }
+
+        return ! $dt->isFuture();
+    }
+
+    public function canEditPublicationSchedule(): bool
+    {
+        if ($this->workflow_status === 'rejected') {
+            return false;
+        }
+
+        $dt = $this->publicationDateTime();
+        if (! $dt) {
+            return true;
+        }
+
+        return $dt->isFuture();
     }
 }

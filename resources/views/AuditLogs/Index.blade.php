@@ -51,16 +51,16 @@
     <!-- Audit Logs Table -->
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light align-middle text-nowrap syncro-table-head">
                     <tr>
-                        <th>Timestamp</th>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Description</th>
-                        <th>Model</th>
-                        <th>IP Address</th>
-                        <th>Actions</th>
+                        <th class="ps-3">TIMESTAMP</th>
+                        <th>USER</th>
+                        <th>ACTION</th>
+                        <th>DESCRIPTION</th>
+                        <th>MODEL</th>
+                        <th>IP ADDRESS</th>
+                        <th class="pe-3 text-end">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>

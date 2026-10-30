@@ -86,6 +86,17 @@ class SubmissionLifecycleService
         $from = $this->current($submission);
 
         if (! $this->canTransition($submission, $actor, $target, $from)) {
+            if ($from === SubmissionLifecycleStatus::Posted) {
+                throw new InvalidLifecycleTransitionException(
+                    'This submission has been published and posted. It is view only and cannot be undone.'
+                );
+            }
+            if ($from === SubmissionLifecycleStatus::Rejected) {
+                throw new InvalidLifecycleTransitionException(
+                    'This submission has been rejected. A rejection is final and cannot be undone.'
+                );
+            }
+
             throw new InvalidLifecycleTransitionException(
                 sprintf(
                     'Cannot move submission #%d from %s to %s.',
@@ -98,6 +109,16 @@ class SubmissionLifecycleService
 
         $submission->workflow_status = $target->value;
         $submission->status          = $this->legacyStatusFor($target);
+
+        if ($target === SubmissionLifecycleStatus::Posted) {
+            $submission->posted_at = isset($context['posted_at'])
+                ? \Carbon\Carbon::parse($context['posted_at'])
+                : now();
+
+            if (isset($context['scheduled_post_at'])) {
+                $submission->scheduled_post_at = \Carbon\Carbon::parse($context['scheduled_post_at']);
+            }
+        }
 
         if (isset($context['org_review_notes'])) {
             $submission->org_review_notes = $context['org_review_notes'];
