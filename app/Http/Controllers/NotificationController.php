@@ -7,10 +7,16 @@ use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\View\View;
 
+use App\Support\ReviewNotificationCleaner;
+
 class NotificationController extends Controller
 {
     public function index(Request $request): View
     {
+        if ($request->user()->isStaffReviewer()) {
+            ReviewNotificationCleaner::pruneStaleQueuedNotifications();
+        }
+
         $notifications = $request->user()
             ->notifications()
             ->orderByDesc('created_at')
@@ -23,6 +29,10 @@ class NotificationController extends Controller
 
     public function unreadCount(Request $request)
     {
+        if ($request->user()->isStaffReviewer()) {
+            ReviewNotificationCleaner::pruneStaleQueuedNotifications();
+        }
+
         return response()->json([
             'count' => $request->user()->unreadNotifications()->count(),
         ]);
@@ -30,6 +40,10 @@ class NotificationController extends Controller
 
     public function recent(Request $request)
     {
+        if ($request->user()->isStaffReviewer()) {
+            ReviewNotificationCleaner::pruneStaleQueuedNotifications();
+        }
+
         $items = $request->user()
             ->notifications()
             ->orderByDesc('created_at')

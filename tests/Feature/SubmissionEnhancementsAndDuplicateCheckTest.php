@@ -100,6 +100,45 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
             ->assertSee('Submitted:');
     }
 
+    public function test_reviewing_submission_automatically_removes_it_from_notifications_without_opening_notif(): void
+    {
+        $org = User::factory()->org()->create([
+            'name' => 'College of Law',
+            'profile_name' => 'College of Law',
+        ]);
+        $admin = User::factory()->admin()->create();
+        $pair = User::factory()->pair()->create();
+
+        $submission = Submission::factory()->create([
+            'user_id' => $org->id,
+            'original_caption' => 'Law journal submission ready for review by PAIR.',
+            'workflow_status' => 'submitted',
+            'status' => 'pending',
+            'review_department_id' => null,
+        ]);
+
+        $admin->notify(new SubmissionQueuedForReview($submission));
+        $pair->notify(new SubmissionQueuedForReview($submission));
+
+        $this->assertSame(1, $admin->unreadNotifications()->count());
+        $this->assertSame(1, $pair->unreadNotifications()->count());
+
+        // Admin does a review by opening the review page directly from dashboard/queue (without opening notification)
+        $this->actingAs($admin)
+            ->get(route('dashboard.submissions.review', $submission))
+            ->assertOk();
+
+        // Notification numbers (unread count) are automatically cleared since submission has been seen/reviewed by admin
+        $this->assertSame(0, $admin->fresh()->unreadNotifications()->count());
+        $this->assertSame(0, $pair->fresh()->unreadNotifications()->count());
+
+        // But notification contents are still preserved in notification history
+        $this->actingAs($pair)
+            ->get(route('dashboard.notifications'))
+            ->assertOk()
+            ->assertSee('College of Law');
+    }
+
     public function test_submission_accepts_scheduled_post_at_date_and_time(): void
     {
         $org = User::factory()->org()->create();

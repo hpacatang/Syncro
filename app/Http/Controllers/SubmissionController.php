@@ -10,6 +10,7 @@ use App\Notifications\EnhancementReadyForOrg;
 use App\Notifications\SubmissionApproved;
 use App\Notifications\SubmissionQueuedForReview;
 use App\Services\ContentSimilarityChecker;
+use App\Support\ReviewNotificationCleaner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -242,6 +243,7 @@ class SubmissionController extends Controller
 
         $submission = Submission::findOrFail($id);
         $this->authorize('reviewAsStaff', $submission);
+        ReviewNotificationCleaner::clearForSubmission($submission);
 
         if ($locked = $this->rejectedLockResponse($submission)) {
             return $locked;
@@ -331,6 +333,7 @@ class SubmissionController extends Controller
         try {
             $submission = Submission::findOrFail($id);
             $this->authorize('reviewAsStaff', $submission);
+            ReviewNotificationCleaner::clearForSubmission($submission);
 
             if ($locked = $this->rejectedLockResponse($submission)) {
                 return $locked;
@@ -362,6 +365,7 @@ class SubmissionController extends Controller
     {
         $submission = Submission::findOrFail($id);
         $this->authorize('reviewAsStaff', $submission);
+        ReviewNotificationCleaner::clearForSubmission($submission);
 
         if ($locked = $this->rejectedLockResponse($submission)) {
             return $locked;

@@ -94,6 +94,10 @@ class MainController extends Controller
         $filter = $this->applySubmissionFilters($query, $request, 'all');
         $submissions = $query->paginate(10)->withQueryString();
 
+        if ($request->filled('enhance') && $request->user()->isStaffReviewer()) {
+            \App\Support\ReviewNotificationCleaner::clearForSubmission((int) $request->input('enhance'));
+        }
+
         return view('main.dashboard', [
             'stats' => $stats,
             'submissions' => $submissions,

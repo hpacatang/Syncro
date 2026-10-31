@@ -7,6 +7,7 @@ use App\Services\SubmissionLifecycleService;
 use App\Submission\Enums\SubmissionLifecycleStatus;
 use App\Submission\Exceptions\InvalidLifecycleTransitionException;
 use App\Support\PairUpdateFormatter;
+use App\Support\ReviewNotificationCleaner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -19,6 +20,7 @@ class SubmissionLifecycleController extends Controller
     public function transition(Request $request, Submission $submission)
     {
         $this->authorize('transition', $submission);
+        ReviewNotificationCleaner::clearForSubmission($submission);
 
         $request->validate([
             'status' => 'required|string',

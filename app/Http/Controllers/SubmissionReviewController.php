@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Gate;
+use App\Support\ReviewNotificationCleaner;
 use Illuminate\View\View;
 
 class SubmissionReviewController extends Controller
@@ -27,6 +28,10 @@ class SubmissionReviewController extends Controller
 
         if (! $user->canSubmitPosts() && ! $user->isStaffReviewer()) {
             return redirect()->route($user->homeRoute());
+        }
+
+        if ($user->isStaffReviewer()) {
+            ReviewNotificationCleaner::clearForSubmission($submission);
         }
 
         $submission = $this->beginStaffReview($submission, $user->isStaffReviewer(), $lifecycle);
@@ -59,6 +64,8 @@ class SubmissionReviewController extends Controller
                 ->with('info', 'This submission has been published and posted. It is view only and cannot be undone.');
         }
 
+        ReviewNotificationCleaner::clearForSubmission($submission);
+
         $submission = $this->beginStaffReview($submission, true, $lifecycle);
         $submission->load(['user', 'reviewDepartment', 'media', 'enhancer']);
 
@@ -83,6 +90,8 @@ class SubmissionReviewController extends Controller
             || $submission->workflow_status !== SubmissionLifecycleStatus::Submitted->value) {
             return $submission;
         }
+
+        ReviewNotificationCleaner::clearForSubmission($submission);
 
         try {
             $submission = $lifecycle->systemTransition($submission, SubmissionLifecycleStatus::UnderPeerReview);
