@@ -71,7 +71,13 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:org')->group(function () {
         Route::get('/org/dashboard', [MainController::class, 'orgDashboard'])->name('org.dashboard');
         Route::get('/org/submit', function () {
-            return view('Submission.OrgSubmit');
+            return view('Submission.OrgSubmit', [
+                'configuredProviders' => [
+                    'openai' => (bool) config('services.openai.key'),
+                    'gemini' => (bool) config('services.gemini.key'),
+                    'deepseek' => (bool) config('services.deepseek.key'),
+                ],
+            ]);
         })->name('org.submit');
         Route::get('/org/submissions', [MainController::class, 'submissions'])->name('org.submissions');
         Route::get('/org/submissions/{submission}/review', [SubmissionReviewController::class, 'show'])
@@ -81,7 +87,13 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(['role:department', 'dept.approved'])->group(function () {
         Route::get('/department/submit', function () {
-            return view('Submission.OrgSubmit');
+            return view('Submission.OrgSubmit', [
+                'configuredProviders' => [
+                    'openai' => (bool) config('services.openai.key'),
+                    'gemini' => (bool) config('services.gemini.key'),
+                    'deepseek' => (bool) config('services.deepseek.key'),
+                ],
+            ]);
         })->name('department.submit');
     });
 
@@ -93,6 +105,8 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('api')->group(function () {
         Route::middleware(['role:org,department', 'dept.approved'])->group(function () {
+            Route::post('/submissions/generate-draft', [SubmissionController::class, 'generateSubmissionDraft'])
+                ->middleware('throttle:10,1');
             Route::post('/submissions', [SubmissionController::class, 'store']);
             Route::post('/submissions/{id}/org-review/approve', [SubmissionController::class, 'orgApproveEnhancement']);
             Route::post('/submissions/{id}/org-review/reject', [SubmissionController::class, 'orgRejectEnhancement']);

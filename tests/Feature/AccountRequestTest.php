@@ -66,6 +66,33 @@ class AccountRequestTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_login_uses_the_users_home_page_instead_of_a_stale_notifications_json_url(): void
+    {
+        $user = User::factory()->org()->create();
+
+        $this->withSession([
+            'url.intended' => route('notifications.recent'),
+        ])->post(route('authenticate'), [
+            'name' => $user->name,
+            'password' => 'password',
+        ])->assertRedirect(route('org.dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_a_notifications_poll_redirected_to_login_does_not_redirect_back_to_json_after_login(): void
+    {
+        $user = User::factory()->org()->create();
+
+        $this->get(route('notifications.recent'))
+            ->assertRedirect(route('login'));
+
+        $this->post(route('authenticate'), [
+            'name' => $user->name,
+            'password' => 'password',
+        ])->assertRedirect(route('org.dashboard'));
+    }
+
     public function test_admin_can_reject_a_pending_request(): void
     {
         $user = User::factory()->create([

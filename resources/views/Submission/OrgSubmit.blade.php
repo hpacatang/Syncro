@@ -67,6 +67,43 @@
                         </div>
 
                         <div class="mb-4">
+                            <fieldset class="border rounded p-3 mb-4 bg-light">
+                                <legend class="float-none w-auto px-2 fs-6 fw-bold">Use AI to draft, or write it yourself</legend>
+                                <label for="draftPrompt" class="form-label">What should the post or article say?</label>
+                                <textarea
+                                    id="draftPrompt"
+                                    class="form-control"
+                                    rows="4"
+                                    maxlength="6000"
+                                    placeholder="Describe what happened and include the confirmed date, location, people involved, key details, and any important context."></textarea>
+                                <div class="form-text mb-3">The more accurate detail you provide, the more useful the draft. The AI must not invent missing facts.</div>
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                    <select id="draftProvider" class="form-select" style="max-width: 180px;" aria-label="AI provider">
+                                        <option value="openai" @disabled(! ($configuredProviders['openai'] ?? false))>OpenAI</option>
+                                        <option value="gemini" @disabled(! ($configuredProviders['gemini'] ?? false))>Gemini</option>
+                                        <option value="deepseek" @disabled(! ($configuredProviders['deepseek'] ?? false))>DeepSeek</option>
+                                    </select>
+                                    <select id="draftTone" class="form-select" style="max-width: 190px;" aria-label="Draft tone">
+                                        <option value="formal">Formal tone</option>
+                                        <option value="professional">Professional tone</option>
+                                        <option value="friendly">Friendly tone</option>
+                                        <option value="enthusiastic">Enthusiastic tone</option>
+                                        <option value="urgent">Urgent tone</option>
+                                    </select>
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-primary"
+                                        id="generateDraftButton"
+                                        @disabled(! collect($configuredProviders ?? [])->contains(true))>
+                                        <i class="bi bi-magic me-1"></i> Generate draft
+                                    </button>
+                                </div>
+                                @if(! collect($configuredProviders ?? [])->contains(true))
+                                    <div class="form-text text-warning mt-2">AI drafting is unavailable. You can still write your post or article manually below.</div>
+                                @endif
+                                <div id="draftMessage" class="alert d-none mt-3 mb-0 py-2" role="status" aria-live="polite"></div>
+                            </fieldset>
+
                             <div id="articleTitleGroup" class="mb-3 d-none">
                                 <label for="articleTitle" class="form-label fw-bold">Article headline</label>
                                 <input
@@ -87,8 +124,9 @@
                                 rows="5"
                                 minlength="10"
                                 maxlength="2200"
-                                placeholder="Write a concise, informational post. Include confirmed dates, locations, and key details."
+                                placeholder="Your generated draft will appear here. You can also write your submission manually."
                                 required></textarea>
+                            <div class="form-text">The generated text is only a draft. Review and edit it before submitting.</div>
                             <small id="contentHelp" class="text-muted d-block mt-2">
                                 <i class="fas fa-info-circle"></i> Keep it concise. Maximum 2,200 characters.
                             </small>
@@ -231,6 +269,65 @@ function updateContentTypeFields() {
 contentTypeInputs.forEach((input) => input.addEventListener('change', updateContentTypeFields));
 updateContentTypeFields();
 
+const draftProvider = document.getElementById('draftProvider');
+const availableProvider = Array.from(draftProvider.options).find((option) => !option.disabled);
+if (availableProvider) draftProvider.value = availableProvider.value;
+
+document.getElementById('generateDraftButton').addEventListener('click', async (event) => {
+    const prompt = document.getElementById('draftPrompt').value.trim();
+    const message = document.getElementById('draftMessage');
+    const button = event.currentTarget;
+    if (prompt.length < 10) {
+        message.className = 'alert alert-warning mt-3 mb-0 py-2';
+        message.textContent = 'Add a few details about the event before asking AI to draft the content.';
+        document.getElementById('draftPrompt').focus();
+        return;
+    }
+
+    button.disabled = true;
+    message.className = 'alert alert-info mt-3 mb-0 py-2';
+    message.textContent = 'Generating a draft. You can continue writing manually if the service is unavailable.';
+
+    try {
+        const response = await fetch('/api/submissions/generate-draft', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+            },
+            body: JSON.stringify({
+                submission_type: document.querySelector('input[name="submission_type"]:checked').value,
+                prompt,
+                llm_provider: draftProvider.value,
+                tone: document.getElementById('draftTone').value
+            })
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok || !result?.success) {
+            const errors = result?.errors ? Object.values(result.errors).flat().join(' ') : '';
+            throw new Error(errors || result?.message || 'AI drafting is unavailable. Write your submission manually.');
+        }
+
+        contentInput.value = result.data.original_caption;
+        if (result.data.submission_type === 'website_article') {
+            articleTitleInput.value = result.data.article_title || '';
+        }
+        message.className = 'alert alert-success mt-3 mb-0 py-2';
+        message.textContent = 'Draft generated. Review and edit it before submitting.';
+        contentInput.focus();
+    } catch (error) {
+        message.className = 'alert alert-warning mt-3 mb-0 py-2';
+        message.textContent = error.message === 'Failed to fetch'
+            ? 'Could not reach the AI service. You can still write the submission manually.'
+            : error.message || 'AI drafting is unavailable. You can still write the submission manually.';
+        contentInput.focus();
+    } finally {
+        button.disabled = false;
+    }
+});
+
 dropZone.addEventListener('click', () => mediaInput.click());
 
 dropZone.addEventListener('dragover', (e) => {
@@ -348,8 +445,15 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
     
     const form = e.target;
     const formData = new FormData(form);
+    const linkInputs = Array.from(form.querySelectorAll('input[name="links[]"]'));
+    formData.delete('links[]');
+    linkInputs
+        .map((input) => input.value.trim())
+        .filter(Boolean)
+        .forEach((link) => formData.append('links[]', link));
 
     const mediaFiles = mediaInput.files ? Array.from(mediaInput.files) : [];
+    if (mediaFiles.length === 0) formData.delete('media[]');
     for (const f of mediaFiles) {
         const ext = fileExtension(f.name);
         if (!ALLOWED_MEDIA_EXT.has(ext)) {

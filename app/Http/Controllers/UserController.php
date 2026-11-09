@@ -46,19 +46,7 @@ class UserController extends Controller
 
             $user = auth()->user();
 
-            if ($user->isStaffReviewer()) {
-                return redirect()->intended(route('dashboard'));
-            }
-
-            if ($user->canSubmitPosts()) {
-                return redirect()->intended(route('org.dashboard'));
-            }
-
-            if ($user->isSuperAdmin()) {
-                return redirect()->intended(route('users.index'));
-            }
-
-            return redirect()->intended(route('dashboard'));
+            return redirect()->route($user->homeRoute());
         }
 
         return back()->withErrors([

@@ -21,6 +21,8 @@ class SubmissionContentEvaluationTest extends TestCase
             ->postJson('/api/submissions', [
                 'original_caption' => 'A concise event update for the university community.',
                 'review_destination' => 'pair',
+                'links' => [''],
+                'media' => [null],
             ])
             ->assertCreated()
             ->json('data');
@@ -37,8 +39,66 @@ class SubmissionContentEvaluationTest extends TestCase
 
         $this->assertSame(Submission::TYPE_SOCIAL_MEDIA, $socialPost['submission_type']);
         $this->assertNull($socialPost['article_title']);
+        $this->assertSame([], $socialPost['links']);
         $this->assertSame(Submission::TYPE_WEBSITE_ARTICLE, $article['submission_type']);
         $this->assertSame('University announces its annual research forum', $article['article_title']);
+    }
+
+    public function test_submitters_can_generate_an_article_draft_without_creating_a_submission(): void
+    {
+        $submitter = User::factory()->org()->create();
+        $headline = 'University hosts annual research forum';
+        $body = trim(str_repeat('The university hosted a research forum for students and faculty. ', 3));
+
+        config([
+            'services.openai.key' => 'test-key',
+            'services.openai.model' => 'gpt-test',
+        ]);
+        Http::fake([
+            'api.openai.com/*' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode(['headline' => $headline, 'body' => $body]),
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $this->actingAs($submitter)
+            ->postJson('/api/submissions/generate-draft', [
+                'submission_type' => Submission::TYPE_WEBSITE_ARTICLE,
+                'prompt' => 'The university hosted a research forum for students and faculty.',
+                'llm_provider' => 'openai',
+                'tone' => 'professional',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.submission_type', Submission::TYPE_WEBSITE_ARTICLE)
+            ->assertJsonPath('data.article_title', $headline)
+            ->assertJsonPath('data.original_caption', $body);
+
+        $this->assertDatabaseCount('submissions', 0);
+        Http::assertSent(fn (ClientRequest $request) => str_contains(
+            $request->data()['messages'][0]['content'],
+            'Do not invent dates'
+        ) && $request->data()['messages'][1]['content'] === 'The university hosted a research forum for students and faculty.');
+    }
+
+    public function test_submitters_can_continue_manually_when_ai_drafting_is_unavailable(): void
+    {
+        $submitter = User::factory()->org()->create();
+        config(['services.openai.key' => null]);
+
+        $this->actingAs($submitter)
+            ->postJson('/api/submissions/generate-draft', [
+                'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
+                'prompt' => 'A few confirmed details about the event.',
+                'llm_provider' => 'openai',
+                'tone' => 'formal',
+            ])
+            ->assertServiceUnavailable()
+            ->assertJsonPath('fallback', true);
+
+        $this->assertDatabaseCount('submissions', 0);
     }
 
     public function test_website_articles_require_a_headline_and_minimum_body_length(): void
@@ -72,6 +132,8 @@ class SubmissionContentEvaluationTest extends TestCase
             ->assertOk()
             ->assertSee('What are you submitting?')
             ->assertSee('USJR website article')
+            ->assertSee('draftPrompt')
+            ->assertSee('Generate draft')
             ->assertSee('article_title');
 
         $this->actingAs($reviewer)
