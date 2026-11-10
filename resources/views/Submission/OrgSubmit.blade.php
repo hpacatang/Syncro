@@ -79,6 +79,7 @@
                                 <div class="form-text mb-3">The more accurate detail you provide, the more useful the draft. The AI must not invent missing facts.</div>
                                 <div class="d-flex flex-wrap gap-2 align-items-center">
                                     <select id="draftProvider" class="form-select" style="max-width: 180px;" aria-label="AI provider">
+                                        <option value="ollama" @disabled(! ($configuredProviders['ollama'] ?? false))>Ollama (local)</option>
                                         <option value="openai" @disabled(! ($configuredProviders['openai'] ?? false))>OpenAI</option>
                                         <option value="gemini" @disabled(! ($configuredProviders['gemini'] ?? false))>Gemini</option>
                                         <option value="deepseek" @disabled(! ($configuredProviders['deepseek'] ?? false))>DeepSeek</option>

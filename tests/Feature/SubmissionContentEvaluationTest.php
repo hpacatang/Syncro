@@ -83,6 +83,140 @@ class SubmissionContentEvaluationTest extends TestCase
         ) && $request->data()['messages'][1]['content'] === 'The university hosted a research forum for students and faculty.');
     }
 
+    public function test_ollama_drafts_social_posts_and_articles_using_the_submission_guardrails(): void
+    {
+        $submitter = User::factory()->org()->create();
+        $articleBody = trim(str_repeat(
+            'The university held a research forum for students and faculty to share verified project updates. ',
+            3
+        ));
+
+        config([
+            'services.ollama.base_url' => 'http://ollama.test/',
+            'services.ollama.model' => 'qwen3:8b',
+        ]);
+        Http::fake([
+            'ollama.test/api/chat' => Http::sequence()
+                ->push([
+                    'message' => [
+                        'content' => json_encode([
+                            'headline' => '',
+                            'body' => 'Students and faculty gathered for a university research forum.',
+                        ]),
+                    ],
+                ])
+                ->push([
+                    'message' => [
+                        'content' => json_encode([
+                            'headline' => 'University hosts research forum',
+                            'body' => $articleBody,
+                        ]),
+                    ],
+                ]),
+        ]);
+
+        $socialDraft = $this->actingAs($submitter)
+            ->postJson('/api/submissions/generate-draft', [
+                'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
+                'prompt' => 'The university research forum took place on campus today.',
+                'llm_provider' => 'ollama',
+                'tone' => 'professional',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.submission_type', Submission::TYPE_SOCIAL_MEDIA)
+            ->assertJsonPath('data.original_caption', 'Students and faculty gathered for a university research forum.')
+            ->json('data');
+
+        $this->assertSame('ollama', $socialDraft['provider_used']);
+
+        $this->postJson('/api/submissions/generate-draft', [
+            'submission_type' => Submission::TYPE_WEBSITE_ARTICLE,
+            'prompt' => 'The university research forum took place on campus today.',
+            'llm_provider' => 'ollama',
+            'tone' => 'formal',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.submission_type', Submission::TYPE_WEBSITE_ARTICLE)
+            ->assertJsonPath('data.article_title', 'University hosts research forum')
+            ->assertJsonPath('data.original_caption', $articleBody)
+            ->assertJsonPath('data.provider_used', 'ollama');
+
+        Http::assertSentCount(2);
+        Http::assertSent(fn (ClientRequest $request) => $request->url() === 'http://ollama.test/api/chat'
+            && $request['model'] === 'qwen3:8b'
+            && $request['stream'] === false
+            && $request['format'] === 'json'
+            && $request['options']['num_predict'] === 900
+            && str_contains($request['messages'][0]['content'], 'Do not invent dates')
+            && $request['messages'][1]['content'] === 'The university research forum took place on campus today.');
+        Http::assertSent(fn (ClientRequest $request) => $request['options']['num_predict'] === 4000
+            && str_contains($request['messages'][0]['content'], 'detailed multi-paragraph body')
+            && $request['messages'][1]['content'] === 'The university research forum took place on campus today.');
+
+        $this->assertDatabaseCount('submissions', 0);
+    }
+
+    public function test_ollama_unavailable_keeps_manual_drafting_available(): void
+    {
+        $submitter = User::factory()->org()->create();
+        config([
+            'services.ollama.base_url' => 'http://ollama.test',
+            'services.ollama.model' => 'qwen3:8b',
+        ]);
+        Http::fake([
+            'ollama.test/api/chat' => Http::response(['error' => 'model not running'], 503),
+        ]);
+
+        $this->actingAs($submitter)
+            ->postJson('/api/submissions/generate-draft', [
+                'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
+                'prompt' => 'A few confirmed details about the event.',
+                'llm_provider' => 'ollama',
+                'tone' => 'formal',
+            ])
+            ->assertServiceUnavailable()
+            ->assertJsonPath('fallback', true)
+            ->assertJsonPath('message', 'AI drafting is unavailable right now. You can write your submission manually.');
+
+        $this->assertDatabaseCount('submissions', 0);
+    }
+
+    public function test_ollama_request_extends_the_php_execution_limit_only_for_its_request(): void
+    {
+        $submitter = User::factory()->org()->create();
+        $originalExecutionLimit = (int) ini_get('max_execution_time');
+        config([
+            'services.ollama.base_url' => 'http://ollama.test',
+            'services.ollama.model' => 'qwen3:8b',
+            'services.ollama.timeout' => 90,
+        ]);
+        Http::fake([
+            'ollama.test/api/chat' => Http::response([
+                'message' => [
+                    'content' => json_encode([
+                        'headline' => '',
+                        'body' => 'Students attended the university community research forum today.',
+                    ]),
+                ],
+            ]),
+        ]);
+
+        try {
+            $this->actingAs($submitter)
+                ->postJson('/api/submissions/generate-draft', [
+                    'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
+                    'prompt' => 'The university community research forum took place today.',
+                    'llm_provider' => 'ollama',
+                    'tone' => 'professional',
+                ])
+                ->assertOk();
+
+            $this->assertSame(105, (int) ini_get('max_execution_time'));
+        } finally {
+            set_time_limit($originalExecutionLimit);
+        }
+    }
+
     public function test_submitters_can_continue_manually_when_ai_drafting_is_unavailable(): void
     {
         $submitter = User::factory()->org()->create();
@@ -154,6 +288,7 @@ class SubmissionContentEvaluationTest extends TestCase
             ->assertOk()
             ->assertSee('What are you submitting?')
             ->assertSee('USJR website article')
+            ->assertSee('Ollama (local)')
             ->assertSee('draftPrompt')
             ->assertSee('Generate draft')
             ->assertSee('article_title');

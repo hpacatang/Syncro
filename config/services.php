@@ -50,6 +50,12 @@ return [
         'model' => env('DEEPSEEK_MODEL', 'deepseek-flash'),
     ],
 
+    'ollama' => [
+        'base_url' => env('OLLAMA_BASE_URL', 'http://127.0.0.1:11434'),
+        'model' => env('OLLAMA_MODEL', 'qwen3:8b'),
+        'timeout' => (int) env('OLLAMA_TIMEOUT', 300),
+    ],
+
     'meta' => [
         'access_token' => env('META_ACCESS_TOKEN'),
         'page_id' => env('META_PAGE_ID'),

@@ -76,6 +76,8 @@ Route::middleware('auth')->group(function () {
                     'openai' => (bool) config('services.openai.key'),
                     'gemini' => (bool) config('services.gemini.key'),
                     'deepseek' => (bool) config('services.deepseek.key'),
+                    'ollama' => filled(config('services.ollama.model'))
+                        && filled(config('services.ollama.base_url')),
                 ],
             ]);
         })->name('org.submit');
@@ -92,6 +94,8 @@ Route::middleware('auth')->group(function () {
                     'openai' => (bool) config('services.openai.key'),
                     'gemini' => (bool) config('services.gemini.key'),
                     'deepseek' => (bool) config('services.deepseek.key'),
+                    'ollama' => filled(config('services.ollama.model'))
+                        && filled(config('services.ollama.base_url')),
                 ],
             ]);
         })->name('department.submit');

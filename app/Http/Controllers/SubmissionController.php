@@ -340,7 +340,7 @@ class SubmissionController extends Controller
                 Submission::TYPE_WEBSITE_ARTICLE,
             ])],
             'prompt' => ['required', 'string', 'min:10', 'max:6000'],
-            'llm_provider' => ['required', Rule::in(['openai', 'gemini', 'deepseek'])],
+            'llm_provider' => ['required', Rule::in(['openai', 'gemini', 'deepseek', 'ollama'])],
             'tone' => ['required', Rule::in(['formal', 'friendly', 'enthusiastic', 'urgent', 'professional'])],
         ]);
 
@@ -351,6 +351,7 @@ class SubmissionController extends Controller
         $draftJson = match ($provider) {
             'gemini' => $this->draftWithGemini($validated['prompt'], $systemPrompt, $maxTokens),
             'deepseek' => $this->draftWithDeepseek($validated['prompt'], $systemPrompt, $maxTokens),
+            'ollama' => $this->draftWithOllama($validated['prompt'], $systemPrompt, $maxTokens),
             default => $this->draftWithOpenAI($validated['prompt'], $systemPrompt, $maxTokens),
         };
         $draft = is_string($draftJson) ? json_decode($draftJson, true) : null;
@@ -774,6 +775,46 @@ class SubmissionController extends Controller
             ]),
             fn ($response) => $response->json('choices.0.message.content'),
             'DeepSeek submission draft'
+        );
+    }
+
+    private function draftWithOllama(string $prompt, string $systemPrompt, int $maxTokens): ?string
+    {
+        $baseUrl = rtrim((string) config('services.ollama.base_url'), '/');
+        $model = (string) config('services.ollama.model');
+
+        if ($baseUrl === '' || $model === '') {
+            return null;
+        }
+
+        $timeout = max(30, min(300, (int) config('services.ollama.timeout', 300)));
+        if (! function_exists('set_time_limit') || ! set_time_limit($timeout + 15)) {
+            Log::error('Ollama draft generation cannot extend the PHP execution time limit.', [
+                'timeout_seconds' => $timeout,
+            ]);
+
+            return null;
+        }
+
+        return $this->callLlm(
+            'local-ollama',
+            fn ($key) => Http::connectTimeout(5)
+                ->timeout($timeout)
+                ->post($baseUrl.'/api/chat', [
+                    'model' => $model,
+                    'stream' => false,
+                    'format' => 'json',
+                    'messages' => [
+                        ['role' => 'system', 'content' => $systemPrompt],
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'options' => [
+                        'temperature' => 0.3,
+                        'num_predict' => $maxTokens,
+                    ],
+                ]),
+            fn ($response) => $response->json('message.content'),
+            'Ollama submission draft'
         );
     }
 
