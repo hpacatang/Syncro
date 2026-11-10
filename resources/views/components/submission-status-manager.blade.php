@@ -8,7 +8,8 @@
     $allowed  = $isStaff ? app(SubmissionLifecycleService::class)->allowedTransitions($submission, auth()->user()) : [];
 
     // Separate into ordered groups for consistent button layout
-    $primaryActions = array_filter($allowed, fn($s) => in_array($s->value, ['approved', 'posted', 'under_peer_review', 'dept_approved'], true));
+    $primaryActions = array_filter($allowed, fn($s) => in_array($s->value, ['approved', 'posted', 'under_peer_review', 'dept_approved'], true)
+        && ! ($submission->isWebsiteArticle() && $s->value === 'posted'));
     $revisionAction = array_filter($allowed, fn($s) => $s->value === 'revised');
     $rejectAction   = array_filter($allowed, fn($s) => $s->value === 'rejected');
 @endphp
@@ -24,6 +25,29 @@
 
         @if($isStaff && count($allowed) > 0)
             <p class="small text-muted mb-2">Click the button for each finished step.</p>
+            @if($submission->isWebsiteArticle())
+                <div class="alert alert-info py-2 small">
+                    Website article publishing is waiting for an approved university CMS API integration.
+                </div>
+            @elseif($submission->scheduled_post_at && $submission->workflow_status === 'approved')
+                <div class="alert alert-primary py-2 small">
+                    <i class="bi bi-calendar-event me-1"></i>
+                    Facebook publishing is scheduled for
+                    <strong><x-formatted-date :at="$submission->scheduled_post_at" format="M d, Y h:i A" /></strong>.
+                </div>
+            @endif
+            @if($submission->meta_publish_status === 'failed' && $submission->meta_publish_error)
+                <div class="alert alert-danger py-2 small" role="alert">
+                    <strong>Facebook publish failed.</strong> {{ $submission->meta_publish_error }}
+                    <div class="mt-1">Correct the Meta configuration or content, then retry using Publish / schedule.</div>
+                </div>
+            @endif
+            @if($submission->meta_publish_status === 'uncertain' && $submission->meta_publish_error)
+                <div class="alert alert-warning py-2 small" role="alert">
+                    <strong>Facebook publish result is unconfirmed.</strong> {{ $submission->meta_publish_error }}
+                    <div class="mt-1">Check the Page before manually retrying; an automatic retry is intentionally disabled.</div>
+                </div>
+            @endif
             <div class="d-flex align-items-center flex-wrap gap-2 mb-2" id="lifecycleSteps-{{ $submission->id }}">
 
                 {{-- Primary actions: Approve, Post, Start Review, Dept Approve --}}
@@ -119,10 +143,21 @@
                         @endif
                     </div>
                 @endif
+                @if($submission->meta_post_url)
+                    <a class="btn btn-sm btn-outline-primary mt-2" href="{{ $submission->meta_post_url }}" target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> View Facebook post
+                    </a>
+                @endif
             </div>
             <p class="small text-muted mb-0">
                 <i class="bi bi-lock-fill me-1"></i> Once published and posted, this submission is view only and cannot be undone.
             </p>
+            @if($submission->meta_publish_status === 'uncertain' && $submission->meta_publish_error)
+                <div class="alert alert-warning py-2 small mt-2 mb-0" role="status">
+                    <strong>{{ $submission->isWebsiteArticle() ? 'Publication status is unverified.' : 'Facebook publication is unverified.' }}</strong>
+                    {{ $submission->meta_publish_error }}
+                </div>
+            @endif
             <div id="lifecycleMessage-{{ $submission->id }}" class="small"></div>
         @elseif($submission->workflow_status === 'rejected')
             <p class="small text-muted mb-0">
@@ -187,13 +222,13 @@
             </div>
             <div class="modal-body bg-white" style="padding: 1.4rem;">
                 <p class="text-secondary small mb-3" id="postingModalDescription-{{ $submission->id }}">
-                    Select the publication date and time. When the scheduled date and time arrives, it will automatically post to social media and become locked against further edits.
+                    Choose when the approved social media post should go live. A future time schedules Facebook publishing; choosing now sends it immediately.
                 </p>
 
                 <div class="alert alert-light border small text-muted py-2 px-3 mb-3 d-flex align-items-start gap-2" style="background-color: #f8fafc; border-radius: 8px;">
                     <i class="bi bi-broadcast text-success fs-5 mt-0"></i>
                     <div>
-                        <strong class="text-dark">Social Media Auto-Publish:</strong> When your <code>FACEBOOK_PAGE_ACCESS_TOKEN</code> and <code>FACEBOOK_PAGE_ID</code> are configured in <code>.env</code>, Syncro will automatically dispatch the post directly to your Facebook Page when its time arrives.
+                        <strong class="text-dark">Facebook publishing:</strong> Syncro publishes only after approval using <code>META_ACCESS_TOKEN</code> and <code>META_PAGE_ID</code>. Scheduled posts are sent when their time arrives. A real Page access token and Page ID are required.
                     </div>
                 </div>
 
@@ -212,7 +247,7 @@
 
                 <div class="mb-3">
                     <label for="postingDateTime-{{ $submission->id }}" class="form-label fw-bold text-dark mb-1">
-                        Publication Date &amp; Time <span class="text-danger">*</span>
+                        Publish now or schedule for <span class="text-danger">*</span>
                     </label>
                     <input
                         type="datetime-local"
@@ -222,7 +257,7 @@
                         style="border: 1.5px solid #28a745; border-radius: 8px; font-size: 1.05rem;"
                         required>
                     <div class="form-text small text-muted">
-                        Click the calendar/clock icon inside the input to choose the date and time.
+                        Choose a future date to schedule. Choosing now publishes immediately; failed attempts remain reviewable and can be retried.
                     </div>
                 </div>
 
@@ -246,7 +281,7 @@
                     Cancel
                 </button>
                 <button type="button" class="btn d-inline-flex align-items-center" id="postingDateConfirmBtn-{{ $submission->id }}" style="background-color: #28a745; border: none; color: #ffffff; border-radius: 6px; padding: 0.42rem 1.35rem; font-weight: 600;">
-                    <i class="bi bi-check-lg me-1"></i> Confirm &amp; Post
+                    <i class="bi bi-check-lg me-1"></i> Publish / Schedule
                 </button>
             </div>
         </div>
@@ -482,19 +517,19 @@
         }
         if (postModalTitle) {
             postModalTitle.innerHTML = isEditingExistingPost
-                ? '<i class="bi bi-calendar-check me-2"></i>Edit Publication Date &amp; Time #' + submissionId
-                : '<i class="bi bi-calendar-event me-2"></i>Schedule &amp; Post Submission #' + submissionId;
+                ? '<i class="bi bi-calendar-check me-2"></i>Edit Facebook Schedule #' + submissionId
+                : '<i class="bi bi-calendar-event me-2"></i>Publish or Schedule #' + submissionId;
         }
         if (postModalDesc) {
             postModalDesc.textContent = isEditingExistingPost
-                ? 'Update the recorded publication date and time in case there was an error or schedule adjustment.'
-                : 'Select the exact publication date and time when this content was or will be published. You can adjust this later if needed.';
+                ? 'Choose a new future Facebook publishing time or select now to publish immediately.'
+                : 'Choose a future time to schedule Facebook publishing, or choose now to publish this approved social post immediately.';
         }
         if (postConfirmBtn) {
             postConfirmBtn.disabled = false;
             postConfirmBtn.innerHTML = isEditingExistingPost
                 ? '<i class="bi bi-save me-1"></i> Save Updated Date/Time'
-                : '<i class="bi bi-check-lg me-1"></i> Confirm &amp; Post';
+                : '<i class="bi bi-check-lg me-1"></i> Publish / Schedule';
         }
 
         const bs = getPostingModal();
@@ -608,7 +643,7 @@
                     postConfirmBtn.disabled = false;
                     postConfirmBtn.innerHTML = isEditingExistingPost
                         ? '<i class="bi bi-save me-1"></i> Save Updated Date/Time'
-                        : '<i class="bi bi-check-lg me-1"></i> Confirm &amp; Post';
+                        : '<i class="bi bi-check-lg me-1"></i> Publish / Schedule';
                 }
             } catch (e) {
                 const err = e.message || 'Failed to save date and time.';
@@ -621,7 +656,7 @@
                 postConfirmBtn.disabled = false;
                 postConfirmBtn.innerHTML = isEditingExistingPost
                     ? '<i class="bi bi-save me-1"></i> Save Updated Date/Time'
-                    : '<i class="bi bi-check-lg me-1"></i> Confirm &amp; Post';
+                    : '<i class="bi bi-check-lg me-1"></i> Publish / Schedule';
             }
         });
     }

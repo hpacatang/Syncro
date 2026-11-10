@@ -21,9 +21,7 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-## Submission content and AI review
-
-> **Architectural Constraint Notice:** Meta API and AI APIs are not integrated natively due to premium costs. AI creates the raw content offline/externally, and humans execute the review.
+## Submission content, review, and publishing
 
 Submissions support two types: `social_media` posts (up to 2,200 characters) and `website_article` drafts (a headline and 100–12,000-character body). Existing clients that omit `submission_type` continue to create social-media submissions.
 
@@ -31,9 +29,11 @@ Reviewers can edit drafts manually or request an AI-generated draft. AI output i
 
 Configure provider credentials in the server environment using `OPEN_AI_KEY`, `GEMINI_KEY`, or `DEEPSEEK_KEY`. The defaults are `gpt-5.4-mini`, `gemini-3.8-flash`, and `deepseek-flash`; optional overrides are `OPENAI_MODEL`, `GEMINI_MODEL`, and `DEEPSEEK_MODEL`. After changing environment values on a server with cached configuration, run `php artisan config:clear` and rebuild the config cache as part of deployment. Keep credentials server-side; do not put them in browser code.
 
-Run `php artisan ai:check-providers` to send each configured provider a short synthetic prompt and report HTTP status, latency, usage, rate-limit headers, and safe error codes. It does not display keys, generated text, or provider error messages. This verifies current model/key access, not account billing or quotas; check each provider dashboard for those. Model context windows are larger than this workflow's intentional generation caps (900 output tokens for social posts and 3,000 for website articles), so long-form article quality/output length can still be constrained by the application prompt and cap. See the [OpenAI GPT-5.4 Mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini), [Gemini 3.8 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash), and [DeepSeek API model documentation](https://api-docs.deepseek.com/quick_start/pricing) for current provider limits and availability.
+Approved social posts can be published to a Facebook Page using the [Page Feed](https://developers.facebook.com/docs/graph-api/reference/page/feed/) and [Page Photos](https://developers.facebook.com/docs/graph-api/reference/page/photos/) endpoints. Configure `META_ACCESS_TOKEN` with a **Page access token**, `META_PAGE_ID` with the destination Page ID, and optionally `META_PAGE_NAME` and `META_GRAPH_API_VERSION` (default `v23.0`). The token must have Meta's Page publishing permission, including `pages_manage_posts`; generate it for a Page the application is authorized to publish to. A user token alone may not be sufficient. The reviewer can publish immediately or schedule a future post; scheduled posts are checked every minute by `php artisan schedule:run` (use `php artisan schedule:work` locally). Failed API attempts are retained for review/retry. Publishing failures do not mark a submission as posted. The integration supports text/link posts and a single publicly accessible image; video, document, and multi-image publishing are not enabled in this proof of concept. Verify the Facebook Page after ambiguous API responses before retrying.
 
-This workflow only stores and reviews content. Direct publishing to the USJR website or social-media networks is not implemented; approval does not publish a submission.
+The review and evaluation pages include channel previews for Facebook posts and website articles. They are representative previews, not exact platform renderings. Article publishing is intentionally disabled until the university CMS API is available. The manually configured Page token is server-side; this is not an OAuth account-connection flow. Do not commit, display, or log the token.
+
+Run `php artisan ai:check-providers` to send each configured provider a short synthetic prompt and report HTTP status, latency, usage, rate-limit headers, and safe error codes. It does not display keys, generated text, or provider error messages. This verifies current model/key access, not account billing or quotas; check each provider dashboard for those. Model context windows are larger than this workflow's intentional generation caps (900 output tokens for social posts and 3,000 for website articles), so long-form article quality/output length can still be constrained by the application prompt and cap. See the [OpenAI GPT-5.4 Mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini), [Gemini 3.8 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash), and [DeepSeek API model documentation](https://api-docs.deepseek.com/quick_start/pricing) for current provider limits and availability.
 
 ## Local frontend assets and storage troubleshooting
 

@@ -220,6 +220,13 @@
                     </div>
                 </div>
             </section>
+            <section class="mt-4">
+                <x-submission-channel-preview
+                    :submission="$submission"
+                    :title="$submission->isWebsiteArticle() ? old('reviewTitle', $submission->enhanced_title ?: $submission->article_title) : null"
+                    :body="old('reviewBody', $submission->enhanced_caption ?: $submission->original_caption)"
+                    live />
+            </section>
         </div>
     </div>
 </div>

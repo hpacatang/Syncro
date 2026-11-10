@@ -151,6 +151,10 @@
                 </div>
             </div>
 
+            <div class="mb-4">
+                <x-submission-channel-preview :submission="$submission" />
+            </div>
+
             @if($submission->pair_feedback)
                 <div class="card syncro-card-elevated border-0 mb-4">
                     <div class="card-header bg-white border-bottom">

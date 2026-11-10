@@ -21,7 +21,9 @@ class Submission extends Model
     protected $fillable = [
         'user_id', 'review_department_id', 'submission_type', 'article_title', 'enhanced_title',
         'original_caption', 'enhanced_caption', 'links', 'media_paths', 'scheduled_post_at', 'posted_at', 'status',
-        'enhanced_by', 'enhanced_at', 'workflow_status', 'org_review_notes', 'pair_feedback'
+        'enhanced_by', 'enhanced_at', 'workflow_status', 'org_review_notes', 'pair_feedback',
+        'meta_publish_status', 'meta_post_id', 'meta_post_url', 'meta_publish_error',
+        'meta_publish_attempts', 'meta_publish_attempted_at',
     ];
 
     protected $casts = [
@@ -29,6 +31,7 @@ class Submission extends Model
         'media_paths' => 'array',
         'scheduled_post_at' => 'datetime',
         'posted_at' => 'datetime',
+        'meta_publish_attempted_at' => 'datetime',
         'enhanced_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

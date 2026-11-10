@@ -50,10 +50,11 @@ return [
         'model' => env('DEEPSEEK_MODEL', 'deepseek-flash'),
     ],
 
-    'facebook' => [
-        'page_access_token' => env('FACEBOOK_PAGE_ACCESS_TOKEN'),
-        'page_id' => env('FACEBOOK_PAGE_ID'),
-        'api_key' => env('SOCIAL_MEDIA_API_KEY'),
+    'meta' => [
+        'access_token' => env('META_ACCESS_TOKEN'),
+        'page_id' => env('META_PAGE_ID'),
+        'page_name' => env('META_PAGE_NAME', 'USJR'),
+        'graph_api_version' => env('META_GRAPH_API_VERSION', 'v23.0'),
     ],
 
 ];

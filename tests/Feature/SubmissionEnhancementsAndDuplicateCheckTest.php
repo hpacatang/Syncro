@@ -2,16 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Models\Department;
 use App\Models\Submission;
 use App\Models\User;
+use App\Notifications\EnhancementReadyForOrg;
 use App\Notifications\SubmissionQueuedForReview;
 use App\Notifications\SubmissionUnderReview;
-use App\Notifications\SubmissionApproved;
-use App\Notifications\EnhancementReadyForOrg;
 use App\Services\ContentSimilarityChecker;
+use App\Services\SocialMediaPublisher;
 use App\Support\SubmissionMedia;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -65,7 +68,7 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
 
     public function test_admin_and_pair_receive_notification_with_org_name_date_and_time(): void
     {
-        $department = \App\Models\Department::factory()->create(['department_name' => 'College of Engineering']);
+        $department = Department::factory()->create(['department_name' => 'College of Engineering']);
         $org = User::factory()->org()->create([
             'name' => 'Engg Council',
             'profile_name' => 'Engineering Student Council',
@@ -164,6 +167,7 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
 
     public function test_submission_allows_pictures_and_videos(): void
     {
+        config(['filesystems.disks.supabase.key' => null]);
         Storage::fake('public');
         $org = User::factory()->org()->create();
 
@@ -248,7 +252,7 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
         $this->assertStringContainsString('previously rejected', $result['reason']);
     }
 
-    public function test_admin_and_pair_can_mark_submission_as_posted_with_chosen_date_and_time(): void
+    public function test_admin_and_pair_can_schedule_submission_for_facebook_publishing(): void
     {
         $admin = User::factory()->admin()->create();
         $submission = Submission::factory()->create([
@@ -256,7 +260,7 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
             'status' => 'approved',
         ]);
 
-        $chosenPostDate = '2026-11-05 14:30:00';
+        $chosenPostDate = now()->addDays(2)->format('Y-m-d H:i:s');
 
         $response = $this->actingAs($admin)->postJson("/api/submissions/{$submission->id}/transition", [
             'status' => 'posted',
@@ -268,13 +272,13 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
         $response->assertOk();
         $submission->refresh();
 
-        $this->assertSame('posted', $submission->workflow_status);
-        $this->assertNotNull($submission->posted_at);
-        $this->assertSame('2026-11-05 14:30', $submission->posted_at->format('Y-m-d H:i'));
-        $this->assertStringContainsString('Published on official university Facebook page', $submission->pair_feedback ?? '');
+        $this->assertSame('approved', $submission->workflow_status);
+        $this->assertNull($submission->posted_at);
+        $this->assertSame($chosenPostDate, $submission->scheduled_post_at->format('Y-m-d H:i:s'));
+        $this->assertStringContainsString('Scheduled Facebook publishing', $submission->pair_feedback ?? '');
     }
 
-    public function test_admin_and_pair_can_edit_posted_date_and_time_in_case_of_error(): void
+    public function test_published_submission_cannot_be_published_again(): void
     {
         $pairStaff = User::factory()->pair()->create();
         $submission = Submission::factory()->create([
@@ -283,22 +287,13 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
             'posted_at' => '2026-11-01 10:00:00',
         ]);
 
-        // Error detected: correct the published date & time
-        $correctedDate = '2026-11-02 09:15:00';
-
         $response = $this->actingAs($pairStaff)->postJson("/api/submissions/{$submission->id}/transition", [
             'status' => 'posted',
-            'posted_at' => $correctedDate,
-            'scheduled_post_at' => $correctedDate,
-            'notes' => 'Corrected publishing timestamp after reschedule.',
+            'posted_at' => now()->addDay()->format('Y-m-d H:i:s'),
         ]);
 
-        $response->assertOk();
-        $submission->refresh();
-
-        $this->assertSame('posted', $submission->workflow_status);
-        $this->assertSame('2026-11-02 09:15', $submission->posted_at->format('Y-m-d H:i'));
-        $this->assertStringContainsString('Corrected publishing timestamp', $submission->pair_feedback ?? '');
+        $response->assertUnprocessable()
+            ->assertJsonPath('message', 'This submission has already been published and cannot be published again.');
     }
 
     public function test_post_date_cannot_be_edited_once_publication_time_has_arrived(): void
@@ -317,12 +312,22 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonFragment([
-            'message' => 'Publication date and time cannot be edited because the scheduled publication time has arrived and the post is locked.',
+            'message' => 'This submission has already been published and cannot be published again.',
         ]);
     }
 
     public function test_scheduled_submissions_automatically_publish_when_date_and_time_arrives(): void
     {
+        config([
+            'services.meta.access_token' => 'fake-page-token',
+            'services.meta.page_id' => '987654321',
+        ]);
+        Http::fake([
+            'https://graph.facebook.com/v23.0/987654321/feed' => Http::response([
+                'id' => '987654321_555',
+            ]),
+        ]);
+
         $org = User::factory()->org()->create();
         $submission = Submission::factory()->create([
             'user_id' => $org->id,
@@ -330,9 +335,11 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
             'status' => 'approved',
             'scheduled_post_at' => now()->subMinutes(10), // Scheduled time has passed
             'original_caption' => 'Scheduled university update ready for publication.',
+            'links' => null,
+            'media_paths' => null,
         ]);
 
-        $published = \App\Services\SocialMediaPublisher::publishDueSubmissions();
+        $published = SocialMediaPublisher::publishDueSubmissions();
         $this->assertSame(1, $published);
 
         $this->artisan('submissions:publish-scheduled')->assertSuccessful();
@@ -340,18 +347,20 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
         $submission->refresh();
         $this->assertSame('posted', $submission->workflow_status);
         $this->assertNotNull($submission->posted_at);
-        $this->assertStringContainsString('Published to Social Media', $submission->pair_feedback ?? '');
+        $this->assertSame('published', $submission->meta_publish_status);
+        $this->assertStringContainsString('Published to Facebook', $submission->pair_feedback ?? '');
     }
 
-    public function test_facebook_graph_api_called_when_key_is_provided(): void
+    public function test_facebook_graph_api_called_when_meta_page_token_is_provided(): void
     {
         config([
-            'services.facebook.page_access_token' => 'fake-page-token-xyz',
-            'services.facebook.page_id' => '987654321',
+            'services.meta.access_token' => 'fake-page-token-xyz',
+            'services.meta.page_id' => '987654321',
+            'services.meta.graph_api_version' => 'v23.0',
         ]);
 
-        \Illuminate\Support\Facades\Http::fake([
-            'https://graph.facebook.com/v19.0/987654321/feed' => \Illuminate\Support\Facades\Http::response([
+        Http::fake([
+            'https://graph.facebook.com/v23.0/987654321/feed' => Http::response([
                 'id' => '987654321_1234567890',
             ], 200),
         ]);
@@ -362,6 +371,8 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
             'status' => 'approved',
             'original_caption' => 'Announcing campus open house this Saturday.',
             'enhanced_caption' => null,
+            'links' => null,
+            'media_paths' => null,
         ]);
 
         $response = $this->actingAs($admin)->postJson("/api/submissions/{$submission->id}/transition", [
@@ -371,10 +382,15 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
 
         $response->assertOk();
 
-        \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
-            return $request->url() === 'https://graph.facebook.com/v19.0/987654321/feed'
-                && $request['access_token'] === 'fake-page-token-xyz'
+        Http::assertSent(function (Request $request) {
+            return $request->url() === 'https://graph.facebook.com/v23.0/987654321/feed'
+                && $request->hasHeader('Authorization', 'Bearer fake-page-token-xyz')
                 && str_contains($request['message'], 'Announcing campus open house');
         });
+
+        $submission->refresh();
+        $this->assertSame('posted', $submission->workflow_status);
+        $this->assertSame('published', $submission->meta_publish_status);
+        $this->assertSame('https://www.facebook.com/987654321_1234567890', $submission->meta_post_url);
     }
 }

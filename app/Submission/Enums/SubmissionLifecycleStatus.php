@@ -33,7 +33,7 @@ enum SubmissionLifecycleStatus: string
             self::Approved        => 'Approve post',
             self::Rejected        => 'Reject post',
             self::Revised         => 'Send back for revision',
-            self::Posted          => 'Mark as posted',
+            self::Posted          => 'Publish / schedule to Facebook',
             default               => $this->label(),
         };
     }

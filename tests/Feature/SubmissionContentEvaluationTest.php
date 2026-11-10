@@ -115,6 +115,28 @@ class SubmissionContentEvaluationTest extends TestCase
             ->assertJsonValidationErrors(['article_title', 'original_caption']);
     }
 
+    public function test_social_media_review_shows_a_facebook_page_preview(): void
+    {
+        $submitter = User::factory()->org()->create();
+        $reviewer = User::factory()->pair()->create();
+        $submission = Submission::factory()->submitted()->create([
+            'user_id' => $submitter->id,
+            'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
+            'original_caption' => 'Campus event preview text for the Facebook Page.',
+            'links' => null,
+            'media_paths' => null,
+            'review_department_id' => null,
+        ]);
+
+        $this->actingAs($reviewer)
+            ->get(route('dashboard.submissions.review', $submission))
+            ->assertOk()
+            ->assertSee('Facebook Page preview')
+            ->assertSee('Campus event preview text for the Facebook Page.')
+            ->assertSee('Like')
+            ->assertSee('Share');
+    }
+
     public function test_submit_and_reviewer_pages_distinguish_website_articles(): void
     {
         $submitter = User::factory()->org()->create();
@@ -141,14 +163,18 @@ class SubmissionContentEvaluationTest extends TestCase
             ->assertOk()
             ->assertSee('A detailed university story')
             ->assertSee('Original article body')
-            ->assertSee('USJR website article');
+            ->assertSee('USJR website article')
+            ->assertSee('Website article preview');
 
         $this->actingAs($reviewer)
             ->get(route('dashboard.submissions.evaluate', $submission))
             ->assertOk()
             ->assertSee('Reviewed headline')
             ->assertSee('Reviewed article body')
-            ->assertSee('Verify names, dates, and claims');
+            ->assertSee('Verify names, dates, and claims')
+            ->assertSee('Website article preview')
+            ->assertSee('data-preview-body-for="reviewBody"', false)
+            ->assertSee('data-preview-title-for="reviewTitle"', false);
 
         $this->actingAs($reviewer)
             ->get(route('dashboard.submissions.review', $submission))

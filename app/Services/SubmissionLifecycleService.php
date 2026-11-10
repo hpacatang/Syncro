@@ -163,6 +163,12 @@ class SubmissionLifecycleService
             $submission->pair_feedback = $context['pair_feedback'];
         }
 
+        if ($target === SubmissionLifecycleStatus::Posted) {
+            $submission->posted_at = isset($context['posted_at'])
+                ? \Carbon\Carbon::parse($context['posted_at'])
+                : now();
+        }
+
         $submission->save();
 
         return $submission->fresh();

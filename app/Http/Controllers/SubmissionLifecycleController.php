@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Submission;
+use App\Services\SocialMediaPublisher;
 use App\Services\SubmissionLifecycleService;
 use App\Submission\Enums\SubmissionLifecycleStatus;
 use App\Submission\Exceptions\InvalidLifecycleTransitionException;
 use App\Support\PairUpdateFormatter;
 use App\Support\ReviewNotificationCleaner;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -51,6 +53,103 @@ class SubmissionLifecycleController extends Controller
             ], 422);
         }
 
+        if ($submission->meta_publish_status === 'publishing'
+            && $target !== SubmissionLifecycleStatus::Posted) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A Facebook publishing request is in progress. Try this review action again after it completes.',
+            ], 409);
+        }
+
+        if ($target === SubmissionLifecycleStatus::Posted) {
+            if ($submission->workflow_status === 'posted') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This submission has already been published and cannot be published again.',
+                ], 422);
+            }
+
+            if ($submission->isWebsiteArticle()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Website article publishing is not available until the university CMS API is configured.',
+                ], 422);
+            }
+
+            if (! $this->lifecycle->canTransition($submission, $request->user(), $target)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This submission cannot be published from its current review state.',
+                ], 422);
+            }
+
+            $publicationTime = $request->input('posted_at')
+                ? Carbon::parse($request->input('posted_at'))
+                : ($request->input('scheduled_post_at')
+                    ? Carbon::parse($request->input('scheduled_post_at'))
+                    : ($submission->scheduled_post_at ?? now()));
+
+            if ($publicationTime->isFuture() && $submission->meta_publish_status === 'uncertain') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Verify the Facebook Page before rescheduling this unconfirmed publish attempt. After verification, retry manually.',
+                ], 409);
+            }
+
+            $step = PairUpdateFormatter::step(
+                $request->user(),
+                $publicationTime->isFuture() ? 'Scheduled Facebook publishing' : 'Requested Facebook publishing',
+                $request->input('notes')
+            );
+            $submission->pair_feedback = PairUpdateFormatter::append($submission->pair_feedback, $step);
+
+            if ($publicationTime->isFuture()) {
+                $submission->forceFill([
+                    'scheduled_post_at' => $publicationTime,
+                    'posted_at' => null,
+                    'meta_publish_status' => null,
+                    'meta_publish_error' => null,
+                    'meta_publish_attempts' => 0,
+                    'meta_publish_attempted_at' => null,
+                ])->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Facebook publishing scheduled for '.$publicationTime->format('M j, Y g:i A').'.',
+                    'data' => $this->formatSubmission($submission->fresh()),
+                ]);
+            }
+
+            $publishResult = SocialMediaPublisher::publish($submission, $request->user(), true);
+            if (! $publishResult['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $publishResult['message'],
+                    'data' => $this->formatSubmission($submission->fresh()),
+                ], 502);
+            }
+
+            $submission->refresh();
+            $submission->pair_feedback = PairUpdateFormatter::append($submission->pair_feedback, $step);
+            $context = [
+                'posted_at' => now(),
+                'scheduled_post_at' => $publicationTime,
+                'pair_feedback' => $submission->pair_feedback,
+            ];
+            $updated = $this->lifecycle->transition(
+                $submission,
+                $target,
+                $request->user(),
+                $context
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => $publishResult['message'].' '.$publishResult['url'],
+                'data' => $this->formatSubmission($updated),
+            ]);
+        }
+
         if (in_array($target, [SubmissionLifecycleStatus::Revised, SubmissionLifecycleStatus::Rejected], true)) {
             $request->validate(['notes' => 'required|string|min:10']);
         }
@@ -59,56 +158,6 @@ class SubmissionLifecycleController extends Controller
             $context = [];
             if ($request->filled('notes')) {
                 $context['org_review_notes'] = $request->input('notes');
-            }
-
-            if ($target === SubmissionLifecycleStatus::Posted && $submission->workflow_status === 'posted') {
-                if ($submission->isPublicationTimeReached()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Publication date and time cannot be edited because the scheduled publication time has arrived and the post is locked.',
-                    ], 422);
-                }
-
-                $newTime = null;
-                if ($request->filled('posted_at')) {
-                    $newTime = \Carbon\Carbon::parse($request->input('posted_at'));
-                    $submission->posted_at = $newTime;
-                }
-                if ($request->filled('scheduled_post_at')) {
-                    $newTime = \Carbon\Carbon::parse($request->input('scheduled_post_at'));
-                    $submission->scheduled_post_at = $newTime;
-                }
-
-                if ($request->filled('notes')) {
-                    $step = PairUpdateFormatter::step(
-                        $request->user(),
-                        'Updated publication date & time',
-                        $request->input('notes')
-                    );
-                    $submission->pair_feedback = PairUpdateFormatter::append($submission->pair_feedback, $step);
-                }
-
-                if ($newTime && ! $newTime->isFuture()) {
-                    \App\Services\SocialMediaPublisher::publish($submission, $request->user());
-                }
-
-                $submission->save();
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Posted date and time updated successfully.',
-                    'data' => $this->formatSubmission($submission->fresh()),
-                ]);
-            }
-
-            if ($target === SubmissionLifecycleStatus::Posted) {
-                $targetTime = $request->input('posted_at') ? \Carbon\Carbon::parse($request->input('posted_at')) : now();
-                $context['posted_at'] = $targetTime;
-                if ($request->filled('scheduled_post_at')) {
-                    $context['scheduled_post_at'] = \Carbon\Carbon::parse($request->input('scheduled_post_at'));
-                } else {
-                    $context['scheduled_post_at'] = $targetTime;
-                }
             }
 
             $step = PairUpdateFormatter::step(
@@ -124,14 +173,6 @@ class SubmissionLifecycleController extends Controller
                 $request->user(),
                 $context
             );
-
-            if ($target === SubmissionLifecycleStatus::Posted) {
-                $publishTime = $updated->posted_at ?? now();
-                if (! $publishTime->isFuture()) {
-                    \App\Services\SocialMediaPublisher::publish($updated, $request->user());
-                    $updated->save();
-                }
-            }
 
             return response()->json([
                 'success' => true,
@@ -182,6 +223,7 @@ class SubmissionLifecycleController extends Controller
 
         $query = Submission::query()->select([
             'id', 'workflow_status', 'status', 'updated_at', 'user_id',
+            'meta_publish_status', 'meta_post_url', 'meta_publish_error',
         ]);
 
         if ($request->user()->isOrg()) {
@@ -222,6 +264,9 @@ class SubmissionLifecycleController extends Controller
             'progress_index' => $lifecycle->progressIndex(),
             'status' => $submission->status,
             'updated_at' => $submission->updated_at?->toIso8601String(),
+            'meta_publish_status' => $submission->meta_publish_status,
+            'meta_post_url' => $submission->meta_post_url,
+            'meta_publish_error' => $submission->meta_publish_error,
         ];
     }
 }
