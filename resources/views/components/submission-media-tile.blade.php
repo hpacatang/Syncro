@@ -17,6 +17,7 @@
                     src="{{ $mediaUrl }}"
                     alt="{{ $filename }}"
                     loading="lazy"
+                    decoding="async"
                     class="syncro-media-tile__img w-100 h-100"
                     style="object-fit: cover;"
                 >
@@ -31,7 +32,7 @@
             </div>
         @elseif($isVideo)
             <div class="syncro-media-tile__video-wrapper bg-dark position-relative" style="height: 180px;">
-                <video controls preload="metadata" class="w-100 h-100" style="object-fit: contain;">
+                <video controls preload="none" class="w-100 h-100" style="object-fit: contain;">
                     <source src="{{ $mediaUrl }}">
                     Your browser does not support the video tag.
                 </video>

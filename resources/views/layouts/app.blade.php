@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="{{ asset('css/syncro.css') }}">
 </head>
 <body class="syncro-app">
+<div id="syncroNavigationProgress" class="syncro-navigation-progress" role="progressbar" aria-label="Loading page" aria-valuemin="0" aria-valuemax="100" hidden></div>
 @auth
     @php
         $isOrg = auth()->user()->isOrg();
@@ -143,6 +144,41 @@
     </main>
 @endauth
 
+<script>
+(function () {
+    var progress = document.getElementById('syncroNavigationProgress');
+    if (!progress) return;
+
+    document.addEventListener('click', function (event) {
+        var link = event.target.closest('a[href]');
+        if (!link || link.target || link.hasAttribute('download')
+            || link.dataset.noNavProgress !== undefined
+            || event.defaultPrevented
+            || event.button !== 0
+            || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+        var destination = new URL(link.href, window.location.href);
+        if (destination.origin !== window.location.origin
+            || (destination.pathname === window.location.pathname
+                && destination.search === window.location.search
+                && destination.hash)) return;
+
+        progress.hidden = false;
+        progress.classList.add('is-active');
+    });
+
+    document.addEventListener('submit', function (event) {
+        if (event.defaultPrevented || event.target.matches('[data-no-nav-progress]')) return;
+        progress.hidden = false;
+        progress.classList.add('is-active');
+    });
+
+    window.addEventListener('pageshow', function () {
+        progress.classList.remove('is-active');
+        progress.hidden = true;
+    });
+})();
+</script>
 <script>
 (function () {
     var toggle = document.getElementById('sidebarToggle');

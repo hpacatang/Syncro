@@ -215,6 +215,22 @@ class DashboardPagesTest extends TestCase
         $this->assertTrue($paginated->hasPages());
         $response->assertSee('page=2', false);
     }
+
+    public function test_org_dashboard_statistics_are_refreshed_when_a_submission_is_added(): void
+    {
+        $org = User::factory()->org()->create();
+        Submission::factory()->submitted()->create(['user_id' => $org->id]);
+
+        $this->actingAs($org)
+            ->get(route('org.dashboard'))
+            ->assertOk()
+            ->assertViewHas('stats', fn (array $stats) => $stats['total'] === 1);
+
+        Submission::factory()->submitted()->create(['user_id' => $org->id]);
+
+        $this->actingAs($org)
+            ->get(route('org.dashboard'))
+            ->assertOk()
+            ->assertViewHas('stats', fn (array $stats) => $stats['total'] === 2);
+    }
 }
-
-

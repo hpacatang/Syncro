@@ -8,6 +8,7 @@ use App\Models\AppSetting;
 use App\Models\Submission;
 use App\Models\Feedback;
 use App\Support\SubmissionWorkflowGroups;
+use Illuminate\Support\Facades\Cache;
 
 class MainController extends Controller
 {
@@ -79,16 +80,20 @@ class MainController extends Controller
     }
     public function index(Request $request)
     {
-        $stats = [
-            'total' => Submission::count(),
-            'pending_submission' => Submission::whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
-            'pending_pair_review' => Submission::whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
-            'approved' => Submission::where('workflow_status', 'approved')->count(),
-            'rejected' => Submission::where('workflow_status', 'rejected')->count(),
-            'posted' => Submission::where('workflow_status', 'posted')->count(),
-            'pending' => Submission::whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
-            'under_review' => Submission::whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
-        ];
+        $stats = Cache::remember(
+            $this->dashboardStatsCacheKey($request),
+            now()->addMinutes(15),
+            fn () => [
+                'total' => Submission::count(),
+                'pending_submission' => Submission::whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
+                'pending_pair_review' => Submission::whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
+                'approved' => Submission::where('workflow_status', 'approved')->count(),
+                'rejected' => Submission::where('workflow_status', 'rejected')->count(),
+                'posted' => Submission::where('workflow_status', 'posted')->count(),
+                'pending' => Submission::whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
+                'under_review' => Submission::whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
+            ]
+        );
 
         $query = Submission::with(['user.department', 'reviewDepartment']);
         $filter = $this->applySubmissionFilters($query, $request, 'all');
@@ -142,16 +147,20 @@ class MainController extends Controller
     {
         $userId = auth()->id();
 
-        $stats = [
-            'total' => Submission::where('user_id', $userId)->count(),
-            'pending_submission' => Submission::where('user_id', $userId)->whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
-            'pending_pair_review' => Submission::where('user_id', $userId)->whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
-            'ready_for_review' => Submission::where('user_id', $userId)
-                ->whereIn('workflow_status', SubmissionWorkflowGroups::READY_FOR_ORG_REVIEW)
-                ->whereNotNull('enhanced_caption')
-                ->count(),
-            'approved' => Submission::where('user_id', $userId)->where('workflow_status', 'approved')->count(),
-        ];
+        $stats = Cache::remember(
+            $this->dashboardStatsCacheKey($request),
+            now()->addMinutes(15),
+            fn () => [
+                'total' => Submission::where('user_id', $userId)->count(),
+                'pending_submission' => Submission::where('user_id', $userId)->whereIn('workflow_status', SubmissionWorkflowGroups::SUBMITTED)->count(),
+                'pending_pair_review' => Submission::where('user_id', $userId)->whereIn('workflow_status', array_merge(SubmissionWorkflowGroups::IN_PEER_REVIEW, SubmissionWorkflowGroups::REVISED))->count(),
+                'ready_for_review' => Submission::where('user_id', $userId)
+                    ->whereIn('workflow_status', SubmissionWorkflowGroups::READY_FOR_ORG_REVIEW)
+                    ->whereNotNull('enhanced_caption')
+                    ->count(),
+                'approved' => Submission::where('user_id', $userId)->where('workflow_status', 'approved')->count(),
+            ]
+        );
 
         $query = Submission::where('user_id', $userId)
             ->with(['feedback.user', 'reviewDepartment', 'enhancer' => function ($q) {
@@ -162,8 +171,10 @@ class MainController extends Controller
 
         $showAwaitingSection = in_array($filter, ['all', 'ready_for_review', 'under_peer_review'], true);
         $awaitingApproval = $showAwaitingSection
-            ? (clone $query)->get()->filter(fn ($s) => $s->enhanced_caption
-                && SubmissionWorkflowGroups::matches($s->workflow_status, SubmissionWorkflowGroups::READY_FOR_ORG_REVIEW))->values()
+            ? (clone $query)
+                ->whereNotNull('enhanced_caption')
+                ->whereIn('workflow_status', SubmissionWorkflowGroups::READY_FOR_ORG_REVIEW)
+                ->get()
             : collect();
 
         $submissions = $query->paginate(10)->withQueryString();
@@ -185,5 +196,13 @@ class MainController extends Controller
             'currentFilter' => $filter,
             'currentSearch' => trim((string) $request->get('q', '')),
         ]);
+    }
+
+    private function dashboardStatsCacheKey(Request $request): string
+    {
+        $version = Cache::get('dashboard-stats-version', 1);
+        $user = $request->user();
+
+        return "dashboard-stats:v{$version}:user:{$user->id}:role:{$user->role}";
     }
 }

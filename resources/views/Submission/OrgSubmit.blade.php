@@ -274,10 +274,26 @@ const draftProvider = document.getElementById('draftProvider');
 const availableProvider = Array.from(draftProvider.options).find((option) => !option.disabled);
 if (availableProvider) draftProvider.value = availableProvider.value;
 
+function applyGeneratedDraft(data) {
+    const typeInput = document.querySelector(`input[name="submission_type"][value="${data.submission_type}"]`);
+    if (typeInput && !typeInput.checked) {
+        typeInput.checked = true;
+        typeInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    contentInput.value = data.original_caption;
+    if (data.submission_type === 'website_article') {
+        articleTitleInput.value = data.article_title || '';
+    }
+}
+
 document.getElementById('generateDraftButton').addEventListener('click', async (event) => {
     const prompt = document.getElementById('draftPrompt').value.trim();
     const message = document.getElementById('draftMessage');
     const button = event.currentTarget;
+    const startingContent = contentInput.value;
+    const startingTitle = articleTitleInput.value;
+    const startingType = document.querySelector('input[name="submission_type"]:checked').value;
     if (prompt.length < 10) {
         message.className = 'alert alert-warning mt-3 mb-0 py-2';
         message.textContent = 'Add a few details about the event before asking AI to draft the content.';
@@ -286,8 +302,10 @@ document.getElementById('generateDraftButton').addEventListener('click', async (
     }
 
     button.disabled = true;
+    const originalButtonContent = button.innerHTML;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Generating…';
     message.className = 'alert alert-info mt-3 mb-0 py-2';
-    message.textContent = 'Generating a draft. You can continue writing manually if the service is unavailable.';
+    message.textContent = 'Draft queued. It may take a few minutes for a local model; you can keep writing while it works.';
 
     try {
         const response = await fetch('/api/submissions/generate-draft', {
@@ -305,19 +323,57 @@ document.getElementById('generateDraftButton').addEventListener('click', async (
                 tone: document.getElementById('draftTone').value
             })
         });
-        const result = await response.json().catch(() => null);
-        if (!response.ok || !result?.success) {
-            const errors = result?.errors ? Object.values(result.errors).flat().join(' ') : '';
-            throw new Error(errors || result?.message || 'AI drafting is unavailable. Write your submission manually.');
+        const request = await response.json().catch(() => null);
+        if (response.status !== 202 || !request?.request_id) {
+            const errors = request?.errors ? Object.values(request.errors).flat().join(' ') : '';
+            throw new Error(errors || request?.message || 'Could not start AI drafting. Write your submission manually.');
         }
 
-        contentInput.value = result.data.original_caption;
-        if (result.data.submission_type === 'website_article') {
-            articleTitleInput.value = result.data.article_title || '';
+        let result = null;
+        for (let attempt = 0; attempt < 190; attempt++) {
+            await new Promise((resolve) => window.setTimeout(resolve, 2000));
+            const statusResponse = await fetch(`/api/submissions/generate-draft/${encodeURIComponent(request.request_id)}`, {
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' }
+            });
+            const status = await statusResponse.json().catch(() => null);
+            if (!statusResponse.ok || !status || !['queued', 'running', 'completed', 'failed'].includes(status.status)) {
+                throw new Error(status?.message || 'Could not check the draft status. You can continue writing manually.');
+            }
+            if (status.status === 'running') {
+                message.textContent = 'The AI model is writing your draft. You can continue editing; your changes will be preserved.';
+            }
+            if (status.status === 'completed' || status.status === 'failed') {
+                result = status.result;
+                break;
+            }
         }
+
+        if (!result) throw new Error('Draft generation is taking longer than expected. You can continue writing manually.');
+        if (!result.success) throw new Error(result.message || 'AI drafting is unavailable. Write your submission manually.');
+
         message.className = 'alert alert-success mt-3 mb-0 py-2';
-        message.textContent = 'Draft generated. Review and edit it before submitting.';
-        contentInput.focus();
+        const contentChangedWhileWaiting = contentInput.value !== startingContent
+            || articleTitleInput.value !== startingTitle
+            || document.querySelector('input[name="submission_type"]:checked').value !== startingType;
+
+        if (contentChangedWhileWaiting) {
+            message.textContent = 'Draft generated. Your edits were kept; apply the AI draft only if you want to replace them. ';
+            const applyButton = document.createElement('button');
+            applyButton.type = 'button';
+            applyButton.className = 'btn btn-sm btn-outline-success ms-2';
+            applyButton.textContent = 'Apply AI draft';
+            applyButton.addEventListener('click', () => {
+                applyGeneratedDraft(result.data);
+                message.textContent = 'Draft applied. Review and edit it before submitting.';
+                contentInput.focus();
+            }, { once: true });
+            message.appendChild(applyButton);
+        } else {
+            applyGeneratedDraft(result.data);
+            message.textContent = 'Draft generated. Review and edit it before submitting.';
+            contentInput.focus();
+        }
     } catch (error) {
         message.className = 'alert alert-warning mt-3 mb-0 py-2';
         message.textContent = error.message === 'Failed to fetch'
@@ -326,6 +382,7 @@ document.getElementById('generateDraftButton').addEventListener('click', async (
         contentInput.focus();
     } finally {
         button.disabled = false;
+        button.innerHTML = originalButtonContent;
     }
 });
 

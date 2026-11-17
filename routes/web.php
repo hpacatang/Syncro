@@ -111,6 +111,8 @@ Route::middleware('auth')->group(function () {
         Route::middleware(['role:org,department', 'dept.approved'])->group(function () {
             Route::post('/submissions/generate-draft', [SubmissionController::class, 'generateSubmissionDraft'])
                 ->middleware('throttle:10,1');
+            Route::get('/submissions/generate-draft/{requestId}', [SubmissionController::class, 'submissionDraftStatus'])
+                ->middleware('throttle:40,1');
             Route::post('/submissions', [SubmissionController::class, 'store']);
             Route::post('/submissions/{id}/org-review/approve', [SubmissionController::class, 'orgApproveEnhancement']);
             Route::post('/submissions/{id}/org-review/reject', [SubmissionController::class, 'orgRejectEnhancement']);

@@ -7,6 +7,7 @@ use App\Models\Scopes\OrgOwnedSubmissionScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 
 class Submission extends Model
 {
@@ -46,6 +47,15 @@ class Submission extends Model
             $submission->created_at ??= $now;
             $submission->updated_at ??= $now;
         });
+
+        static::saved(fn () => self::invalidateDashboardStats());
+        static::deleted(fn () => self::invalidateDashboardStats());
+    }
+
+    private static function invalidateDashboardStats(): void
+    {
+        Cache::add('dashboard-stats-version', 1, now()->addYears(5));
+        Cache::increment('dashboard-stats-version');
     }
 
     public function user()

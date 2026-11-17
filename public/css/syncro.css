@@ -556,6 +556,32 @@ body.syncro-nav-open {
     overflow-y: auto;
 }
 
+.syncro-notif-skeleton {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.syncro-notif-skeleton span {
+    height: 0.7rem;
+    border-radius: 0.35rem;
+    background: linear-gradient(90deg, #edf0f2 25%, #f8f9fa 50%, #edf0f2 75%);
+    background-size: 200% 100%;
+    animation: syncro-skeleton-pulse 1.4s ease infinite;
+}
+
+.syncro-notif-skeleton span:nth-child(2) { width: 82%; }
+.syncro-notif-skeleton span:nth-child(3) { width: 65%; }
+
+@keyframes syncro-skeleton-pulse {
+    to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .syncro-notif-skeleton span {
+        animation: none;
+    }
+}
+
 .syncro-notif-item--unread {
     background-color: rgba(var(--syncro-primary-rgb), 0.06);
     border-left: 3px solid var(--syncro-primary);
@@ -1006,6 +1032,64 @@ body.syncro-nav-open {
 .syncro-sidebar-card .card-header,
 .syncro-panel__header {
     border-bottom: 1px solid var(--syncro-border);
+}
+
+@media (min-width: 992px) {
+    .syncro-dashboard-sidebar {
+        position: sticky;
+        top: 1rem;
+        align-self: flex-start;
+        max-height: calc(100vh - 2rem);
+        max-height: calc(100dvh - 2rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+    }
+}
+
+@media (min-width: 1200px) {
+    .syncro-evaluate-sidebar {
+        position: sticky;
+        top: 1rem;
+        max-height: calc(100vh - 2rem);
+        max-height: calc(100dvh - 2rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+    }
+}
+
+.syncro-navigation-progress {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 2000;
+    height: 3px;
+    overflow: hidden;
+    background: rgba(45, 122, 74, 0.18);
+}
+
+.syncro-navigation-progress::after {
+    display: block;
+    width: 35%;
+    height: 100%;
+    content: "";
+    background: var(--syncro-accent-soft);
+    transform: translateX(-100%);
+}
+
+.syncro-navigation-progress.is-active::after {
+    animation: syncro-navigation-loading 1.1s ease-in-out infinite;
+}
+
+@keyframes syncro-navigation-loading {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(300%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .syncro-navigation-progress.is-active::after {
+        animation-duration: 2.5s;
+    }
 }
 
 .submission-filters--compact {

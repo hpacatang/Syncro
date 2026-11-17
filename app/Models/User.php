@@ -130,7 +130,7 @@ class User extends Authenticatable
     public function homeRoute(): string
     {
         if ($this->isSuperAdmin()) {
-            return 'users.index';
+            return 'dashboard';
         }
 
         if ($this->isStaffReviewer()) {

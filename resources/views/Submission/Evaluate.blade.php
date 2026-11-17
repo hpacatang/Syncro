@@ -135,7 +135,7 @@
         </div>
 
         <div class="col-xl-5">
-            <section class="card border-0 shadow-sm">
+            <section class="card border-0 shadow-sm syncro-evaluate-sidebar">
                 <div class="card-header bg-white py-3">
                     <h5 class="mb-1 fw-bold">Prepare reviewed draft</h5>
                     <p class="small text-muted mb-0">AI suggestions are drafts. Verify names, dates, and claims before saving.</p>
@@ -324,6 +324,8 @@
 
     generateButton.addEventListener('click', async () => {
         generateButton.disabled = true;
+        const originalButtonContent = generateButton.innerHTML;
+        generateButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Suggesting…';
         showMessage('info', 'Requesting an AI suggestion. This can take a little while.');
 
         try {
@@ -356,6 +358,7 @@
             showMessage('warning', error.message || 'AI assistance is unavailable. You can continue editing manually.');
         } finally {
             generateButton.disabled = false;
+            generateButton.innerHTML = originalButtonContent;
         }
     });
 
@@ -375,6 +378,8 @@
         }
 
         saveButton.disabled = true;
+        const originalButtonContent = saveButton.innerHTML;
+        saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Sending…';
         try {
             const response = await fetch(`/api/submissions/${submissionId}/save-manual-caption`, {
                 method: 'POST',
@@ -403,6 +408,7 @@
         } catch (error) {
             showMessage('danger', error.message || 'The reviewed draft could not be saved.');
             saveButton.disabled = false;
+            saveButton.innerHTML = originalButtonContent;
         }
     });
 

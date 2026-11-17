@@ -31,7 +31,7 @@
                     @if($live) data-preview-title-for="reviewTitle" @endif
                 >{{ $previewTitle }}</h2>
                 @if($imageUrl)
-                    <img src="{{ $imageUrl }}" class="img-fluid rounded mb-3 w-100" alt="Submission image preview">
+                    <img src="{{ $imageUrl }}" class="img-fluid rounded mb-3 w-100" alt="Submission image preview" loading="lazy" decoding="async">
                 @endif
                 <div
                     class="channel-preview__body"
@@ -52,7 +52,7 @@
                     @if($live) data-preview-body-for="reviewBody" @endif
                 >{{ $previewBody }}</div>
                 @if($imageUrl)
-                    <img src="{{ $imageUrl }}" class="img-fluid rounded w-100" alt="Submission image preview">
+                    <img src="{{ $imageUrl }}" class="img-fluid rounded w-100" alt="Submission image preview" loading="lazy" decoding="async">
                 @elseif(!empty($submission->links[0]))
                     <div class="border rounded p-3 bg-light">
                         <div class="small text-uppercase text-muted">Link preview</div>

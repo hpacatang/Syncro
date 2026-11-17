@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\GenerateSubmissionDraft;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class SubmissionContentEvaluationTest extends TestCase
@@ -64,17 +67,17 @@ class SubmissionContentEvaluationTest extends TestCase
             ]),
         ]);
 
-        $this->actingAs($submitter)
-            ->postJson('/api/submissions/generate-draft', [
-                'submission_type' => Submission::TYPE_WEBSITE_ARTICLE,
-                'prompt' => 'The university hosted a research forum for students and faculty.',
-                'llm_provider' => 'openai',
-                'tone' => 'professional',
-            ])
+        $this->generateDraft($submitter, [
+            'submission_type' => Submission::TYPE_WEBSITE_ARTICLE,
+            'prompt' => 'The university hosted a research forum for students and faculty.',
+            'llm_provider' => 'openai',
+            'tone' => 'professional',
+        ])
             ->assertOk()
-            ->assertJsonPath('data.submission_type', Submission::TYPE_WEBSITE_ARTICLE)
-            ->assertJsonPath('data.article_title', $headline)
-            ->assertJsonPath('data.original_caption', $body);
+            ->assertJsonPath('status', 'completed')
+            ->assertJsonPath('result.data.submission_type', Submission::TYPE_WEBSITE_ARTICLE)
+            ->assertJsonPath('result.data.article_title', $headline)
+            ->assertJsonPath('result.data.original_caption', $body);
 
         $this->assertDatabaseCount('submissions', 0);
         Http::assertSent(fn (ClientRequest $request) => str_contains(
@@ -115,31 +118,32 @@ class SubmissionContentEvaluationTest extends TestCase
                 ]),
         ]);
 
-        $socialDraft = $this->actingAs($submitter)
-            ->postJson('/api/submissions/generate-draft', [
-                'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
-                'prompt' => 'The university research forum took place on campus today.',
-                'llm_provider' => 'ollama',
-                'tone' => 'professional',
-            ])
+        $socialDraft = $this->generateDraft($submitter, [
+            'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
+            'prompt' => 'The university research forum took place on campus today.',
+            'llm_provider' => 'ollama',
+            'tone' => 'professional',
+        ])
             ->assertOk()
-            ->assertJsonPath('data.submission_type', Submission::TYPE_SOCIAL_MEDIA)
-            ->assertJsonPath('data.original_caption', 'Students and faculty gathered for a university research forum.')
-            ->json('data');
+            ->assertJsonPath('status', 'completed')
+            ->assertJsonPath('result.data.submission_type', Submission::TYPE_SOCIAL_MEDIA)
+            ->assertJsonPath('result.data.original_caption', 'Students and faculty gathered for a university research forum.')
+            ->json('result.data');
 
         $this->assertSame('ollama', $socialDraft['provider_used']);
 
-        $this->postJson('/api/submissions/generate-draft', [
+        $this->generateDraft($submitter, [
             'submission_type' => Submission::TYPE_WEBSITE_ARTICLE,
             'prompt' => 'The university research forum took place on campus today.',
             'llm_provider' => 'ollama',
             'tone' => 'formal',
         ])
             ->assertOk()
-            ->assertJsonPath('data.submission_type', Submission::TYPE_WEBSITE_ARTICLE)
-            ->assertJsonPath('data.article_title', 'University hosts research forum')
-            ->assertJsonPath('data.original_caption', $articleBody)
-            ->assertJsonPath('data.provider_used', 'ollama');
+            ->assertJsonPath('status', 'completed')
+            ->assertJsonPath('result.data.submission_type', Submission::TYPE_WEBSITE_ARTICLE)
+            ->assertJsonPath('result.data.article_title', 'University hosts research forum')
+            ->assertJsonPath('result.data.original_caption', $articleBody)
+            ->assertJsonPath('result.data.provider_used', 'ollama');
 
         Http::assertSentCount(2);
         Http::assertSent(fn (ClientRequest $request) => $request->url() === 'http://ollama.test/api/chat'
@@ -167,21 +171,21 @@ class SubmissionContentEvaluationTest extends TestCase
             'ollama.test/api/chat' => Http::response(['error' => 'model not running'], 503),
         ]);
 
-        $this->actingAs($submitter)
-            ->postJson('/api/submissions/generate-draft', [
-                'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
-                'prompt' => 'A few confirmed details about the event.',
-                'llm_provider' => 'ollama',
-                'tone' => 'formal',
-            ])
-            ->assertServiceUnavailable()
-            ->assertJsonPath('fallback', true)
-            ->assertJsonPath('message', 'AI drafting is unavailable right now. You can write your submission manually.');
+        $this->generateDraft($submitter, [
+            'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
+            'prompt' => 'A few confirmed details about the event.',
+            'llm_provider' => 'ollama',
+            'tone' => 'formal',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', 'failed')
+            ->assertJsonPath('result.fallback', true)
+            ->assertJsonPath('result.message', 'AI drafting is unavailable right now. You can write your submission manually.');
 
         $this->assertDatabaseCount('submissions', 0);
     }
 
-    public function test_ollama_request_extends_the_php_execution_limit_only_for_its_request(): void
+    public function test_ollama_draft_request_is_queued_instead_of_waiting_for_generation(): void
     {
         $submitter = User::factory()->org()->create();
         $originalExecutionLimit = (int) ini_get('max_execution_time');
@@ -190,31 +194,25 @@ class SubmissionContentEvaluationTest extends TestCase
             'services.ollama.model' => 'qwen3:8b',
             'services.ollama.timeout' => 90,
         ]);
-        Http::fake([
-            'ollama.test/api/chat' => Http::response([
-                'message' => [
-                    'content' => json_encode([
-                        'headline' => '',
-                        'body' => 'Students attended the university community research forum today.',
-                    ]),
-                ],
-            ]),
-        ]);
+        Http::fake();
+        Queue::fake();
 
-        try {
-            $this->actingAs($submitter)
-                ->postJson('/api/submissions/generate-draft', [
-                    'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
-                    'prompt' => 'The university community research forum took place today.',
-                    'llm_provider' => 'ollama',
-                    'tone' => 'professional',
-                ])
-                ->assertOk();
+        $response = $this->actingAs($submitter)
+            ->postJson('/api/submissions/generate-draft', [
+                'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
+                'prompt' => 'The university community research forum took place today.',
+                'llm_provider' => 'ollama',
+                'tone' => 'professional',
+            ])
+            ->assertAccepted()
+            ->assertJsonPath('status', 'queued');
 
-            $this->assertSame(105, (int) ini_get('max_execution_time'));
-        } finally {
-            set_time_limit($originalExecutionLimit);
-        }
+        $this->assertSame($originalExecutionLimit, (int) ini_get('max_execution_time'));
+        Http::assertNothingSent();
+        Queue::assertPushed(GenerateSubmissionDraft::class);
+        $this->getJson('/api/submissions/generate-draft/'.$response->json('request_id'))
+            ->assertOk()
+            ->assertJsonPath('status', 'queued');
     }
 
     public function test_submitters_can_continue_manually_when_ai_drafting_is_unavailable(): void
@@ -222,15 +220,15 @@ class SubmissionContentEvaluationTest extends TestCase
         $submitter = User::factory()->org()->create();
         config(['services.openai.key' => null]);
 
-        $this->actingAs($submitter)
-            ->postJson('/api/submissions/generate-draft', [
-                'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
-                'prompt' => 'A few confirmed details about the event.',
-                'llm_provider' => 'openai',
-                'tone' => 'formal',
-            ])
-            ->assertServiceUnavailable()
-            ->assertJsonPath('fallback', true);
+        $this->generateDraft($submitter, [
+            'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
+            'prompt' => 'A few confirmed details about the event.',
+            'llm_provider' => 'openai',
+            'tone' => 'formal',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', 'failed')
+            ->assertJsonPath('result.fallback', true);
 
         $this->assertDatabaseCount('submissions', 0);
     }
@@ -247,6 +245,42 @@ class SubmissionContentEvaluationTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['article_title', 'original_caption']);
+    }
+
+    public function test_draft_status_is_only_visible_to_the_submitter_who_started_it(): void
+    {
+        $submitter = User::factory()->org()->create();
+        $otherSubmitter = User::factory()->org()->create();
+        Queue::fake();
+
+        $response = $this->actingAs($submitter)
+            ->postJson('/api/submissions/generate-draft', [
+                'submission_type' => Submission::TYPE_SOCIAL_MEDIA,
+                'prompt' => 'A few confirmed details about the event.',
+                'llm_provider' => 'openai',
+                'tone' => 'formal',
+            ])
+            ->assertAccepted();
+
+        $requestId = $response->json('request_id');
+        $this->actingAs($otherSubmitter)
+            ->getJson('/api/submissions/generate-draft/'.$requestId)
+            ->assertNotFound();
+
+        $this->actingAs($submitter)
+            ->getJson('/api/submissions/generate-draft/'.$requestId)
+            ->assertOk()
+            ->assertJsonPath('status', 'queued');
+    }
+
+    private function generateDraft(User $submitter, array $data): TestResponse
+    {
+        config(['queue.default' => 'sync']);
+        $response = $this->actingAs($submitter)
+            ->postJson('/api/submissions/generate-draft', $data)
+            ->assertAccepted();
+
+        return $this->getJson('/api/submissions/generate-draft/'.$response->json('request_id'));
     }
 
     public function test_social_media_review_shows_a_facebook_page_preview(): void

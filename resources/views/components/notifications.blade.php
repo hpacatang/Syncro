@@ -26,7 +26,9 @@
             </li>
             <li class="p-0 border-0">
                 <div id="syncroNotifList">
-                    <div class="text-center text-muted small py-3">Loading…</div>
+                    <div class="syncro-notif-skeleton p-3" aria-hidden="true">
+                        <span></span><span></span><span></span>
+                    </div>
                 </div>
             </li>
             <li class="border-top"><a class="dropdown-item text-center small" href="{{ $notifListRoute }}">View all</a></li>
@@ -46,6 +48,8 @@
                     const markAll = document.getElementById('syncroNotifMarkAll');
                     const toggle = document.getElementById('syncroNotifToggle');
                     const readBase = @json(url('/notifications'));
+                    let recentItems = null;
+                    let recentLoadedAt = 0;
 
                     function setBadge(count) {
                         if (!badge) return;
@@ -95,10 +99,17 @@
                     }
 
                     async function loadRecent() {
+                        if (recentItems && Date.now() - recentLoadedAt < 30000) {
+                            renderList(recentItems);
+                            return;
+                        }
+
                         try {
                             const r = await fetch(@json(route('notifications.recent')), { credentials: 'same-origin' });
                             const j = await r.json();
-                            renderList(j.notifications || []);
+                            recentItems = j.notifications || [];
+                            recentLoadedAt = Date.now();
+                            renderList(recentItems);
                         } catch (e) {
                             if (list) list.innerHTML = '<div class="text-danger small px-3 py-2">Could not load</div>';
                         }
@@ -140,7 +151,14 @@
                                     headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
                                 });
                                 setBadge(0);
-                                await loadRecent();
+                                if (recentItems) {
+                                    recentItems = recentItems.map(function (item) {
+                                        return Object.assign({}, item, { read: true });
+                                    });
+                                    renderList(recentItems);
+                                } else {
+                                    await loadRecent();
+                                }
                             } catch (err) {  }
                         });
                     }

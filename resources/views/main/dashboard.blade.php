@@ -147,7 +147,7 @@
             </div>
         </div>
 
-        <div class="col-xl-3 col-lg-4">
+        <div class="col-xl-3 col-lg-4 syncro-dashboard-sidebar">
             <div class="syncro-sidebar-card card mb-3">
                 <div class="card-header bg-white py-3">
                     <h5 class="mb-0 fw-bold">Status Overview</h5>

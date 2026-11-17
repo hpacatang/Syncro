@@ -241,7 +241,7 @@
         </div>
 
         
-        <div class="col-lg-4">
+        <div class="col-lg-4 syncro-dashboard-sidebar">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white border-bottom">
                     <h5 class="mb-0 fw-bold">Recent feedback</h5>
