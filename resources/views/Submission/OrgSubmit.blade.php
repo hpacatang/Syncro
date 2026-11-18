@@ -173,14 +173,17 @@
                             <div class="form-control p-3 text-center" style="border: 2px dashed #dee2e6; cursor: pointer;" id="dropZone">
                                 <i class="fas fa-cloud-upload-alt text-primary" style="font-size: 2.2rem;"></i>
                                 <p class="text-dark fw-semibold mt-2 mb-0">Drag and drop pictures or videos here, or click to browse</p>
-                                <small class="text-muted">Pictures (JPG, PNG, WebP, GIF), Videos (MP4, MOV, WebM, AVI), Docs &amp; PDF — max 50&nbsp;MB each</small>
+                                <small class="text-muted">Add up to 10 files: pictures, videos, documents — max 50&nbsp;MB each and 100&nbsp;MB total. Selecting or dropping more files adds them to your current selection.</small>
                                 <input 
                                     type="file" 
                                     id="media" 
                                     name="media[]" 
                                     class="form-control d-none" 
                                     multiple 
-                                    accept=".jpg,.jpeg,.png,.webp,.gif,.mp4,.mov,.webm,.ogg,.avi,.mkv,.doc,.docx,.pdf,.txt,image/*,video/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
+                                    accept=".jpg,.jpeg,.jpe,.jfif,.png,.webp,.gif,.avif,.bmp,.heic,.heif,.tif,.tiff,.mp4,.mov,.webm,.ogg,.avi,.mkv,.wmv,.m4v,.3gp,.doc,.docx,.pdf,.txt,image/*,video/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
+                            </div>
+                            <div id="mediaUploadMessage" class="form-text mt-2" role="status" aria-live="polite">
+                                You can choose files more than once; each selection will be added to the list below.
                             </div>
                             <div id="mediaPreview" class="mt-3"></div>
                         </div>
@@ -241,6 +244,9 @@ function createLinksContainer() {
 const dropZone = document.getElementById('dropZone');
 const mediaInput = document.getElementById('media');
 const mediaPreview = document.getElementById('mediaPreview');
+const mediaUploadMessage = document.getElementById('mediaUploadMessage');
+let selectedMediaFiles = [];
+let mediaPreviewObjectUrls = [];
 const contentTypeInputs = document.querySelectorAll('input[name="submission_type"]');
 const articleTitleGroup = document.getElementById('articleTitleGroup');
 const articleTitleInput = document.getElementById('articleTitle');
@@ -386,7 +392,9 @@ document.getElementById('generateDraftButton').addEventListener('click', async (
     }
 });
 
-dropZone.addEventListener('click', () => mediaInput.click());
+dropZone.addEventListener('click', (event) => {
+    if (event.target !== mediaInput) mediaInput.click();
+});
 
 dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
@@ -402,16 +410,72 @@ dropZone.addEventListener('dragleave', () => {
 dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
     dropZone.style.borderColor = '#dee2e6';
-    const dt = new DataTransfer();
-    Array.from(e.dataTransfer.files).forEach((f) => dt.items.add(f));
-    mediaInput.files = dt.files;
-    updateMediaPreview();
+    addMediaFiles(Array.from(e.dataTransfer.files));
 });
 
-mediaInput.addEventListener('change', updateMediaPreview);
+mediaInput.addEventListener('change', () => addMediaFiles(Array.from(mediaInput.files)));
 
-const ALLOWED_MEDIA_EXT = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'mov', 'webm', 'ogg', 'avi', 'mkv', 'doc', 'docx', 'pdf', 'txt']);
+const ALLOWED_MEDIA_EXT = new Set(['jpg', 'jpeg', 'jpe', 'jfif', 'png', 'webp', 'gif', 'avif', 'bmp', 'heic', 'heif', 'tif', 'tiff', 'mp4', 'mov', 'webm', 'ogg', 'avi', 'mkv', 'wmv', 'm4v', '3gp', 'doc', 'docx', 'pdf', 'txt']);
+const PREVIEWABLE_IMAGE_EXT = new Set(['jpg', 'jpeg', 'jpe', 'jfif', 'png', 'webp', 'gif', 'avif', 'bmp']);
+const PREVIEWABLE_VIDEO_EXT = new Set(['mp4', 'mov', 'webm', 'ogg', 'avi', 'mkv', 'wmv', 'm4v', '3gp']);
 const MAX_MEDIA_BYTES = 50 * 1024 * 1024;
+const MAX_MEDIA_TOTAL_BYTES = 100 * 1024 * 1024;
+const MAX_MEDIA_FILES = 10;
+
+function setMediaMessage(text, kind = 'muted') {
+    mediaUploadMessage.className = `form-text mt-2 text-${kind}`;
+    mediaUploadMessage.textContent = text;
+}
+
+function syncMediaInput() {
+    const dataTransfer = new DataTransfer();
+    selectedMediaFiles.forEach((file) => dataTransfer.items.add(file));
+    mediaInput.files = dataTransfer.files;
+}
+
+function addMediaFiles(filesToAdd) {
+    const additions = filesToAdd.filter((file) => !selectedMediaFiles.some((selected) =>
+        selected.name === file.name
+        && selected.size === file.size
+        && selected.lastModified === file.lastModified
+    ));
+
+    for (const file of additions) {
+        if (!ALLOWED_MEDIA_EXT.has(fileExtension(file.name))) {
+            setMediaMessage(`Unsupported file type: ${file.name}`, 'danger');
+            syncMediaInput();
+            return;
+        }
+        if (file.size > MAX_MEDIA_BYTES) {
+            setMediaMessage(`${file.name} exceeds the 50 MB per-file limit.`, 'danger');
+            syncMediaInput();
+            return;
+        }
+    }
+
+    const candidate = [...selectedMediaFiles, ...additions];
+    const totalBytes = candidate.reduce((total, file) => total + file.size, 0);
+    if (candidate.length > MAX_MEDIA_FILES) {
+        setMediaMessage(`You can attach up to ${MAX_MEDIA_FILES} files. Remove a file before adding more.`, 'danger');
+        syncMediaInput();
+        return;
+    }
+    if (totalBytes > MAX_MEDIA_TOTAL_BYTES) {
+        setMediaMessage('Attachments cannot exceed 100 MB total. Remove a file before adding more.', 'danger');
+        syncMediaInput();
+        return;
+    }
+
+    selectedMediaFiles = candidate;
+    syncMediaInput();
+    updateMediaPreview();
+    setMediaMessage(
+        selectedMediaFiles.length
+            ? `${selectedMediaFiles.length} file${selectedMediaFiles.length === 1 ? '' : 's'} selected (${formatBytes(totalBytes)} of 100 MB).`
+            : 'No files selected.',
+        'muted'
+    );
+}
 
 function fileExtension(name) {
     const i = name.lastIndexOf('.');
@@ -433,17 +497,16 @@ function escapeHtml(str) {
 }
 
 function updateMediaPreview() {
+    mediaPreviewObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+    mediaPreviewObjectUrls = [];
     mediaPreview.innerHTML = '';
-    const files = mediaInput.files;
+    const files = selectedMediaFiles;
     
     if (files.length === 0) return;
 
     const preview = document.createElement('div');
     preview.className = 'row g-2';
     
-    const imageExts = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif']);
-    const videoExts = new Set(['mp4', 'mov', 'webm', 'ogg', 'avi', 'mkv']);
-
     Array.from(files).forEach((file, index) => {
         const col = document.createElement('div');
         col.className = 'col-md-3';
@@ -454,22 +517,21 @@ function updateMediaPreview() {
                 <i class="fas fa-times"></i>
             </button>`;
 
-        if (imageExts.has(ext)) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                col.innerHTML = `
+        if (PREVIEWABLE_IMAGE_EXT.has(ext)) {
+            const objectUrl = URL.createObjectURL(file);
+            mediaPreviewObjectUrls.push(objectUrl);
+            col.innerHTML = `
                 <div class="position-relative border rounded overflow-hidden bg-light" style="height: 120px;">
-                    <img src="${e.target.result}" class="img-fluid w-100 h-100" style="object-fit: cover;">
+                    <img src="${objectUrl}" class="img-fluid w-100 h-100" style="object-fit: cover;" alt="${escapeHtml(file.name)}">
                     ${removeBtn}
                 </div>
-                <small class="text-muted text-truncate d-block mt-1" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</small>`;
-            };
-            reader.readAsDataURL(file);
-        } else if (videoExts.has(ext)) {
+                <small class="text-muted text-truncate d-block mt-1" title="${escapeHtml(file.name)}">${escapeHtml(file.name)} (${formatBytes(file.size)})</small>`;
+        } else if (PREVIEWABLE_VIDEO_EXT.has(ext)) {
             const blobUrl = URL.createObjectURL(file);
+            mediaPreviewObjectUrls.push(blobUrl);
             col.innerHTML = `
                 <div class="position-relative border rounded overflow-hidden bg-dark d-flex align-items-center justify-content-center" style="height: 120px;">
-                    <video src="${blobUrl}" style="max-height: 120px; max-width: 100%; object-fit: contain;"></video>
+                    <video src="${blobUrl}" preload="metadata" style="max-height: 120px; max-width: 100%; object-fit: contain;"></video>
                     <span class="position-absolute bottom-0 start-0 m-1 badge bg-dark bg-opacity-75"><i class="fas fa-video me-1"></i>${ext.toUpperCase()}</span>
                     ${removeBtn}
                 </div>
@@ -490,12 +552,16 @@ function updateMediaPreview() {
 }
 
 function removeMedia(index) {
-    const files = Array.from(mediaInput.files);
-    files.splice(index, 1);
-    const dt = new DataTransfer();
-    files.forEach(f => dt.items.add(f));
-    mediaInput.files = dt.files;
+    selectedMediaFiles.splice(index, 1);
+    syncMediaInput();
     updateMediaPreview();
+    const totalBytes = selectedMediaFiles.reduce((total, file) => total + file.size, 0);
+    setMediaMessage(
+        selectedMediaFiles.length
+            ? `${selectedMediaFiles.length} file${selectedMediaFiles.length === 1 ? '' : 's'} selected (${formatBytes(totalBytes)} of 100 MB).`
+            : 'No files selected.',
+        'muted'
+    );
 }
 
 document.getElementById('submissionForm').addEventListener('submit', async (e) => {
@@ -510,7 +576,7 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
         .filter(Boolean)
         .forEach((link) => formData.append('links[]', link));
 
-    const mediaFiles = mediaInput.files ? Array.from(mediaInput.files) : [];
+    const mediaFiles = selectedMediaFiles;
     if (mediaFiles.length === 0) formData.delete('media[]');
     for (const f of mediaFiles) {
         const ext = fileExtension(f.name);
@@ -538,9 +604,15 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
             }
         });
         
-        const data = await response.json();
+        const responseBody = await response.text();
+        let data = {};
+        try {
+            data = responseBody ? JSON.parse(responseBody) : {};
+        } catch {
+            data = {};
+        }
         
-        if (data.success) {
+        if (response.ok && data.success) {
             const alert = document.createElement('div');
             alert.className = 'alert alert-success alert-dismissible fade show';
             alert.innerHTML = `
@@ -550,7 +622,10 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
             form.parentElement.insertBefore(alert, form);
 
             form.reset();
-            mediaPreview.innerHTML = '';
+            selectedMediaFiles = [];
+            mediaInput.value = '';
+            updateMediaPreview();
+            setMediaMessage('You can choose files more than once; each selection will be added to the list below.');
             updateContentTypeFields();
 
             setTimeout(() => {
@@ -558,12 +633,16 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
             }, 2000);
         } else {
             const isDuplicate = data.error === 'DuplicateContentDetected';
+            const validationMessage = data.errors ? Object.values(data.errors).flat().join(' ') : '';
+            const message = response.status === 413
+                ? 'The upload exceeds the server request-size limit. Reduce the attachment size or increase the PHP and web-server upload limits.'
+                : validationMessage || data.reason || data.message || 'The server returned an invalid response. Your submission was not confirmed.';
             const alertBox = document.createElement('div');
             alertBox.className = 'alert ' + (isDuplicate ? 'alert-danger' : 'alert-warning') + ' alert-dismissible fade show';
             alertBox.innerHTML = `
                 <i class="fas ${isDuplicate ? 'fa-ban' : 'fa-exclamation-triangle'} me-2"></i>
                 <strong>${isDuplicate ? 'Submission Rejected (Duplicate / Similar Content Detected)' : 'Error'}</strong>
-                <p class="mb-0 mt-1">${escapeHtml(data.reason || data.message || 'Submission failed.')}</p>
+                <p class="mb-0 mt-1">${escapeHtml(message)}</p>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             form.parentElement.insertBefore(alertBox, form);
@@ -573,7 +652,7 @@ document.getElementById('submissionForm').addEventListener('submit', async (e) =
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit for Review';
         }
     } catch (error) {
-        alert('Error submitting form: ' + error.message);
+        alert('Could not submit the form. Check your connection and try again. ' + error.message);
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit for Review';
     }

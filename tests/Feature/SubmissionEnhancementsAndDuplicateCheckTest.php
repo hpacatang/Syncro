@@ -165,28 +165,79 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
         );
     }
 
-    public function test_submission_allows_pictures_and_videos(): void
+    public function test_submission_accepts_multiple_image_video_and_gif_attachments(): void
     {
         config(['filesystems.disks.supabase.key' => null]);
         Storage::fake('public');
         $org = User::factory()->org()->create();
 
         $imageFile = UploadedFile::fake()->image('banner.png', 800, 600);
+        $secondImageFile = UploadedFile::fake()->image('event.jpg', 800, 600);
+        $gifFile = UploadedFile::fake()->create('animation.gif', 5)->mimeType('image/gif');
+        $avifFile = UploadedFile::fake()->create('event.avif', 5)->mimeType('image/avif');
+        $heicFile = UploadedFile::fake()->create('phone-photo.heic', 5)->mimeType('image/heic');
         $videoFile = UploadedFile::fake()->create('event_clip.mp4', 5000, 'video/mp4');
 
         $response = $this->actingAs($org)->postJson('/api/submissions', [
             'original_caption' => 'A wonderful celebration captured on photo and video clip.',
             'review_destination' => 'pair',
-            'media' => [$imageFile, $videoFile],
+            'media' => [$imageFile, $secondImageFile, $gifFile, $avifFile, $heicFile, $videoFile],
         ]);
 
         $response->assertCreated();
         $submissionId = $response->json('data.id');
         $submission = Submission::find($submissionId);
 
-        $this->assertCount(2, $submission->media_paths);
+        $this->assertCount(6, $submission->media_paths);
         $this->assertTrue(SubmissionMedia::isImage($submission->media_paths[0]));
-        $this->assertTrue(SubmissionMedia::isVideo($submission->media_paths[1]));
+        $this->assertTrue(SubmissionMedia::isImage($submission->media_paths[2]));
+        $this->assertTrue(SubmissionMedia::isImage($submission->media_paths[3]));
+        $this->assertTrue(SubmissionMedia::isVideo($submission->media_paths[5]));
+        $this->assertCount(6, $submission->media);
+    }
+
+    public function test_submission_attachment_count_is_limited_to_ten_files(): void
+    {
+        config(['filesystems.disks.supabase.key' => null]);
+        Storage::fake('public');
+        $org = User::factory()->org()->create();
+        $files = array_map(
+            fn ($index) => UploadedFile::fake()->image("photo-{$index}.jpg"),
+            range(1, 11)
+        );
+
+        $this->actingAs($org)
+            ->postJson('/api/submissions', [
+                'original_caption' => 'Multiple photos are attached to this university event update.',
+                'review_destination' => 'pair',
+                'media' => $files,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['media']);
+
+        $this->assertDatabaseCount('submissions', 0);
+    }
+
+    public function test_submission_attachment_total_size_is_limited_to_one_hundred_megabytes(): void
+    {
+        config(['filesystems.disks.supabase.key' => null]);
+        Storage::fake('public');
+        $org = User::factory()->org()->create();
+        $files = array_map(
+            fn ($index) => UploadedFile::fake()->image("large-photo-{$index}.jpg")->size(40 * 1024),
+            range(1, 3)
+        );
+
+        $this->actingAs($org)
+            ->postJson('/api/submissions', [
+                'original_caption' => 'Three large photos are attached to this university event update.',
+                'review_destination' => 'pair',
+                'media' => $files,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.media.0', 'The total size of submission attachments must not exceed 100 MB.');
+
+        $this->assertDatabaseCount('submissions', 0);
     }
 
     public function test_duplicate_and_highly_similar_content_is_rejected(): void

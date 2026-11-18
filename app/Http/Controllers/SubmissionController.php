@@ -11,8 +11,10 @@ use App\Notifications\EnhancementReadyForOrg;
 use App\Notifications\SubmissionApproved;
 use App\Notifications\SubmissionQueuedForReview;
 use App\Services\ContentSimilarityChecker;
+use App\Support\SubmissionMedia;
 use App\Support\ReviewNotificationCleaner;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -48,17 +50,27 @@ class SubmissionController extends Controller
             'scheduled_post_at' => 'nullable|date',
             'links' => 'nullable|array|max:10',
             'links.*' => 'nullable|url|max:500',
-            'media' => 'nullable|array',
+            'media' => ['nullable', 'array', 'max:'.SubmissionMedia::MAX_FILES],
             'media.*' => [
                 'nullable',
                 'file',
-                File::types([
-                    'jpg', 'jpeg', 'png', 'webp', 'gif',
-                    'mp4', 'mov', 'webm', 'ogg', 'avi', 'mkv',
-                    'doc', 'docx', 'pdf', 'txt'
-                ])->max(50 * 1024),
+                File::types(SubmissionMedia::allowedExtensions())
+                    ->max(SubmissionMedia::MAX_FILE_SIZE_KB),
             ],
         ]);
+
+        $totalMediaBytes = collect($validated['media'] ?? [])
+            ->filter(fn ($file) => $file instanceof UploadedFile && $file->isValid())
+            ->sum(fn (UploadedFile $file) => $file->getSize() ?: 0);
+
+        if ($totalMediaBytes > SubmissionMedia::MAX_TOTAL_SIZE_BYTES) {
+            return response()->json([
+                'message' => 'The total size of submission attachments must not exceed 100 MB.',
+                'errors' => [
+                    'media' => ['The total size of submission attachments must not exceed 100 MB.'],
+                ],
+            ], 422);
+        }
 
         // Duplicate and similarity checker: reject if identical or highly similar content exists
         $similarity = ContentSimilarityChecker::check(

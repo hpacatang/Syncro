@@ -7,8 +7,29 @@ use Illuminate\Support\Facades\Storage;
 
 final class SubmissionMedia
 {
-    private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-    private const VIDEO_EXTENSIONS = ['mp4', 'mov', 'webm', 'ogg', 'avi', 'mkv', 'wmv'];
+    public const MAX_FILES = 10;
+
+    public const MAX_FILE_SIZE_KB = 50 * 1024;
+
+    public const MAX_TOTAL_SIZE_BYTES = 100 * 1024 * 1024;
+
+    private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'jpe', 'jfif', 'png', 'webp', 'gif', 'avif', 'bmp'];
+
+    private const ADDITIONAL_IMAGE_EXTENSIONS = ['heic', 'heif', 'tif', 'tiff'];
+
+    private const VIDEO_EXTENSIONS = ['mp4', 'mov', 'webm', 'ogg', 'avi', 'mkv', 'wmv', 'm4v', '3gp'];
+
+    private const DOCUMENT_EXTENSIONS = ['doc', 'docx', 'pdf', 'txt'];
+
+    public static function allowedExtensions(): array
+    {
+        return [
+            ...self::IMAGE_EXTENSIONS,
+            ...self::ADDITIONAL_IMAGE_EXTENSIONS,
+            ...self::VIDEO_EXTENSIONS,
+            ...self::DOCUMENT_EXTENSIONS,
+        ];
+    }
 
     private const DISKS = ['supabase', 'public'];
 
@@ -41,7 +62,6 @@ final class SubmissionMedia
         ]);
     }
 
-    
     public static function resolve(string $path): ?array
     {
         $path = ltrim($path, '/');
@@ -85,7 +105,6 @@ final class SubmissionMedia
         return $storage->url($path);
     }
 
-    
     private static function disksToTry(): array
     {
         $default = (string) config('filesystems.default', 'supabase');
