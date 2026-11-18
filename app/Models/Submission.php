@@ -122,7 +122,7 @@ class Submission extends Model
 
     public function canEditPublicationSchedule(): bool
     {
-        if ($this->workflow_status === 'rejected') {
+        if (in_array($this->workflow_status, ['rejected', 'posted'], true)) {
             return false;
         }
 

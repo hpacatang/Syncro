@@ -6,17 +6,6 @@
 @section('content')
 <div class="container-fluid px-0">
 
-    @if($submissions->isNotEmpty())
-        @php $trackerSubmission = $awaitingApproval->first() ?? $submissions->sortByDesc('updated_at')->first(); @endphp
-        <div class="card shadow-sm border-0 mb-4 submission-lifecycle-tracker-card">
-            <div class="card-body">
-                <h6 class="text-muted text-uppercase small mb-3 fw-semibold">Submission progress</h6>
-                <x-submission-lifecycle-progress :submission="$trackerSubmission" />
-            </div>
-        </div>
-    @endif
-
-    
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
             <div class="card shadow-sm border-0">
@@ -313,9 +302,9 @@
                 
                 <div id="pairFeedbackSection" class="mb-4" style="display: none;">
                     <label class="form-label fw-bold">
-                        <i class="fas fa-comments text-info"></i> Review team updates
+                        Review team updates
                     </label>
-                    <div class="bg-info bg-opacity-10 border border-info border-opacity-25 p-3 rounded pair-updates" id="pairFeedbackText"></div>
+                    <div class="pair-updates text-dark" id="pairFeedbackText"></div>
                 </div>
 
                 
@@ -371,15 +360,85 @@
 </div>
 
 <script>
-function formatPairUpdates(text) {
-    return text.split(/\n\s*\n/).map(function (block) {
-        const lines = block.trim().split(/\r?\n/).filter(Boolean);
+function formatPairUpdates(text, submission) {
+    if (!text && submission) {
+        const wf = submission.workflow_status;
+        const actor = 'Review team - PAIR Reviewer';
+        const updatedTime = submission.updated_at || submission.created_at || '';
+        const postedTime = submission.posted_at || updatedTime;
+        const blocks = [];
+        if (submission.enhanced_caption || submission.enhanced_at) {
+            blocks.push(`[${actor} • ${updatedTime}]\n• Manual content saved — ready for your review`);
+        }
+        if (wf === 'revised' || submission.org_review_notes) {
+            const notes = submission.org_review_notes ? `: ${submission.org_review_notes}` : '';
+            blocks.push(`[${actor} • ${updatedTime}]\n• Send back for revision${notes}`);
+        }
+        if (['approved', 'posted'].includes(wf)) {
+            blocks.push(`[${actor} • ${updatedTime}]\n• Approve post`);
+        }
+        if (wf === 'posted') {
+            blocks.push(`[${actor} • ${postedTime}]\n• Mark as posted`);
+        }
+        if (wf === 'rejected') {
+            blocks.push(`[${actor} • ${updatedTime}]\n• Reject post`);
+        }
+        text = blocks.join('\n\n');
+    }
+    if (!text) return '';
+    const blocks = text.split(/\n\s*\n/).map(function (b) { return b.trim(); }).filter(Boolean);
+    if (!blocks.length) return '';
+
+    return blocks.map(function (block) {
+        const lines = block.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
         if (!lines.length) return '';
-        const header = lines[0].startsWith('[PAIR') || lines[0].startsWith('[Review team') ? '<div class="fw-bold syncro-pair-header mb-1">' + escapeHtml(lines[0]) + '</div>' : '<div class="mb-1">' + escapeHtml(lines[0]) + '</div>';
-        const bullets = lines.slice(1).map(function (line) {
-            return '<li>' + escapeHtml(line.replace(/^•\s*/, '')) + '</li>';
+
+        let header = lines[0].trim();
+        let bullets = lines.slice(1);
+
+        if (!bullets.length && !header.startsWith('[')) {
+            bullets = [header];
+            header = '[Review team - PAIR Reviewer]';
+        }
+
+        const cleanHeader = header.replace(/^\[|\]$/g, '');
+        const parts = cleanHeader.split('•').map(p => p.trim());
+        const rawActor = parts[0] || '';
+        let time = parts[1] || null;
+
+        let actorName = 'PAIR Reviewer';
+        if (rawActor.startsWith('Review team - ')) {
+            actorName = rawActor.substring(14).trim();
+        } else if (rawActor.startsWith('PAIR - ')) {
+            actorName = rawActor.substring(7).trim();
+        } else if (rawActor === 'PAIR' || rawActor === 'Review team' || !rawActor) {
+            actorName = 'PAIR Reviewer';
+        } else {
+            actorName = rawActor;
+        }
+
+        const actor = 'Review team - ' + actorName;
+
+        if (!time && submission) {
+            const firstBullet = (bullets[0] || '').toLowerCase();
+            if (firstBullet.includes('post') || firstBullet.includes('publish')) {
+                time = submission.posted_at || submission.updated_at;
+            } else if (firstBullet.includes('save') || firstBullet.includes('manual')) {
+                time = submission.enhanced_at || submission.updated_at;
+            } else {
+                time = submission.updated_at || submission.created_at;
+            }
+        }
+
+        const formattedHeader = time ? `[${actor} • ${time}]` : `[${actor}]`;
+        const bulletHtml = bullets.map(function (line) {
+            return '<li>' + escapeHtml(line.replace(/^[•\s\t]+/, '')) + '</li>';
         }).join('');
-        return '<div class="pair-update-block mb-3">' + header + (bullets ? '<ul class="mb-0 ps-3">' + bullets + '</ul>' : '') + '</div>';
+
+        return '<div class="pair-update-block mb-3">' +
+            '<div class="fw-bold syncro-pair-header mb-1">' + escapeHtml(formattedHeader) + '</div>' +
+            (bulletHtml ? '<ul class="mb-0 ps-3">' + bulletHtml + '</ul>' : '') +
+            '</div>';
     }).join('');
 }
 
@@ -408,8 +467,9 @@ async function fetchSubmissionDetails(submissionId) {
             const pairFeedbackSection = document.getElementById('pairFeedbackSection');
             const pairFeedbackText = document.getElementById('pairFeedbackText');
             
-            if (submission.pair_feedback) {
-                pairFeedbackText.innerHTML = formatPairUpdates(submission.pair_feedback);
+            const renderedUpdates = formatPairUpdates(submission.pair_feedback, submission);
+            if (renderedUpdates) {
+                pairFeedbackText.innerHTML = renderedUpdates;
                 pairFeedbackSection.style.display = 'block';
             } else {
                 pairFeedbackSection.style.display = 'none';

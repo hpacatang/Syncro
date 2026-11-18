@@ -116,8 +116,6 @@
             </div>
         @endif
 
-        <x-submission-lifecycle-tracker-card :submission="$submission" class="mb-0" />
-
         <x-submission-lifecycle-poll :submission-ids="(string) $submission->id" />
     </div>
 
@@ -155,16 +153,14 @@
                 <x-submission-channel-preview :submission="$submission" />
             </div>
 
-            @if($submission->pair_feedback)
-                <div class="card syncro-card-elevated border-0 mb-4">
-                    <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0 fw-bold">Review team updates</h5>
-                    </div>
-                    <div class="card-body">
-                        <x-pair-updates :text="$submission->pair_feedback" />
-                    </div>
+            <div class="card syncro-card-elevated border-0 mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0 fw-bold">Review team updates</h5>
                 </div>
-            @endif
+                <div class="card-body p-4">
+                    <x-pair-updates :text="$submission->pair_feedback" :submission="$submission" />
+                </div>
+            </div>
 
             @if($submission->media_paths && count($submission->media_paths))
                 <div class="card syncro-card-elevated border-0">

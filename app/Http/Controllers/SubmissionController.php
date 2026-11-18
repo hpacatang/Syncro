@@ -583,10 +583,14 @@ class SubmissionController extends Controller
                 return $locked;
             }
 
+            $actor = auth()->user();
+            $step = PairUpdateFormatter::step($actor, 'Approve post', $request->notes);
+
             $submission->update([
                 'status' => 'approved',
                 'workflow_status' => 'approved',
-                'org_review_notes' => $request->notes ?? 'Approved by organization'
+                'org_review_notes' => $request->notes ?? 'Approved by organization',
+                'pair_feedback' => PairUpdateFormatter::append($submission->pair_feedback, $step),
             ]);
 
             return response()->json([
@@ -632,11 +636,14 @@ class SubmissionController extends Controller
 
             $status = 'revised';
             $legacyStatus = 'under_review';
+            $actor = auth()->user();
+            $step = PairUpdateFormatter::step($actor, 'Send back for revision', $request->notes);
 
             $submission->update([
                 'workflow_status' => $status,
                 'org_review_notes' => $request->notes,
-                'status' => $legacyStatus
+                'status' => $legacyStatus,
+                'pair_feedback' => PairUpdateFormatter::append($submission->pair_feedback, $step),
             ]);
 
             return response()->json([

@@ -101,7 +101,7 @@
             <div id="lifecycleMessage-{{ $submission->id }}" class="small"></div>
         @elseif($submission->workflow_status === 'posted')
             @php
-                $isTimeReached = $submission->isPublicationTimeReached();
+                $postedDateTime = $submission->publicationDateTime() ?? $submission->posted_at ?? $submission->updated_at;
             @endphp
             <div class="p-3 bg-light rounded border border-success border-opacity-25 mb-2">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
@@ -111,38 +111,26 @@
                         </div>
                         <div class="small text-muted d-flex align-items-center flex-wrap">
                             <span class="me-1">Date &amp; Time:</span>
-                            @if($submission->publicationDateTime())
+                            @if($postedDateTime)
                                 <span id="displayedPostedAt-{{ $submission->id }}" class="text-dark fw-semibold d-inline-flex align-items-center">
-                                    <i class="bi bi-calendar-check me-1 text-success"></i><x-formatted-date :at="$submission->publicationDateTime()" format="M d, Y \a\t h:i A" />
+                                    <i class="bi bi-calendar-check me-1 text-success"></i><x-formatted-date :at="$postedDateTime" format="M d, Y \a\t h:i A" />
                                 </span>
                             @else
-                                <span id="displayedPostedAt-{{ $submission->id }}" class="text-muted ms-1">Not recorded</span>
+                                <span id="displayedPostedAt-{{ $submission->id }}" class="text-muted ms-1">Recorded</span>
                             @endif
                         </div>
                     </div>
                 </div>
 
-                @if($isTimeReached)
-                    <div class="pt-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
-                        <span class="badge bg-secondary py-1 px-2 d-inline-flex align-items-center">
-                            <i class="bi bi-lock-fill me-1"></i> Published &amp; Locked
-                        </span>
-                        <span class="small text-muted fst-italic">
-                            Publication time has arrived &mdash; post is live, view only, and cannot be undone.
-                        </span>
-                    </div>
-                @else
-                    <div class="pt-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
-                        <span class="badge bg-warning text-dark py-1 px-2 d-inline-flex align-items-center">
-                            <i class="bi bi-clock-history me-1"></i> Pending Auto-Publish
-                        </span>
-                        @if($isStaff)
-                            <button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center" id="editPostedDateBtn-{{ $submission->id }}" title="Change or edit publication date and time">
-                                <i class="bi bi-pencil-square me-1"></i> Edit Date / Time
-                            </button>
-                        @endif
-                    </div>
-                @endif
+                <div class="pt-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <span class="badge bg-secondary py-1 px-2 d-inline-flex align-items-center">
+                        <i class="bi bi-lock-fill me-1"></i> Published &amp; Locked
+                    </span>
+                    <span class="small text-muted fst-italic">
+                        Post is live, view only, and cannot be undone.
+                    </span>
+                </div>
+
                 @if($submission->meta_post_url)
                     <a class="btn btn-sm btn-outline-primary mt-2" href="{{ $submission->meta_post_url }}" target="_blank" rel="noopener noreferrer">
                         <i class="bi bi-box-arrow-up-right me-1"></i> View Facebook post

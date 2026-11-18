@@ -186,9 +186,24 @@ textarea {
     flex-direction: column;
     align-items: stretch;
     padding: 1rem 0.8rem;
-    position: relative;
+    position: sticky;
+    top: var(--syncro-rail-gap, 0.75rem);
+    height: calc(100vh - (var(--syncro-rail-gap, 0.75rem) * 2));
+    min-height: calc(100vh - (var(--syncro-rail-gap, 0.75rem) * 2));
     z-index: 1040;
     box-shadow: 0 8px 32px rgba(15, 57, 29, 0.35);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.syncro-rail::-webkit-scrollbar {
+    width: 4px;
+}
+.syncro-rail::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
 }
 
 .syncro-rail__brand {
@@ -209,7 +224,7 @@ textarea {
 }
 
 .syncro-rail__nav {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -762,7 +777,7 @@ body.syncro-nav-open {
 }
 
 .syncro-queue {
-    --queue-cols: minmax(10rem, 1.2fr) minmax(14rem, 2.2fr) minmax(9rem, max-content) minmax(8.5rem, max-content) 7.5rem;
+    --queue-cols: minmax(9rem, 1.1fr) minmax(12rem, 1.8fr) minmax(6.5rem, max-content) minmax(10.5rem, max-content) minmax(10rem, max-content);
     font-size: 0.8125rem;
     border-top: 1px solid var(--syncro-border);
 }
@@ -871,6 +886,7 @@ body.syncro-nav-open {
     font-size: 0.75rem;
     color: #6c757d;
     white-space: nowrap;
+    padding-right: 0.35rem;
 }
 
 .syncro-queue__actions {
@@ -975,16 +991,12 @@ body.syncro-nav-open {
 
 @media (max-width: 1399.98px) {
     .syncro-queue {
-        --queue-cols: minmax(8rem, 1.1fr) minmax(8rem, 1.6fr) minmax(8.5rem, max-content) minmax(6.2rem, max-content) 14.5rem;
+        --queue-cols: minmax(7.5rem, 1fr) minmax(8.5rem, 1.4fr) minmax(6rem, max-content) minmax(9.5rem, max-content) minmax(9.5rem, max-content);
         font-size: 0.78rem;
     }
 
-    .syncro-queue-actions__label {
-        display: none;
-    }
-
     .syncro-queue-actions__btn {
-        padding: 0.3rem 0.25rem;
+        padding: 0.25rem 0.5rem;
     }
 
     .syncro-queue__head,
@@ -1186,4 +1198,240 @@ body.syncro-nav-open {
 .syncro-app .modal-body .alert.border {
     border-color: var(--syncro-accent-soft) !important;
 }
+
+
+/* ============================================================
+   Sidebar Calendar Widget (Pair Side)
+   ============================================================ */
+.syncro-rail-calendar-container {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    margin-top: 0.35rem;
+    padding-top: 0.45rem;
+    margin-bottom: 0.35rem;
+}
+
+.syncro-rail-calendar {
+    width: 100%;
+}
+
+.syncro-rail-calendar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0.4rem;
+    margin-bottom: 0.4rem;
+}
+
+.syncro-rail-calendar__nav {
+    background: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    padding: 0.15rem 0.4rem !important;
+    cursor: pointer;
+    line-height: 1;
+    font-size: 0.88rem;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.syncro-rail-calendar__nav:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.syncro-rail-calendar__month {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.syncro-rail-calendar__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    row-gap: 3px;
+    column-gap: 2px;
+    padding: 0 0.1rem;
+}
+
+.syncro-rail-calendar__day-name {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.67rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding-bottom: 0.2rem;
+}
+
+.syncro-rail-calendar__day {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 25px;
+    padding: 1px;
+    border-radius: 5px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.76rem;
+    font-weight: 500;
+    cursor: pointer;
+    line-height: 1.1;
+    user-select: none;
+    transition: background 0.15s, color 0.15s;
+}
+
+.syncro-rail-calendar__day:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+.syncro-rail-calendar__day.has-posts {
+    background: rgba(0, 0, 0, 0.22);
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.syncro-rail-calendar__day.has-posts:hover {
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.syncro-rail-calendar__day.is-today {
+    border: 1.2px solid rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.syncro-rail-calendar__day.is-today.has-posts {
+    border: 1.2px solid rgba(255, 255, 255, 0.75);
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.syncro-rail-calendar__dot {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: #55d688;
+    margin-top: 3px;
+}
+
+.syncro-rail-calendar__dot.syncro-rail-calendar__dot--red,
+.syncro-rail-calendar__dot--red {
+    background-color: #ef4444 !important;
+}
+
+.syncro-rail-calendar__day.empty {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* ============================================================
+   Calendar Day Detail Modal
+   ============================================================ */
+.cal-post-card {
+    border-left: 3px solid var(--syncro-highlight, #2d7a4a);
+    background: #f8fdf9;
+    border-radius: 0 6px 6px 0;
+    padding: .65rem .9rem;
+    margin-bottom: .5rem;
+}
+.cal-post-card:last-child {
+    margin-bottom: 0;
+}
+
+/* ============================================================
+   Queue: Last Updated timestamp
+   ============================================================ */
+.syncro-queue-actions__updated {
+    font-size: .68rem;
+    line-height: 1.25;
+    color: #6c757d;
+    margin-top: .25rem;
+    text-align: center;
+    white-space: nowrap;
+    width: 100%;
+}
+
+/* ============================================================
+   Submission Horizontal Stepper Timeline (Matching PAIR)
+   ============================================================ */
+.syncro-stepper-timeline {
+    position: relative;
+    width: 100%;
+    padding: 0.6rem 0.25rem 0.25rem;
+}
+
+.syncro-stepper-line {
+    position: absolute;
+    top: 22px;
+    left: 12%;
+    right: 12%;
+    height: 3px;
+    background-color: #16a34a;
+    z-index: 1;
+}
+
+.syncro-stepper-steps {
+    position: relative;
+    z-index: 2;
+}
+
+.syncro-stepper-item {
+    flex: 1 1 0;
+    text-align: center;
+    padding: 0 4px;
+}
+
+.syncro-stepper-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 6px;
+    box-shadow: 0 0 0 4px #ffffff;
+    flex-shrink: 0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.syncro-stepper-circle--upcoming {
+    background-color: #e2e8f0 !important;
+    color: #94a3b8;
+}
+
+.syncro-stepper-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #94a3b8;
+}
+
+.syncro-stepper-dot-white {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ffffff;
+}
+
+.syncro-stepper-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 2px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.syncro-stepper-subtitle {
+    font-size: 0.72rem;
+    color: #64748b;
+    line-height: 1.25;
+}
+
 

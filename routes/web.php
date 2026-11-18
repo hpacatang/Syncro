@@ -128,6 +128,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/submissions', [SubmissionController::class, 'index']);
         Route::get('/submissions/pending', [SubmissionController::class, 'index']);
         Route::get('/submissions/lifecycle-updates', [SubmissionLifecycleController::class, 'updates']);
+        Route::get('/submissions/calendar', [SubmissionLifecycleController::class, 'calendarMonth'])->name('api.submissions.calendar.month');
+        Route::get('/submissions/calendar/day', [SubmissionLifecycleController::class, 'calendarDay'])->name('api.submissions.calendar.day');
         Route::get('/submissions/{submission}/lifecycle', [SubmissionLifecycleController::class, 'show']);
         Route::get('/submissions/{id}', [SubmissionController::class, 'show']);
         Route::put('/submissions/{id}', [SubmissionController::class, 'update']);

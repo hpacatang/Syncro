@@ -250,6 +250,120 @@ class SubmissionLifecycleController extends Controller
         ]);
     }
 
+    /**
+     * Return all scheduled post dates for a given month (for the calendar dot markers).
+     * GET /api/submissions/calendar?year=YYYY&month=MM
+     */
+    public function calendarMonth(Request $request)
+    {
+        $this->authorize('viewAny', Submission::class);
+
+        $request->validate([
+            'year'  => 'nullable|integer|min:2020|max:2100',
+            'month' => 'nullable|integer|min:1|max:12',
+        ]);
+
+        $year  = (int) $request->get('year',  now()->year);
+        $month = (int) $request->get('month', now()->month);
+
+        $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $end   = $start->copy()->endOfMonth();
+
+        $rows = Submission::withoutGlobalScopes()
+            ->with(['user:id,name,profile_name', 'enhancer:id,name,profile_name'])
+            ->where(function ($q) use ($start, $end) {
+                $q->whereBetween('scheduled_post_at', [$start, $end])
+                  ->orWhere(function ($sub) use ($start, $end) {
+                      $sub->whereNull('scheduled_post_at')
+                          ->whereBetween('posted_at', [$start, $end]);
+                  });
+            })
+            ->get(['id', 'scheduled_post_at', 'posted_at', 'workflow_status', 'original_caption',
+                   'article_title', 'submission_type', 'user_id', 'enhanced_by', 'updated_at']);
+
+        // Group day => count & status for dot markers
+        $days = [];
+        foreach ($rows as $row) {
+            $dt = $row->scheduled_post_at ?? $row->posted_at;
+            if ($dt) {
+                $day = (string) $dt->format('j');
+                if (!isset($days[$day])) {
+                    $days[$day] = [
+                        'count'      => 0,
+                        'has_posted' => false,
+                        'all_posted' => true,
+                        'is_posted'  => false,
+                        'is_past'    => $dt->copy()->startOfDay()->lt(now()->startOfDay()),
+                    ];
+                }
+                $days[$day]['count']++;
+                $isRowPosted = ($row->workflow_status === 'posted' || !empty($row->posted_at));
+                if ($isRowPosted) {
+                    $days[$day]['has_posted'] = true;
+                    $days[$day]['is_posted']  = true;
+                } else {
+                    $days[$day]['all_posted'] = false;
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'year'    => $year,
+            'month'   => $month,
+            'days'    => $days, // e.g. {"5": 2, "14": 1}
+        ]);
+    }
+
+    /**
+     * Return detailed posts scheduled for a specific date.
+     * GET /api/submissions/calendar/day?date=YYYY-MM-DD
+     */
+    public function calendarDay(Request $request)
+    {
+        $this->authorize('viewAny', Submission::class);
+
+        $request->validate(['date' => 'required|date_format:Y-m-d']);
+
+        $date  = Carbon::createFromFormat('Y-m-d', $request->get('date'));
+        $start = $date->copy()->startOfDay();
+        $end   = $date->copy()->endOfDay();
+
+        $rows = Submission::withoutGlobalScopes()
+            ->with(['user:id,name,profile_name', 'enhancer:id,name,profile_name', 'reviewDepartment'])
+            ->where(function ($q) use ($start, $end) {
+                $q->whereBetween('scheduled_post_at', [$start, $end])
+                  ->orWhere(function ($sub) use ($start, $end) {
+                      $sub->whereNull('scheduled_post_at')
+                          ->whereBetween('posted_at', [$start, $end]);
+                  });
+            })
+            ->orderByRaw('COALESCE(scheduled_post_at, posted_at) ASC')
+            ->get();
+
+        $data = $rows->map(function (Submission $s) {
+            $scheduleDt = $s->scheduled_post_at ?? $s->posted_at;
+            $publisher = $s->enhancer?->displayName()
+                ?? ($s->reviewOwnerLabel() !== 'PAIR' ? $s->reviewOwnerLabel() : 'PAIR Office');
+
+            return [
+                'id'                 => $s->id,
+                'caption'            => $s->isWebsiteArticle()
+                    ? ($s->article_title ?: \Illuminate\Support\Str::limit($s->original_caption, 90))
+                    : \Illuminate\Support\Str::limit($s->original_caption, 90),
+                'content_type'       => $s->contentTypeLabel(),
+                'workflow_status'    => $s->lifecycle()->label(),
+                'scheduled_at'       => $scheduleDt ? $scheduleDt->format('M j, Y h:i A') : '—',
+                'updated_at'         => $s->updated_at ? $s->updated_at->format('M j, Y h:i A') : '—',
+                'schedule_creator'   => $s->user?->displayName() ?? 'Unknown',
+                'assigned_publisher' => $publisher,
+                'review_url'         => route('dashboard.submissions.review', $s->id),
+            ];
+        });
+
+        return response()->json(['success' => true, 'date' => $request->get('date'), 'posts' => $data]);
+    }
+
     private function formatSubmission(Submission $submission): array
     {
         $lifecycle = $submission->lifecycle();

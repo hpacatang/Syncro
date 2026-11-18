@@ -13,7 +13,8 @@
     $previewBody = $body ?? ($submission->enhanced_caption ?: $submission->original_caption);
     $imagePath = collect($submission->media_paths ?? [])
         ->first(fn ($path) => is_string($path) && SubmissionMedia::isImage($path));
-    $imageUrl = $imagePath ? SubmissionMedia::url($imagePath) : null;
+    $resolvedMedia = $imagePath ? SubmissionMedia::resolve($imagePath) : null;
+    $imageUrl = $resolvedMedia ? SubmissionMedia::url($resolvedMedia['path']) : ($imagePath ? SubmissionMedia::url($imagePath) : null);
     $pageName = config('services.meta.page_name', 'USJR');
 @endphp
 
@@ -31,7 +32,7 @@
                     @if($live) data-preview-title-for="reviewTitle" @endif
                 >{{ $previewTitle }}</h2>
                 @if($imageUrl)
-                    <img src="{{ $imageUrl }}" class="img-fluid rounded mb-3 w-100" alt="Submission image preview" loading="lazy" decoding="async">
+                    <img src="{{ $imageUrl }}" class="img-fluid rounded mb-3 w-100" alt="Submission image preview" loading="lazy" decoding="async" onerror="this.onerror=null; this.style.display='none';">
                 @endif
                 <div
                     class="channel-preview__body"
@@ -52,7 +53,7 @@
                     @if($live) data-preview-body-for="reviewBody" @endif
                 >{{ $previewBody }}</div>
                 @if($imageUrl)
-                    <img src="{{ $imageUrl }}" class="img-fluid rounded w-100" alt="Submission image preview" loading="lazy" decoding="async">
+                    <img src="{{ $imageUrl }}" class="img-fluid rounded w-100" alt="Submission image preview" loading="lazy" decoding="async" onerror="this.onerror=null; this.style.display='none';">
                 @elseif(!empty($submission->links[0]))
                     <div class="border rounded p-3 bg-light">
                         <div class="small text-uppercase text-muted">Link preview</div>
