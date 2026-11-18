@@ -9,6 +9,12 @@
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
     @vite(['resources/css/vendor-icons.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="{{ asset('css/syncro.css') }}">
+    <style>
+        .syncro-rail-calendar__dot.syncro-rail-calendar__dot--yellow,
+        .syncro-rail-calendar__dot--yellow {
+            background-color: #facc15 !important;
+        }
+    </style>
 </head>
 <body class="syncro-app">
 <div id="syncroNavigationProgress" class="syncro-navigation-progress" role="progressbar" aria-label="Loading page" aria-valuemin="0" aria-valuemax="100" hidden></div>
@@ -411,14 +417,22 @@
 
                     const isPast = thisDate < today || ((typeof info === 'object' && info !== null) ? Boolean(info.is_past) : false);
                     const isPosted = (typeof info === 'object' && info !== null) ? (Boolean(info.is_posted) || Boolean(info.has_posted)) : false;
+                    const hasUnposted = (typeof info === 'object' && info !== null) ? (Boolean(info.has_unposted) || !Boolean(info.all_posted)) : (!isPosted);
+                    const backendColor = (typeof info === 'object' && info !== null) ? info.dot_color : null;
 
-                    if (isPast || isPosted) {
+                    dot.classList.remove('syncro-rail-calendar__dot--red', 'syncro-rail-calendar__dot--yellow');
+
+                    let statusDesc = 'scheduled';
+                    if (backendColor === 'yellow' || (isPast && (hasUnposted || !isPosted))) {
+                        dot.classList.add('syncro-rail-calendar__dot--yellow');
+                        statusDesc = 'past / not yet posted';
+                    } else if (backendColor === 'red' || isPosted) {
                         dot.classList.add('syncro-rail-calendar__dot--red');
+                        statusDesc = 'posted';
                     } else {
-                        dot.classList.remove('syncro-rail-calendar__dot--red');
+                        statusDesc = 'scheduled';
                     }
 
-                    const statusDesc = (isPast || isPosted) ? 'posted / past' : 'scheduled';
                     dayEl.setAttribute('title', MONTH_NAMES[month - 1] + ' ' + d + ', ' + year + ' (' + count + ' ' + statusDesc + ')');
                 }
             }

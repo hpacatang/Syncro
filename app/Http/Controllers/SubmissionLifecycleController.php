@@ -289,11 +289,12 @@ class SubmissionLifecycleController extends Controller
                 $day = (string) $dt->format('j');
                 if (!isset($days[$day])) {
                     $days[$day] = [
-                        'count'      => 0,
-                        'has_posted' => false,
-                        'all_posted' => true,
-                        'is_posted'  => false,
-                        'is_past'    => $dt->copy()->startOfDay()->lt(now()->startOfDay()),
+                        'count'        => 0,
+                        'has_posted'   => false,
+                        'all_posted'   => true,
+                        'is_posted'    => false,
+                        'has_unposted' => false,
+                        'is_past'      => $dt->copy()->startOfDay()->lt(now()->startOfDay()),
                     ];
                 }
                 $days[$day]['count']++;
@@ -302,10 +303,22 @@ class SubmissionLifecycleController extends Controller
                     $days[$day]['has_posted'] = true;
                     $days[$day]['is_posted']  = true;
                 } else {
-                    $days[$day]['all_posted'] = false;
+                    $days[$day]['all_posted']   = false;
+                    $days[$day]['has_unposted'] = true;
                 }
             }
         }
+
+        foreach ($days as $d => &$info) {
+            if ($info['is_past'] && ($info['has_unposted'] || ! $info['has_posted'])) {
+                $info['dot_color'] = 'yellow';
+            } elseif ($info['has_posted']) {
+                $info['dot_color'] = 'red';
+            } else {
+                $info['dot_color'] = 'green';
+            }
+        }
+        unset($info);
 
         return response()->json([
             'success' => true,

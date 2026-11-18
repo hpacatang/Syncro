@@ -145,7 +145,15 @@
     });
 
     document.querySelectorAll('.notif-open-link').forEach(function (a) {
-        a.addEventListener('click', async function (e) {
+        a.addEventListener('click', function (e) {
+            if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) {
+                const id = a.getAttribute('data-notif-id');
+                if (id && csrf) {
+                    markRead(id).catch(() => {});
+                }
+                return;
+            }
+
             const href = a.getAttribute('href');
             if (!href || href === '#') return;
 
@@ -154,7 +162,7 @@
 
             const id = a.getAttribute('data-notif-id');
             if (id && csrf) {
-                try { await markRead(id); } catch (err) {  }
+                markRead(id).catch(() => {});
             }
             window.location.assign(href);
         });

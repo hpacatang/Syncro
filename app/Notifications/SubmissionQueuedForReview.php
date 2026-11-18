@@ -47,7 +47,7 @@ class SubmissionQueuedForReview extends Notification
             'scheduled_post_at' => $scheduledPost,
             'type' => 'submission_queued',
             'open_enhance' => true,
-            'url' => route('dashboard', ['enhance' => $this->submission->id]),
+            'url' => route('dashboard.submissions.review', $this->submission),
         ], $submitter);
     }
 }

@@ -1323,6 +1323,11 @@ body.syncro-nav-open {
     background-color: #ef4444 !important;
 }
 
+.syncro-rail-calendar__dot.syncro-rail-calendar__dot--yellow,
+.syncro-rail-calendar__dot--yellow {
+    background-color: #facc15 !important;
+}
+
 .syncro-rail-calendar__day.empty {
     visibility: hidden;
     pointer-events: none;

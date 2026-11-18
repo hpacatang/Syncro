@@ -7,7 +7,6 @@ use App\Models\User;
 
 class NotificationTargetUrl
 {
-    
     public static function resolve(array $data, User $user): string
     {
         if (! empty($data['review_url'])) {
@@ -15,26 +14,31 @@ class NotificationTargetUrl
         }
 
         $submissionId = $data['submission_id'] ?? null;
+
+        if (! $submissionId && ! empty($data['url'])) {
+            if (preg_match('/submissions\/(\d+)/', $data['url'], $matches)
+                || preg_match('/[?&](?:enhance|submission)=(\d+)/', $data['url'], $matches)) {
+                $submissionId = (int) $matches[1];
+            }
+        }
+
         if ($submissionId) {
-            $submission = Submission::find($submissionId);
-            if ($submission) {
-                if ($user->isOrg()) {
+            $submission = Submission::withoutGlobalScopes()->find($submissionId);
+
+            if ($user->isOrg()) {
+                if ($submission) {
                     return route('org.submissions.review', $submission);
                 }
+                return route('org.submissions');
+            }
 
-                $needsEnhance = ! empty($data['open_enhance'])
-                    || ($data['type'] ?? '') === 'submission_queued'
-                    || in_array($submission->workflow_status, [
-                        'pending_submission', 'pending_pair_review',
-                        'submitted', 'under_peer_review', 'revised',
-                    ], true);
-
-                if ($needsEnhance) {
-                    return route('dashboard', ['enhance' => $submission->id]);
-                }
-
+            // For staff reviewers (PAIR, Department, Super Admin, Admin):
+            // Direct straight to the submission review page: /dashboard/submissions/{id}/review
+            if ($submission) {
                 return route('dashboard.submissions.review', $submission);
             }
+
+            return route('dashboard.submissions.review', (int) $submissionId);
         }
 
         if (! empty($data['url'])) {
@@ -46,3 +50,4 @@ class NotificationTargetUrl
             : route('dashboard.notifications');
     }
 }
+

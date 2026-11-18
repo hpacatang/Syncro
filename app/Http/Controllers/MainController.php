@@ -95,13 +95,29 @@ class MainController extends Controller
             ]
         );
 
+        $targetSubmissionId = (int) ($request->input('submission') ?: $request->input('enhance') ?: $request->input('highlight'));
+
+        if ($targetSubmissionId > 0 && $request->user()->isStaffReviewer()) {
+            \App\Support\ReviewNotificationCleaner::clearForSubmission($targetSubmissionId);
+        }
+
         $query = Submission::with(['user.department', 'reviewDepartment']);
         $filter = $this->applySubmissionFilters($query, $request, 'all');
-        $submissions = $query->paginate(10)->withQueryString();
 
-        if ($request->filled('enhance') && $request->user()->isStaffReviewer()) {
-            \App\Support\ReviewNotificationCleaner::clearForSubmission((int) $request->input('enhance'));
+        if ($targetSubmissionId > 0) {
+            $query->reorder()
+                ->orderByRaw('CASE WHEN submissions.id = ? THEN 0 ELSE 1 END', [$targetSubmissionId]);
+
+            $sortBy = $request->get('sort', 'created_at');
+            $allowedSort = ['created_at', 'updated_at', 'id'];
+            if (!in_array($sortBy, $allowedSort, true)) {
+                $sortBy = 'created_at';
+            }
+            $sortOrder = strtolower($request->get('order', 'desc')) === 'asc' ? 'asc' : 'desc';
+            $query->orderBy($sortBy, $sortOrder);
         }
+
+        $submissions = $query->paginate(10)->withQueryString();
 
         return view('main.dashboard', [
             'stats' => $stats,
@@ -109,6 +125,7 @@ class MainController extends Controller
             'currentFilter' => $filter,
             'currentSearch' => trim((string) $request->get('q', '')),
             'defaultCaptionTone' => AppSetting::get('caption_tone', 'formal'),
+            'targetSubmissionId' => $targetSubmissionId > 0 ? $targetSubmissionId : null,
         ]);
     }
 

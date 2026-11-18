@@ -77,6 +77,15 @@
                     </div>
                 </div>
                 <div class="syncro-panel__body syncro-panel__body--flush">
+                    @if(!empty($targetSubmissionId))
+                        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-3 mx-3 py-2 px-3 shadow-sm border-success" role="alert">
+                            <i class="bi bi-bell-fill text-success fs-5 me-2"></i>
+                            <div class="small">
+                                Showing submission <strong>#{{ $targetSubmissionId }}</strong> selected from notification. It has been prioritized and highlighted below.
+                            </div>
+                            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
                     @if(count($submissions) === 0)
                         <div class="text-center py-5 px-3">
                             <i class="fas fa-inbox text-muted" style="font-size: 3rem;"></i>
@@ -94,8 +103,18 @@
                             </div>
                             <ul class="syncro-queue__list list-unstyled mb-0">
                                 @foreach($submissions as $submission)
-                                    <li class="syncro-queue__item">
+                                    @php
+                                        $isTargeted = !empty($targetSubmissionId) && (int) $targetSubmissionId === (int) $submission->id;
+                                    @endphp
+                                    <li class="syncro-queue__item {{ $isTargeted ? 'syncro-queue__item--highlighted' : '' }}"
+                                        id="submission-{{ $submission->id }}"
+                                        @if($isTargeted) tabindex="-1" @endif>
                                         <div class="syncro-queue__org">
+                                            @if($isTargeted)
+                                                <span class="badge bg-success text-white mb-1 d-inline-flex align-items-center shadow-sm">
+                                                    <i class="bi bi-bullseye me-1"></i> From Notification
+                                                </span>
+                                            @endif
                                             <span class="syncro-queue__org-name" title="{{ $submission->user?->displayName() }}">
                                                 {{ $submission->user?->displayName() ?? 'Unknown' }}
                                             </span>
@@ -270,6 +289,45 @@
 
 @if(count($submissions ?? []) > 0)
 <x-submission-lifecycle-poll :submission-ids="collect($submissions)->pluck('id')->implode(',')" />
+@endif
+
+@push('styles')
+<style>
+.syncro-queue__item--highlighted {
+    background-color: #f0fdf4 !important;
+    border: 2px solid #16a34a !important;
+    border-radius: 8px;
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.25), 0 4px 14px rgba(0, 0, 0, 0.08) !important;
+    position: relative;
+    z-index: 5;
+    animation: syncroTargetPulse 2s ease-in-out infinite;
+}
+
+@keyframes syncroTargetPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.25), 0 4px 14px rgba(0, 0, 0, 0.08);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(22, 163, 74, 0.45), 0 6px 18px rgba(0, 0, 0, 0.12);
+    }
+}
+</style>
+@endpush
+
+@if(!empty($targetSubmissionId))
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const targetEl = document.getElementById('submission-{{ $targetSubmissionId }}');
+    if (targetEl) {
+        setTimeout(function () {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetEl.focus({ preventScroll: true });
+        }, 150);
+    }
+});
+</script>
+@endpush
 @endif
 
 @endsection
