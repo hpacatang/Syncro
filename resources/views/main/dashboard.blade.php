@@ -135,7 +135,7 @@
                                         <div class="syncro-queue__status">
                                             <x-submission-workflow-badge :submission="$submission" size="sm" />
                                         </div>
-                                        <div class="syncro-queue__date" @if($submission->created_at) title="Submitted: {{ $submission->created_at->format('M d, Y h:i A') }}" @endif>
+                                        <div class="syncro-queue__date" @if($submission->created_at) title="Submitted: {{ \App\Support\AppTime::format($submission->created_at, 'M d, Y h:i A') }}" @endif>
                                             <span class="d-block small text-muted">Submitted:</span>
                                             <span class="fw-semibold text-dark"><x-formatted-date :at="$submission->created_at" format="M d, Y" /></span>
                                             <small class="text-muted d-block"><i class="bi bi-clock me-1"></i><x-formatted-date :at="$submission->created_at" format="h:i A" /></small>

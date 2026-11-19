@@ -7,6 +7,7 @@ use App\Models\AppSetting;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\PairUpdateFormatter;
+use App\Support\AppTime;
 use App\Notifications\EnhancementReadyForOrg;
 use App\Notifications\SubmissionApproved;
 use App\Notifications\SubmissionQueuedForReview;
@@ -58,6 +59,7 @@ class SubmissionController extends Controller
                     ->max(SubmissionMedia::MAX_FILE_SIZE_KB),
             ],
         ]);
+        $scheduledPostAt = AppTime::parseLocal($validated['scheduled_post_at'] ?? null);
 
         $totalMediaBytes = collect($validated['media'] ?? [])
             ->filter(fn ($file) => $file instanceof UploadedFile && $file->isValid())
@@ -139,7 +141,8 @@ class SubmissionController extends Controller
                 $validated,
                 $mediaPaths,
                 $mediaFiles,
-                $mediaDisk
+                $mediaDisk,
+                $scheduledPostAt
             ): Submission {
                 $submission = Submission::create([
                     'user_id' => $user->id,
@@ -151,7 +154,7 @@ class SubmissionController extends Controller
                         ? $validated['article_title']
                         : null,
                     'original_caption' => $validated['original_caption'],
-                    'scheduled_post_at' => $validated['scheduled_post_at'] ?? null,
+                    'scheduled_post_at' => $scheduledPostAt,
                     'links' => array_values(array_filter(
                         $validated['links'] ?? [],
                         fn ($link) => is_string($link) && trim($link) !== ''
@@ -529,7 +532,13 @@ class SubmissionController extends Controller
                 'posted_at' => 'nullable|date',
                 'scheduled_post_at' => 'nullable|date',
             ]);
-            $submission->update($request->only('status', 'posted_at', 'scheduled_post_at'));
+            $updates = $request->only('status', 'posted_at', 'scheduled_post_at');
+            foreach (['posted_at', 'scheduled_post_at'] as $dateField) {
+                if (array_key_exists($dateField, $updates)) {
+                    $updates[$dateField] = AppTime::parseLocal($updates[$dateField]);
+                }
+            }
+            $submission->update($updates);
 
             return response()->json([
                 'success' => true,

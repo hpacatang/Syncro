@@ -11,6 +11,7 @@ use App\Support\SubmissionMedia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class SocialMediaPublisher
@@ -56,27 +57,66 @@ class SocialMediaPublisher
             fn ($path) => is_string($path) && trim($path) !== ''
         ));
 
-        $imageUrl = null;
+        $imagePath = null;
+        $imageStream = null;
+        $imageMimeType = null;
         if ($mediaPaths !== []) {
-            if (count($mediaPaths) !== 1 || ! SubmissionMedia::isImage($mediaPaths[0])) {
+            if (count($mediaPaths) !== 1 || ! SubmissionMedia::isMetaPublishableImage($mediaPaths[0])) {
                 return self::markFailed(
                     $submission,
-                    'Facebook publishing currently supports one public image attachment. Remove video or document attachments and try again.'
+                    'Facebook publishing currently supports one JPEG, PNG, GIF, BMP, or TIFF image up to 10 MB. Video, document, and multiple attachments are not supported.'
                 );
             }
 
-            $imageUrl = SubmissionMedia::publicUrl($mediaPaths[0]);
-            if (! $imageUrl) {
+            $imagePath = $mediaPaths[0];
+            $resolvedImage = SubmissionMedia::resolve($imagePath, false);
+            if (! $resolvedImage) {
                 return self::markFailed(
                     $submission,
-                    'The attached image is not publicly accessible to Facebook. Check its storage bucket permissions or publish without the attachment.'
+                    'The attached image could not be read from storage. Check the stored file and try again.'
                 );
             }
+
+            try {
+                $imageDisk = Storage::disk($resolvedImage['disk']);
+                $imageSize = $imageDisk->size($resolvedImage['path']);
+                if ($imageSize > SubmissionMedia::MAX_META_PHOTO_SIZE_BYTES) {
+                    return self::markFailed(
+                        $submission,
+                        'Facebook photo uploads must be 10 MB or smaller. Use a smaller image or publish without the attachment.'
+                    );
+                }
+
+                if ($imageSize < 1) {
+                    return self::markFailed($submission, 'The attached image is empty and cannot be published.');
+                }
+
+                $imageStream = $imageDisk->readStream($resolvedImage['path']);
+            } catch (Throwable $exception) {
+                Log::warning('Submission image could not be opened for Meta publishing.', [
+                    'submission_id' => $submission->id,
+                    'exception' => $exception::class,
+                ]);
+
+                return self::markFailed(
+                    $submission,
+                    'The attached image could not be read from storage. Check the stored file and try again.'
+                );
+            }
+
+            if (! is_resource($imageStream)) {
+                return self::markFailed(
+                    $submission,
+                    'The attached image could not be read from storage. Check the stored file and try again.'
+                );
+            }
+
+            $imageMimeType = SubmissionMedia::metaPhotoMimeType($imagePath);
         }
 
         $apiVersion = (string) config('services.meta.graph_api_version', 'v23.0');
         $endpoint = 'https://graph.facebook.com/'.$apiVersion.'/'.rawurlencode(trim($pageId));
-        $isPhoto = $imageUrl !== null;
+        $isPhoto = $imagePath !== null;
         $url = $endpoint.($isPhoto ? '/photos' : '/feed');
         $message = $caption;
 
@@ -87,7 +127,7 @@ class SocialMediaPublisher
         }
 
         $payload = $isPhoto
-            ? ['url' => $imageUrl, 'caption' => $message, 'published' => true]
+            ? ['caption' => $message, 'published' => true]
             : ['message' => $message];
 
         if (! $isPhoto && count($links) === 1) {
@@ -95,21 +135,48 @@ class SocialMediaPublisher
         }
 
         try {
-            $response = Http::withToken($token)
+            $request = Http::withToken($token)
                 ->acceptJson()
-                ->timeout(25)
-                ->post($url, $payload);
+                ->connectTimeout(10)
+                ->timeout(60);
+
+            if ($isPhoto) {
+                $request->attach(
+                    'source',
+                    $imageStream,
+                    basename($imagePath),
+                    ['Content-Type' => $imageMimeType]
+                );
+            }
+
+            $response = $request->post($url, $payload);
 
             if ($response->failed()) {
-                $error = $response->json('error.message');
+                $metaCode = $response->json('error.code');
+                $metaSubcode = $response->json('error.error_subcode');
+                $metaTraceId = $response->json('error.fbtrace_id');
+                $error = $response->json('error.error_user_msg') ?: $response->json('error.message');
                 $error = is_string($error) && trim($error) !== ''
                     ? mb_substr(trim($error), 0, 1000)
                     : 'Meta Graph API rejected the publishing request (HTTP '.$response->status().').';
+                $diagnostics = [];
+                if ($metaCode !== null) {
+                    $diagnostics[] = 'Meta code '.$metaCode.($metaSubcode !== null ? '/'.$metaSubcode : '');
+                }
+                if (is_string($metaTraceId) && trim($metaTraceId) !== '') {
+                    $diagnostics[] = 'trace '.$metaTraceId;
+                }
+                if ($diagnostics !== []) {
+                    $error .= ' ('.implode(', ', $diagnostics).').';
+                }
 
                 Log::warning('Meta rejected a submission publish request.', [
                     'submission_id' => $submission->id,
                     'http_status' => $response->status(),
-                    'meta_error_code' => $response->json('error.code'),
+                    'meta_error_code' => $metaCode,
+                    'meta_error_subcode' => $metaSubcode,
+                    'meta_error_type' => $response->json('error.type'),
+                    'meta_trace_id' => $metaTraceId,
                 ]);
 
                 return self::markFailed($submission, $error);
@@ -179,6 +246,10 @@ class SocialMediaPublisher
                 'The Facebook publishing request ended without a confirmed response. Verify the Page before retrying to avoid duplicate posts.',
                 'uncertain'
             );
+        } finally {
+            if (is_resource($imageStream)) {
+                fclose($imageStream);
+            }
         }
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\NotificationTargetUrl;
+use App\Support\AppTime;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\View\View;
@@ -69,8 +70,8 @@ class NotificationController extends Controller
                         }
                         $fromOrg ??= $legacyOrg;
                         $fromName ??= $legacyOrg;
-                        $submittedAt ??= $submission->created_at?->format('M d, Y h:i A');
-                        $scheduledPostAt ??= $submission->scheduled_post_at?->format('M d, Y h:i A');
+                        $submittedAt ??= AppTime::format($submission->created_at, 'M d, Y h:i A');
+                        $scheduledPostAt ??= AppTime::format($submission->scheduled_post_at, 'M d, Y h:i A');
                         if ($message === 'A new submission was added to the review queue.' && $legacyOrg) {
                             $message = "Submitted by {$legacyOrg} on {$submittedAt} for review.";
                         }
@@ -81,7 +82,7 @@ class NotificationController extends Controller
                     'id' => $n->id,
                     'read' => $n->read_at !== null,
                     'created_at' => $n->created_at?->toIso8601String(),
-                    'created_at_formatted' => $n->created_at?->format('M d, Y h:i A'),
+                    'created_at_formatted' => AppTime::format($n->created_at, 'M d, Y h:i A'),
                     'title' => $data['title'] ?? class_basename($n->type),
                     'from' => $fromOrg ?? $fromName,
                     'from_org' => $fromOrg,

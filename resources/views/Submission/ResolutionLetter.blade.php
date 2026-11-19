@@ -22,7 +22,7 @@
 
     <article class="card shadow-sm" id="resolutionLetter">
         <div class="card-body p-5">
-            <p class="text-muted mb-4">{{ $issuedOn->format('F j, Y') }}</p>
+            <p class="text-muted mb-4">{{ \App\Support\AppTime::format($issuedOn, 'F j, Y') }}</p>
 
             <p class="mb-0 fw-semibold">The Director</p>
             <p class="mb-4">Public Affairs and Institutional Relations (PAIR)</p>

@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Submission;
 use App\Notifications\Concerns\EnrichesNotificationPayload;
+use App\Support\AppTime;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -29,8 +30,8 @@ class SubmissionQueuedForReview extends Notification
         }
 
         $team = $this->submission->reviewOwnerLabel();
-        $submittedAt = ($this->submission->created_at ?? now())->format('M d, Y h:i A');
-        $scheduledPost = $this->submission->scheduled_post_at?->format('M d, Y h:i A');
+        $submittedAt = AppTime::format($this->submission->created_at ?? now(), 'M d, Y h:i A');
+        $scheduledPost = AppTime::format($this->submission->scheduled_post_at, 'M d, Y h:i A');
 
         $message = "Submitted by {$orgName} on {$submittedAt} for {$team} review.";
         if ($scheduledPost) {

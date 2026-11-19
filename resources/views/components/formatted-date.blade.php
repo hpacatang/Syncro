@@ -6,7 +6,7 @@
 ])
 
 @php
-    $value = $at instanceof \DateTimeInterface ? $at : null;
+    $value = $at instanceof \DateTimeInterface ? \App\Support\AppTime::toLocal($at) : null;
 @endphp
 
 @if($relative && $value)

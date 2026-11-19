@@ -1,6 +1,8 @@
 @props(['text' => '', 'submission' => null])
 
 @php
+    use App\Support\AppTime;
+
     $rawBlocks = array_values(array_filter(preg_split("/\n\s*\n/", trim((string) $text))));
 
     // If text is empty or missing lifecycle steps, build timeline events from submission
@@ -8,9 +10,9 @@
         $existingText = implode("\n", $rawBlocks);
         $wf = $submission->workflow_status;
         $actorName = $submission->enhancer?->displayName() ?? 'PAIR Reviewer';
-        $createdTime = $submission->created_at?->format('M d, Y h:i A') ?? now()->format('M d, Y h:i A');
-        $updatedTime = $submission->updated_at?->format('M d, Y h:i A') ?? $createdTime;
-        $postedTime = $submission->posted_at?->format('M d, Y h:i A') ?? $updatedTime;
+        $createdTime = AppTime::format($submission->created_at, 'M d, Y h:i A', AppTime::now()->format('M d, Y h:i A'));
+        $updatedTime = AppTime::format($submission->updated_at, 'M d, Y h:i A', $createdTime);
+        $postedTime = AppTime::format($submission->posted_at, 'M d, Y h:i A', $updatedTime);
 
         if (empty($rawBlocks)) {
             // Build full chronological timeline matching PAIR
@@ -71,6 +73,12 @@
                 $parts = explode('•', $cleanHeader);
                 $rawActor = trim($parts[0] ?? '');
                 $time = isset($parts[1]) ? trim($parts[1]) : null;
+                if ($time) {
+                    try {
+                        $time = AppTime::format(AppTime::parseLogTimestamp($time), 'M d, Y h:i A');
+                    } catch (\Throwable) {
+                    }
+                }
 
                 // Normalize actor name across all account types (Admin, PAIR, Department, etc.)
                 if (str_starts_with($rawActor, 'Review team - ')) {
@@ -88,15 +96,18 @@
                 if (! $time && $submission) {
                     $firstBullet = strtolower(trim($bullets[0] ?? ''));
                     if (str_contains($firstBullet, 'post') || str_contains($firstBullet, 'publish')) {
-                        $time = $submission->posted_at?->format('M d, Y h:i A');
+                        $time = AppTime::format($submission->posted_at, 'M d, Y h:i A');
                     } elseif (str_contains($firstBullet, 'approve')) {
-                        $time = $submission->updated_at?->format('M d, Y h:i A');
+                        $time = AppTime::format($submission->updated_at, 'M d, Y h:i A');
                     } elseif (str_contains($firstBullet, 'revision') || str_contains($firstBullet, 'reject')) {
-                        $time = $submission->updated_at?->format('M d, Y h:i A');
+                        $time = AppTime::format($submission->updated_at, 'M d, Y h:i A');
                     } elseif (str_contains($firstBullet, 'save') || str_contains($firstBullet, 'manual')) {
-                        $time = $submission->enhanced_at?->format('M d, Y h:i A') ?? $submission->updated_at?->format('M d, Y h:i A');
+                        $time = AppTime::format($submission->enhanced_at, 'M d, Y h:i A')
+                            ?: AppTime::format($submission->updated_at, 'M d, Y h:i A');
                     }
-                    $time = $time ?? $submission->updated_at?->format('M d, Y h:i A') ?? $submission->created_at?->format('M d, Y h:i A');
+                    $time = $time
+                        ?: AppTime::format($submission->updated_at, 'M d, Y h:i A')
+                        ?: AppTime::format($submission->created_at, 'M d, Y h:i A');
                 }
 
                 $formattedHeader = $time ? "[{$actor} • {$time}]" : "[{$actor}]";

@@ -36,10 +36,10 @@
                         $fromOrg ??= $legacyOrg;
                         $fromName ??= $legacyOrg;
                         if (!$submittedAt && $submission->created_at) {
-                            $submittedAt = $submission->created_at->format('M d, Y h:i A');
+                            $submittedAt = \App\Support\AppTime::format($submission->created_at, 'M d, Y h:i A');
                         }
                         if (!$scheduledPostAt && $submission->scheduled_post_at) {
-                            $scheduledPostAt = $submission->scheduled_post_at->format('M d, Y h:i A');
+                            $scheduledPostAt = \App\Support\AppTime::format($submission->scheduled_post_at, 'M d, Y h:i A');
                         }
                         if ($message === 'A new submission was added to the review queue.' && $legacyOrg) {
                             $message = "Submitted by {$legacyOrg} on {$submittedAt} for {$submission->reviewOwnerLabel()} review.";

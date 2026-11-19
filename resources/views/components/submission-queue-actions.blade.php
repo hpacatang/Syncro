@@ -2,6 +2,7 @@
 
 @php
     use App\Services\SubmissionLifecycleService;
+    use App\Support\AppTime;
 
     $isPair   = auth()->user()->isPair();
     $allowed  = auth()->user()->isStaffReviewer()
@@ -32,12 +33,12 @@
         $updatedTime = $submission->updated_at ?? $submission->created_at;
     @endphp
     @if($updatedTime)
-        <div class="syncro-queue-actions__updated text-center mt-1" title="Last updated: {{ $updatedTime->format('M d, Y h:i A') }}">
+        <div class="syncro-queue-actions__updated text-center mt-1" title="Last updated: {{ AppTime::format($updatedTime, 'M d, Y h:i A') }}">
             <div class="text-muted text-nowrap" style="font-size: 0.68rem; line-height: 1.25;">
-                <i class="bi bi-clock-history me-1 text-secondary"></i>Updated: <strong class="text-dark">{{ $updatedTime->format('M d, Y') }}</strong>
+                <i class="bi bi-clock-history me-1 text-secondary"></i>Updated: <strong class="text-dark">{{ AppTime::format($updatedTime, 'M d, Y') }}</strong>
             </div>
             <div class="text-muted text-nowrap" style="font-size: 0.65rem; line-height: 1.2;">
-                {{ $updatedTime->format('h:i A') }}
+                {{ AppTime::format($updatedTime, 'h:i A') }}
             </div>
         </div>
     @endif

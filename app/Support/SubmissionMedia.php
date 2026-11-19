@@ -13,9 +13,21 @@ final class SubmissionMedia
 
     public const MAX_TOTAL_SIZE_BYTES = 100 * 1024 * 1024;
 
+    public const MAX_META_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
+
     private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'jpe', 'jfif', 'png', 'webp', 'gif', 'avif', 'bmp'];
 
     private const ADDITIONAL_IMAGE_EXTENSIONS = ['heic', 'heif', 'tif', 'tiff'];
+
+    private const META_PHOTO_MIME_TYPES = [
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'bmp' => 'image/bmp',
+        'tif' => 'image/tiff',
+        'tiff' => 'image/tiff',
+    ];
 
     private const VIDEO_EXTENSIONS = ['mp4', 'mov', 'webm', 'ogg', 'avi', 'mkv', 'wmv', 'm4v', '3gp'];
 
@@ -42,6 +54,16 @@ final class SubmissionMedia
         );
     }
 
+    public static function isMetaPublishableImage(string $path): bool
+    {
+        return isset(self::META_PHOTO_MIME_TYPES[strtolower(pathinfo($path, PATHINFO_EXTENSION))]);
+    }
+
+    public static function metaPhotoMimeType(string $path): ?string
+    {
+        return self::META_PHOTO_MIME_TYPES[strtolower(pathinfo($path, PATHINFO_EXTENSION))] ?? null;
+    }
+
     public static function isVideo(string $path): bool
     {
         return in_array(
@@ -62,7 +84,7 @@ final class SubmissionMedia
         ]);
     }
 
-    public static function resolve(string $path): ?array
+    public static function resolve(string $path, bool $allowFallback = true): ?array
     {
         $path = ltrim($path, '/');
         if ($path === '') {
@@ -96,7 +118,7 @@ final class SubmissionMedia
         }
 
         // Fallback for missing local image attachments: pick an existing local image
-        if (self::isImage($path)) {
+        if ($allowFallback && self::isImage($path)) {
             try {
                 $existing = Storage::disk('public')->files('submissions/media');
                 $imageFiles = array_values(array_filter($existing, [self::class, 'isImage']));

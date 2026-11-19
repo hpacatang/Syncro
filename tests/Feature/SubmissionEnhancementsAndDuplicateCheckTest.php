@@ -10,6 +10,7 @@ use App\Notifications\SubmissionQueuedForReview;
 use App\Notifications\SubmissionUnderReview;
 use App\Services\ContentSimilarityChecker;
 use App\Services\SocialMediaPublisher;
+use App\Support\AppTime;
 use App\Support\SubmissionMedia;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -145,7 +146,8 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
     public function test_submission_accepts_scheduled_post_at_date_and_time(): void
     {
         $org = User::factory()->org()->create();
-        $targetDate = now()->addDays(3)->format('Y-m-d H:i:s');
+        $targetDate = AppTime::now()->addDays(3)->format('Y-m-d H:i:s');
+        $expectedDate = AppTime::parseLocal($targetDate);
 
         $response = $this->actingAs($org)->postJson('/api/submissions', [
             'original_caption' => 'Upcoming university event scheduled for next week.',
@@ -160,7 +162,7 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
         $this->assertNotNull($submission);
         $this->assertNotNull($submission->scheduled_post_at);
         $this->assertSame(
-            now()->addDays(3)->format('Y-m-d H:i'),
+            $expectedDate->format('Y-m-d H:i'),
             $submission->scheduled_post_at->format('Y-m-d H:i')
         );
     }
@@ -311,7 +313,8 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
             'status' => 'approved',
         ]);
 
-        $chosenPostDate = now()->addDays(2)->format('Y-m-d H:i:s');
+        $chosenPostDate = AppTime::now()->addDays(2)->format('Y-m-d H:i:s');
+        $expectedPostDate = AppTime::parseLocal($chosenPostDate);
 
         $response = $this->actingAs($admin)->postJson("/api/submissions/{$submission->id}/transition", [
             'status' => 'posted',
@@ -325,7 +328,10 @@ class SubmissionEnhancementsAndDuplicateCheckTest extends TestCase
 
         $this->assertSame('approved', $submission->workflow_status);
         $this->assertNull($submission->posted_at);
-        $this->assertSame($chosenPostDate, $submission->scheduled_post_at->format('Y-m-d H:i:s'));
+        $this->assertSame(
+            $expectedPostDate->format('Y-m-d H:i:s'),
+            $submission->scheduled_post_at->format('Y-m-d H:i:s')
+        );
         $this->assertStringContainsString('Scheduled Facebook publishing', $submission->pair_feedback ?? '');
     }
 

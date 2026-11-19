@@ -2,6 +2,7 @@
 
 @php
     use App\Submission\Enums\SubmissionLifecycleStatus;
+    use App\Support\AppTime;
 
     if (! $submission) {
         return;
@@ -28,7 +29,7 @@
         foreach ($keywords as $kw) {
             if (preg_match('/\[Review team[^\•\]]*\•\s*([^\]]+)\]\s*\n[^\n]*' . preg_quote($kw, '/') . '/i', $feedbackText, $m)) {
                 try {
-                    return \Carbon\Carbon::parse(trim($m[1]));
+                    return AppTime::parseLogTimestamp(trim($m[1]));
                 } catch (\Throwable $e) {}
             }
         }
@@ -37,8 +38,8 @@
 
     // Step 1: Submitted
     $submittedAt = $submission->created_at;
-    $submittedDate = $submittedAt?->format('M d, Y');
-    $submittedTime = $submittedAt?->format('h:i A');
+    $submittedDate = AppTime::format($submittedAt, 'M d, Y');
+    $submittedTime = AppTime::format($submittedAt, 'h:i A');
 
     // Step 2: Under Review
     $isUnderReviewReached = !in_array($wf, ['submitted', 'pending'], true);
@@ -46,16 +47,16 @@
         ?? $submission->enhanced_at
         ?? $submission->updated_at
         ?? $submission->created_at;
-    $reviewDate = $reviewAt?->format('M d, Y') ?? 'Oct 30, 2026';
-    $reviewTime = $reviewAt?->format('h:i A') ?? '10:51 AM';
+    $reviewDate = AppTime::format($reviewAt, 'M d, Y', 'Oct 30, 2026');
+    $reviewTime = AppTime::format($reviewAt, 'h:i A', '10:51 AM');
 
     // Step 3: Approved
     $isApprovedReached = in_array($wf, ['approved', 'posted'], true);
     $approvedAt = $findFeedbackTime(['Approve', 'approved'])
         ?? $submission->updated_at
         ?? $submission->created_at;
-    $approvedDate = $approvedAt?->format('M d, Y') ?? 'Oct 30, 2026';
-    $approvedTime = $approvedAt?->format('h:i A') ?? '10:51 AM';
+    $approvedDate = AppTime::format($approvedAt, 'M d, Y', 'Oct 30, 2026');
+    $approvedTime = AppTime::format($approvedAt, 'h:i A', '10:51 AM');
 
     // Step 4: Posted
     $isPostedReached = ($wf === 'posted');
@@ -63,8 +64,8 @@
     $postedAt = $submission->posted_at
         ?? $findFeedbackTime(['Mark as posted', 'posted', 'publish'])
         ?? $submission->updated_at;
-    $postedDate = $postedAt?->format('M d, Y') ?? 'Oct 30, 2026';
-    $postedTime = $postedAt?->format('h:i A') ?? '10:51 AM';
+    $postedDate = AppTime::format($postedAt, 'M d, Y', 'Oct 30, 2026');
+    $postedTime = AppTime::format($postedAt, 'h:i A', '10:51 AM');
 
     $isRejected = ($wf === 'rejected');
     $isRevised  = ($wf === 'revised');

@@ -313,9 +313,9 @@
     const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     const DAY_NAMES   = ['SU','MO','TU','WE','TH','FR','SA'];
 
-    let cur = new Date();
-    let viewYear  = cur.getFullYear();
-    let viewMonth = cur.getMonth() + 1; // 1-based
+    const todayKey = @json(\App\Support\AppTime::now()->format('Y-m-d'));
+    let viewYear  = Number(todayKey.slice(0, 4));
+    let viewMonth = Number(todayKey.slice(5, 7)); // 1-based
     let dotCache  = {};
 
     function pad(n) { return String(n).padStart(2, '0'); }
@@ -345,7 +345,7 @@
         for (let d = 1; d <= daysInMonth; d++) {
             const el = document.createElement('div');
             const thisDayStr = year + '-' + pad(month) + '-' + pad(d);
-            const isToday = (year === cur.getFullYear() && (month - 1) === cur.getMonth() && d === cur.getDate());
+            const isToday = thisDayStr === todayKey;
 
             el.className = 'syncro-rail-calendar__day' + (isToday ? ' is-today' : '');
             el.dataset.dayNum = String(d);
@@ -394,9 +394,6 @@
 
         if (year !== viewYear || month !== viewMonth) return;
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
         Object.keys(dots).forEach(d => {
             const info = dots[d];
             const count = (typeof info === 'object' && info !== null) ? info.count : Number(info);
@@ -412,10 +409,7 @@
                         dayEl.appendChild(dot);
                     }
 
-                    const thisDate = new Date(year, month - 1, parseInt(d, 10));
-                    thisDate.setHours(0, 0, 0, 0);
-
-                    const isPast = thisDate < today || ((typeof info === 'object' && info !== null) ? Boolean(info.is_past) : false);
+                    const isPast = typeof info === 'object' && info !== null && Boolean(info.is_past);
                     const isPosted = (typeof info === 'object' && info !== null) ? (Boolean(info.is_posted) || Boolean(info.has_posted)) : false;
                     const hasUnposted = (typeof info === 'object' && info !== null) ? (Boolean(info.has_unposted) || !Boolean(info.all_posted)) : (!isPosted);
                     const backendColor = (typeof info === 'object' && info !== null) ? info.dot_color : null;

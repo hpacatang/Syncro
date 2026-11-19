@@ -14,7 +14,7 @@
         fn ($path) => is_string($path) && trim($path) !== ''
     ));
     $metaMediaSupported = $mediaPaths === []
-        || (count($mediaPaths) === 1 && SubmissionMedia::isImage($mediaPaths[0]));
+        || (count($mediaPaths) === 1 && SubmissionMedia::isMetaPublishableImage($mediaPaths[0]));
 
     // Separate into ordered groups for consistent button layout
     $primaryActions = array_filter($allowed, fn($s) => in_array($s->value, ['approved', 'posted', 'under_peer_review', 'dept_approved'], true)
@@ -45,19 +45,19 @@
                 </div>
             @elseif($submission->workflow_status === 'approved' && ! $metaMediaSupported)
                 <div class="alert alert-warning py-2 small" role="status">
-                    This post cannot be sent to Facebook yet. The current proof of concept supports text-only posts or one public image; this submission has {{ count($mediaPaths) }} attachments. Video and multi-image publishing are not implemented.
+                    This post cannot be sent to Facebook yet. The current proof of concept supports text-only posts or one JPEG, PNG, GIF, BMP, or TIFF image up to 10 MB; this submission has {{ count($mediaPaths) }} attachments. Video, document, and multi-image publishing are not implemented.
                 </div>
             @elseif($submission->workflow_status === 'approved' && $submission->scheduled_post_at)
                 <div class="alert alert-primary py-2 small" role="status">
                     <i class="bi bi-calendar-event me-1"></i>
                     Facebook publishing to <strong>{{ $metaPageName }}</strong> is scheduled for
                     <strong><x-formatted-date :at="$submission->scheduled_post_at" format="M d, Y h:i A" /></strong>.
-                    The current proof of concept supports text or one public image; video and multi-image publishing are not implemented.
+                    The current proof of concept supports text or one supported image (up to 10 MB); video and multiple attachments are not implemented.
                 </div>
             @elseif($submission->workflow_status === 'approved')
                 <div class="alert alert-light border py-2 small" role="status">
                     <strong>Facebook destination:</strong> {{ $metaPageName }}.
-                    The current proof of concept publishes text or one public image; video and multi-image publishing are not implemented.
+                    The current proof of concept publishes text or one JPEG, PNG, GIF, BMP, or TIFF image up to 10 MB. Video and multiple attachments are not implemented.
                 </div>
             @endif
             @if($submission->meta_publish_status === 'failed' && $submission->meta_publish_error)
@@ -242,7 +242,7 @@
                     <div>
                         <strong class="text-dark">Destination: {{ $metaPageName }}.</strong>
                         Syncro publishes only after approval using the configured Page access token and Page ID. Scheduled posts are sent when their time arrives.
-                        This proof of concept supports text or one public image; video and multi-image publishing are not implemented.
+                        This proof of concept supports text or one JPEG, PNG, GIF, BMP, or TIFF image up to 10 MB. Video and multiple attachments are not implemented.
                     </div>
                 </div>
 
@@ -253,8 +253,8 @@
                         <i class="bi bi-clock me-1"></i>Now (Current Time)
                     </button>
                     @if($submission->scheduled_post_at)
-                        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2 small d-inline-flex align-items-center" id="useDesiredTimeBtn-{{ $submission->id }}" style="font-size: 0.82rem;" data-desired-date="{{ $submission->scheduled_post_at->format('Y-m-d\TH:i') }}">
-                            <i class="bi bi-calendar-check me-1"></i>Desired: {{ $submission->scheduled_post_at->format('M d, h:i A') }}
+                        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2 small d-inline-flex align-items-center" id="useDesiredTimeBtn-{{ $submission->id }}" style="font-size: 0.82rem;" data-desired-date="{{ \App\Support\AppTime::format($submission->scheduled_post_at, 'Y-m-d\TH:i') }}">
+                            <i class="bi bi-calendar-check me-1"></i>Desired: {{ \App\Support\AppTime::format($submission->scheduled_post_at, 'M d, h:i A') }}
                         </button>
                     @endif
                 </div>
@@ -267,7 +267,7 @@
                         type="datetime-local"
                         id="postingDateTime-{{ $submission->id }}"
                         class="form-control form-control-lg fw-semibold"
-                        value="{{ $submission->posted_at ? $submission->posted_at->format('Y-m-d\TH:i') : ($submission->scheduled_post_at ? $submission->scheduled_post_at->format('Y-m-d\TH:i') : now()->format('Y-m-d\TH:i')) }}"
+                        value="{{ \App\Support\AppTime::format($submission->posted_at ?? $submission->scheduled_post_at, 'Y-m-d\TH:i', \App\Support\AppTime::now()->format('Y-m-d\TH:i')) }}"
                         style="border: 1.5px solid #28a745; border-radius: 8px; font-size: 1.05rem;"
                         required>
                     <div class="form-text small text-muted">
@@ -577,9 +577,19 @@
 
     if (useCurrentBtn && postDateInput) {
         useCurrentBtn.addEventListener('click', function () {
-            const now = new Date();
-            const pad = n => String(n).padStart(2, '0');
-            postDateInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            const parts = new Intl.DateTimeFormat('en-CA', {
+                timeZone: @json(config('app.display_timezone', 'Asia/Manila')),
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hourCycle: 'h23',
+            }).formatToParts(new Date()).reduce((result, part) => {
+                if (part.type !== 'literal') result[part.type] = part.value;
+                return result;
+            }, {});
+            postDateInput.value = `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
             if (postDateError) postDateError.style.display = 'none';
         });
     }

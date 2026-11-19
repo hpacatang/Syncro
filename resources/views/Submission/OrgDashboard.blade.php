@@ -101,7 +101,7 @@
                                     </td>
                                     <td>
                                         <small>{{ $submission->enhancer?->name ?? 'Review team' }}</small>
-                                        <br><small class="text-muted">{{ $submission->enhanced_at?->format('M d, Y') }}</small>
+                                        <br><small class="text-muted">{{ \App\Support\AppTime::format($submission->enhanced_at, 'M d, Y') }}</small>
                                     </td>
                                     <td class="text-muted small"><x-formatted-date :at="$submission->created_at" format="M d" /></td>
                                     <td>

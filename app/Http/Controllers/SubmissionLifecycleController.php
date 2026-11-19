@@ -9,6 +9,7 @@ use App\Submission\Enums\SubmissionLifecycleStatus;
 use App\Submission\Exceptions\InvalidLifecycleTransitionException;
 use App\Support\PairUpdateFormatter;
 use App\Support\ReviewNotificationCleaner;
+use App\Support\AppTime;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -84,9 +85,9 @@ class SubmissionLifecycleController extends Controller
             }
 
             $publicationTime = $request->input('posted_at')
-                ? Carbon::parse($request->input('posted_at'))
+                ? AppTime::parseLocal($request->input('posted_at'))
                 : ($request->input('scheduled_post_at')
-                    ? Carbon::parse($request->input('scheduled_post_at'))
+                    ? AppTime::parseLocal($request->input('scheduled_post_at'))
                     : ($submission->scheduled_post_at ?? now()));
 
             if ($publicationTime->isFuture() && $submission->meta_publish_status === 'uncertain') {
@@ -115,7 +116,7 @@ class SubmissionLifecycleController extends Controller
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Facebook publishing scheduled for '.$publicationTime->format('M j, Y g:i A').'.',
+                    'message' => 'Facebook publishing scheduled for '.AppTime::format($publicationTime, 'M j, Y g:i A').'.',
                     'data' => $this->formatSubmission($submission->fresh()),
                 ]);
             }
@@ -263,11 +264,13 @@ class SubmissionLifecycleController extends Controller
             'month' => 'nullable|integer|min:1|max:12',
         ]);
 
-        $year  = (int) $request->get('year',  now()->year);
-        $month = (int) $request->get('month', now()->month);
+        $localNow = AppTime::now();
+        $year  = (int) $request->get('year',  $localNow->year);
+        $month = (int) $request->get('month', $localNow->month);
 
-        $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $end   = $start->copy()->endOfMonth();
+        $localStart = Carbon::createFromDate($year, $month, 1, AppTime::timezone())->startOfMonth();
+        $start = $localStart->copy()->utc();
+        $end   = $localStart->copy()->endOfMonth()->utc();
 
         $rows = Submission::withoutGlobalScopes()
             ->with(['user:id,name,profile_name', 'enhancer:id,name,profile_name'])
@@ -286,7 +289,8 @@ class SubmissionLifecycleController extends Controller
         foreach ($rows as $row) {
             $dt = $row->scheduled_post_at ?? $row->posted_at;
             if ($dt) {
-                $day = (string) $dt->format('j');
+                $localDateTime = AppTime::toLocal($dt);
+                $day = (string) $localDateTime->format('j');
                 if (!isset($days[$day])) {
                     $days[$day] = [
                         'count'        => 0,
@@ -294,7 +298,7 @@ class SubmissionLifecycleController extends Controller
                         'all_posted'   => true,
                         'is_posted'    => false,
                         'has_unposted' => false,
-                        'is_past'      => $dt->copy()->startOfDay()->lt(now()->startOfDay()),
+                        'is_past'      => $localDateTime->copy()->startOfDay()->lt($localNow->copy()->startOfDay()),
                     ];
                 }
                 $days[$day]['count']++;
@@ -338,9 +342,9 @@ class SubmissionLifecycleController extends Controller
 
         $request->validate(['date' => 'required|date_format:Y-m-d']);
 
-        $date  = Carbon::createFromFormat('Y-m-d', $request->get('date'));
-        $start = $date->copy()->startOfDay();
-        $end   = $date->copy()->endOfDay();
+        $date  = Carbon::createFromFormat('Y-m-d', $request->get('date'), AppTime::timezone());
+        $start = $date->copy()->startOfDay()->utc();
+        $end   = $date->copy()->endOfDay()->utc();
 
         $rows = Submission::withoutGlobalScopes()
             ->with(['user:id,name,profile_name', 'enhancer:id,name,profile_name', 'reviewDepartment'])
@@ -366,8 +370,8 @@ class SubmissionLifecycleController extends Controller
                     : \Illuminate\Support\Str::limit($s->original_caption, 90),
                 'content_type'       => $s->contentTypeLabel(),
                 'workflow_status'    => $s->lifecycle()->label(),
-                'scheduled_at'       => $scheduleDt ? $scheduleDt->format('M j, Y h:i A') : '—',
-                'updated_at'         => $s->updated_at ? $s->updated_at->format('M j, Y h:i A') : '—',
+                'scheduled_at'       => AppTime::format($scheduleDt, 'M j, Y h:i A', '—'),
+                'updated_at'         => AppTime::format($s->updated_at, 'M j, Y h:i A', '—'),
                 'schedule_creator'   => $s->user?->displayName() ?? 'Unknown',
                 'assigned_publisher' => $publisher,
                 'review_url'         => route('dashboard.submissions.review', $s->id),
@@ -390,7 +394,7 @@ class SubmissionLifecycleController extends Controller
             'progress_color' => $lifecycle->progressColor(),
             'progress_index' => $lifecycle->progressIndex(),
             'status' => $submission->status,
-            'updated_at' => $submission->updated_at?->toIso8601String(),
+            'updated_at' => AppTime::toLocal($submission->updated_at)?->toIso8601String(),
             'meta_publish_status' => $submission->meta_publish_status,
             'meta_post_url' => $submission->meta_post_url,
             'meta_publish_error' => $submission->meta_publish_error,

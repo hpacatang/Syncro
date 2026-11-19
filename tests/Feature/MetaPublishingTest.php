@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Submission;
 use App\Models\User;
+use App\Support\AppTime;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Facades\Http;
@@ -56,15 +57,16 @@ class MetaPublishingTest extends TestCase
         $admin = User::factory()->admin()->create();
         $submission = $this->approvedSocialSubmission();
 
-        $this->actingAs($admin)
+        $response = $this->actingAs($admin)
             ->postJson($this->transitionUrl($submission), [
                 'status' => 'posted',
                 'posted_at' => now()->format('Y-m-d H:i:s'),
             ])
             ->assertStatus(502)
-            ->assertJsonPath('message', 'Permission denied')
             ->assertJsonPath('data.meta_publish_status', 'failed');
 
+        $this->assertStringContainsString('Permission denied', $response->json('message'));
+        $this->assertStringContainsString('Meta code 200', $response->json('message'));
         $submission->refresh();
         $this->assertSame('approved', $submission->workflow_status);
         $this->assertSame('failed', $submission->meta_publish_status);
@@ -119,8 +121,8 @@ class MetaPublishingTest extends TestCase
             ->assertOk()
             ->assertSee('Destination: SyncroTest')
             ->assertSee('Publish / schedule')
-            ->assertSee('one public image')
-            ->assertSee('multi-image publishing are not implemented');
+            ->assertSee('one JPEG')
+            ->assertSee('multiple attachments are not implemented');
     }
 
     public function test_review_page_explains_when_attachment_mix_is_not_supported_by_meta_publishing(): void
@@ -137,7 +139,7 @@ class MetaPublishingTest extends TestCase
         $this->actingAs($admin)
             ->get(route('dashboard.submissions.review', $submission))
             ->assertOk()
-            ->assertSee('text-only posts or one public image')
+            ->assertSee('text-only posts or one JPEG')
             ->assertSee('this submission has 2 attachments')
             ->assertDontSee('Publish / schedule');
     }
@@ -151,7 +153,8 @@ class MetaPublishingTest extends TestCase
         Http::fake();
         $admin = User::factory()->admin()->create();
         $submission = $this->approvedSocialSubmission();
-        $scheduledAt = now()->addDay()->startOfMinute();
+        $scheduledAt = AppTime::now()->addDay()->startOfMinute();
+        $scheduledAtUtc = $scheduledAt->copy()->utc();
 
         $this->actingAs($admin)
             ->postJson($this->transitionUrl($submission), [
@@ -165,17 +168,18 @@ class MetaPublishingTest extends TestCase
 
         $submission->refresh();
         $this->assertSame('approved', $submission->workflow_status);
-        $this->assertSame($scheduledAt->format('Y-m-d H:i'), $submission->scheduled_post_at->format('Y-m-d H:i'));
+        $this->assertSame($scheduledAtUtc->format('Y-m-d H:i'), $submission->scheduled_post_at->format('Y-m-d H:i'));
         Http::assertNothingSent();
     }
 
-    public function test_meta_publishing_supports_one_public_image_attachment(): void
+    public function test_meta_publishing_uploads_one_supported_image_as_multipart_source(): void
     {
         config([
             'services.meta.access_token' => 'page-token-for-test',
             'services.meta.page_id' => '123456789',
             'services.meta.graph_api_version' => 'v23.0',
             'filesystems.default' => 'supabase',
+            'filesystems.disks.supabase.key' => 'test-storage-key',
             'filesystems.disks.supabase.public_url' => 'https://storage.example/public',
         ]);
         Storage::fake('supabase');
@@ -198,8 +202,62 @@ class MetaPublishingTest extends TestCase
         ])->assertOk();
 
         Http::assertSent(fn (ClientRequest $request) => str_ends_with($request->url(), '/photos')
-            && $request['url'] === 'https://storage.example/public/submissions/media/post.jpg'
-            && $request['published'] === true);
+            && $request->isMultipart()
+            && $request->hasFile('source', null, 'post.jpg'));
+    }
+
+    public function test_meta_publishing_reports_unsupported_video_and_document_attachments_without_calling_meta(): void
+    {
+        config([
+            'services.meta.access_token' => 'page-token-for-test',
+            'services.meta.page_id' => '123456789',
+        ]);
+        Http::fake();
+        $admin = User::factory()->admin()->create();
+
+        foreach (['submissions/media/clip.mp4', 'submissions/media/handout.pdf'] as $path) {
+            $submission = $this->approvedSocialSubmission(['media_paths' => [$path]]);
+
+            $this->actingAs($admin)
+                ->postJson($this->transitionUrl($submission), [
+                    'status' => 'posted',
+                    'posted_at' => AppTime::now()->format('Y-m-d H:i:s'),
+                ])
+                ->assertStatus(502)
+                ->assertJsonPath('message', 'Facebook publishing currently supports one JPEG, PNG, GIF, BMP, or TIFF image up to 10 MB. Video, document, and multiple attachments are not supported.');
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_meta_photo_upload_rejects_images_over_the_graph_api_size_limit(): void
+    {
+        config([
+            'services.meta.access_token' => 'page-token-for-test',
+            'services.meta.page_id' => '123456789',
+            'filesystems.default' => 'supabase',
+            'filesystems.disks.supabase.key' => 'test-storage-key',
+        ]);
+        Storage::fake('supabase');
+        Storage::disk('supabase')->put(
+            'submissions/media/large.jpg',
+            str_repeat('x', \App\Support\SubmissionMedia::MAX_META_PHOTO_SIZE_BYTES + 1)
+        );
+        Http::fake();
+        $admin = User::factory()->admin()->create();
+        $submission = $this->approvedSocialSubmission([
+            'media_paths' => ['submissions/media/large.jpg'],
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson($this->transitionUrl($submission), [
+                'status' => 'posted',
+                'posted_at' => AppTime::now()->format('Y-m-d H:i:s'),
+            ])
+            ->assertStatus(502)
+            ->assertJsonPath('message', 'Facebook photo uploads must be 10 MB or smaller. Use a smaller image or publish without the attachment.');
+
+        Http::assertNothingSent();
     }
 
     public function test_article_publish_is_rejected_until_a_cms_integration_is_configured(): void

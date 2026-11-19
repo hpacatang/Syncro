@@ -142,7 +142,7 @@
                                 id="scheduled_post_at" 
                                 name="scheduled_post_at" 
                                 class="form-control"
-                                min="{{ now()->format('Y-m-d\TH:i') }}">
+                                min="{{ \App\Support\AppTime::now()->format('Y-m-d\TH:i') }}">
                             <small class="text-muted d-block mt-2">
                                 <i class="fas fa-info-circle"></i> When would you like this post to be published once approved? Leave blank to publish immediately.
                             </small>
