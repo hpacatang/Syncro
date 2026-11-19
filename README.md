@@ -1,92 +1,170 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Syncro
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Syncro is a Laravel application for an academic institution to collect, review, and manage student and department publication submissions. Submitters can route work to a department reviewer or directly to PAIR for university-wide publication. Reviewers evaluate social posts and website article drafts; approved social posts can be published to a configured Facebook Page.
 
-## About Laravel
+## What the application does
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Accepts account requests and lets authorized staff approve or reject them.
+- Supports student/organization (`org`) submitters, department reviewer accounts, PAIR reviewers, admins, and super admins.
+- Routes submissions to a submitter's department or PAIR.
+- Supports social media posts and website article drafts, with optional links and multiple media attachments.
+- Tracks review and publication workflow, feedback, scheduling, and notifications.
+- Offers optional AI draft generation through OpenAI, Gemini, DeepSeek, or a reachable Ollama service. Manual drafting remains available.
+- Publishes approved social posts to a configured Facebook Page. Article publishing is not connected until the university CMS integration is available.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack and requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.2 or newer and Composer
+- Node.js and npm for frontend assets
+- SQLite for a convenient local development/test database; PostgreSQL is used for the hosted Supabase database
+- Laravel 12, Blade, Vite, Bootstrap, and Tailwind CSS
 
-## Submission content, review, and publishing
+## Local setup
 
-Submissions support two types: `social_media` posts (up to 2,200 characters) and `website_article` drafts (a headline and 100–12,000-character body). Existing clients that omit `submission_type` continue to create social-media submissions.
+1. Install PHP/Composer and Node.js/npm, then install dependencies:
 
-Submission attachments support up to 10 files, 50 MB each, and 100 MB total. The PHP settings in `public/.user.ini` apply to PHP-FPM/FastCGI deployments that allow per-directory overrides. Set the web server request-body limit to at least 130 MB as well (for example, Nginx `client_max_body_size 130M`) and ensure the Supabase Storage bucket allows files up to 50 MB. For local `php artisan serve`, `.user.ini` is not loaded: update the PHP CLI `php.ini` shown by `php --ini` with matching `upload_max_filesize`, `post_max_size`, and `max_file_uploads` values, then restart the server. Apache `mod_php` and managed hosts may also require these limits in their PHP/server configuration.
+   ```sh
+   composer install
+   npm ci
+   ```
 
-Reviewers can edit drafts manually or request an AI-generated draft. AI output is not saved or sent to submitters until a reviewer edits or confirms it with **Save & Send for Review**. Reviewers remain responsible for checking facts; prompts direct providers to preserve source facts and not invent details. Missing or expired provider keys leave manual review available.
+2. Create the local environment file and application key:
 
-Configure provider credentials in the server environment using `OPEN_AI_KEY`, `GEMINI_KEY`, or `DEEPSEEK_KEY`. The defaults are `gpt-5.4-mini`, `gemini-3.8-flash`, and `deepseek-flash`; optional overrides are `OPENAI_MODEL`, `GEMINI_MODEL`, and `DEEPSEEK_MODEL`. After changing environment values on a server with cached configuration, run `php artisan config:clear` and rebuild the config cache as part of deployment. Keep credentials server-side; do not put them in browser code.
+   ```sh
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-The submitter's draft generator also supports local Ollama. With Ollama running on a machine reachable by Laravel and `qwen3:8b` pulled, add `OLLAMA_BASE_URL=http://127.0.0.1:11434`, `OLLAMA_MODEL=qwen3:8b`, and optionally `OLLAMA_TIMEOUT=300` to `.env`. Draft generation runs in a queued job so slow local inference does not hold a web request open. The database queue is configured with a 420-second retry window for the job's 360-second timeout; keep `DB_QUEUE_RETRY_AFTER` greater than the worker timeout. For production, run a supervised queue worker such as `php artisan queue:work --tries=1 --timeout=360` and monitor failed jobs. The job still validates headline/body lengths and reports the manual fallback if Ollama is unavailable or returns invalid output. If Laravel is inside Docker, `127.0.0.1` points to the container; use a host-accessible Ollama address such as `http://host.docker.internal:11434` when supported by the Docker setup. For a hosted application, the worker must be able to reach Ollama over a private, secured network—do not expose the Ollama API publicly.
+   On PowerShell, use `Copy-Item .env.example .env` instead of `cp`.
 
-Approved social posts can be published to a Facebook Page using the [Page Feed](https://developers.facebook.com/docs/graph-api/reference/page/feed/) and [Page Photos](https://developers.facebook.com/docs/graph-api/reference/page/photos/) endpoints. Configure `META_ACCESS_TOKEN` with a **Page access token**, `META_PAGE_ID` with the destination Page ID, and optionally `META_PAGE_NAME` and `META_GRAPH_API_VERSION` (default `v23.0`). The token must have Meta's Page publishing permission, including `pages_manage_posts`; generate it for a Page the application is authorized to publish to. A user token alone may not be sufficient. The reviewer can publish immediately or schedule a future post; scheduled posts are checked every minute by `php artisan schedule:run` (use `php artisan schedule:work` locally). Failed API attempts are retained for review/retry. Publishing failures do not mark a submission as posted. The integration supports text/link posts and one JPEG, PNG, GIF, BMP, or TIFF image up to 10 MB, uploaded directly from application storage. Video, document, and multi-image publishing are not enabled. Verify the Facebook Page after ambiguous API responses before retrying.
+3. Configure local SQLite and storage in `.env`. The example file selects SQLite and local public storage; no Supabase, Meta, or AI credentials are needed for ordinary local development. Create the SQLite file if it does not exist:
 
-All timestamps are stored in UTC and displayed and entered using `APP_DISPLAY_TIMEZONE` (defaults to `Asia/Manila`). Set the same value in each web and queue-worker environment. If the setting changes, clear Laravel's cached configuration and restart web and queue processes.
+   ```sh
+   php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
+   ```
 
-The review and evaluation pages include channel previews for Facebook posts and website articles. They are representative previews, not exact platform renderings. Article publishing is intentionally disabled until the university CMS API is available. The manually configured Page token is server-side; this is not an OAuth account-connection flow. Do not commit, display, or log the token.
+   PowerShell alternative:
 
-Run `php artisan ai:check-providers` to send each configured provider a short synthetic prompt and report HTTP status, latency, usage, rate-limit headers, and safe error codes. It does not display keys, generated text, or provider error messages. This verifies current model/key access, not account billing or quotas; check each provider dashboard for those. Model context windows are larger than this workflow's intentional generation caps (900 output tokens for social posts and 3,000 for website articles), so long-form article quality/output length can still be constrained by the application prompt and cap. See the [OpenAI GPT-5.4 Mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini), [Gemini 3.8 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash), and [DeepSeek API model documentation](https://api-docs.deepseek.com/quick_start/pricing) for current provider limits and availability.
+   ```powershell
+   if (-not (Test-Path database\database.sqlite)) { New-Item -ItemType File database\database.sqlite }
+   ```
 
-## Local frontend assets and storage troubleshooting
+4. Run migrations and build the frontend:
 
-Bootstrap CSS is served from `public/css`, while Bootstrap JavaScript, Bootstrap Icons, and Font Awesome are bundled locally. After checkout or changing frontend assets, run `npm ci` and `npm run build`; deployments must include the resulting `public/build` assets and manifest. The application views no longer require icon stylesheets from jsDelivr or cdnjs.
+   ```sh
+   php artisan migrate
+   npm run build
+   ```
 
-The staff dashboard and media gallery must not query Supabase Storage to check each object while rendering HTML. Media object reads happen only when the browser requests a media URL. A PHP fatal error in Guzzle's `CurlMultiHandler` indicates a stalled outbound HTTP request, not by itself a PostgreSQL failure; this app's S3-compatible Supabase Storage adapter also uses Guzzle. A read-only database check and storage-object check can be run separately with Laravel Tinker:
+5. Start the app. In separate terminals, run:
 
-```powershell
-php artisan tinker --execute="DB::select('select 1');"
-php artisan tinker --execute="Storage::disk('supabase')->exists(DB::table('media')->whereNotNull('path')->value('path'));"
+   ```sh
+   php artisan serve
+   npm run dev
+   php artisan queue:work --tries=1 --timeout=360
+   php artisan schedule:work
+   ```
+
+   The queue worker is needed for queued AI draft generation. The scheduler checks due Facebook posts. If you only need to work on a page or synchronous feature, the app and Vite processes may be enough.
+
+`composer run dev` is also available and starts the Laravel server, queue listener, log tail, and Vite together. It requires the Composer script's `npx concurrently` dependency.
+
+### Optional demo data
+
+Run `php artisan db:seed` only against a disposable local database. The seeder creates demo accounts and sample submissions; do not use those accounts or credentials in a shared or production environment. Tests should normally create only the records they need with model factories.
+
+## Tests and checks
+
+PHPUnit is configured to use an in-memory SQLite database, array cache/session, and synchronous queue. The test suite does not require access to the configured Supabase, Meta, or AI services; tests should fake HTTP, queue, and storage interactions.
+
+Run the complete suite:
+
+```sh
+php artisan test
 ```
 
-The storage check requires at least one media row with a path. Avoid logging or sharing `.env` values, authorization headers, signed URLs, or full exception request options when diagnosing connectivity.
+Run a focused test file or case while iterating:
 
-## Learning Laravel
+```sh
+php artisan test tests/Feature/DepartmentWorkflowTest.php
+php artisan test --filter=department_reviewer_can_review
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Useful focused suites:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Area | Test file |
+| --- | --- |
+| Account requests and login | `tests/Feature/AccountRequestTest.php` |
+| Roles, department routing, and reviewer boundaries | `tests/Feature/DepartmentWorkflowTest.php`, `tests/Feature/SubmissionAccessControlTest.php`, `tests/Feature/DefenseReadinessTest.php` |
+| Submission types, AI drafting, and review | `tests/Feature/SubmissionContentEvaluationTest.php` |
+| Upload validation, duplicate detection, scheduling, and notifications | `tests/Feature/SubmissionEnhancementsAndDuplicateCheckTest.php`, `tests/Feature/MediaNotificationOwnershipTest.php` |
+| Facebook publishing behavior | `tests/Feature/MetaPublishingTest.php` |
+| Display and storage time conversion | `tests/Feature/AppTimeTest.php` |
+| Profile updates | `tests/Feature/ProfileManagementTest.php` |
+| Lifecycle rules and media helpers | `tests/Unit/SubmissionLifecycleServiceTest.php`, `tests/Unit/SubmissionLifecycleStatusTest.php`, `tests/Unit/SubmissionMediaTest.php` |
 
-## Laravel Sponsors
+Before submitting a change, run the narrowest relevant test(s), then the full suite when practical. For Blade changes, also run `php artisan view:cache`; for PHP formatting, use `vendor/bin/pint --test`; for frontend changes, run `npm run build`. Run `git diff --check` to catch whitespace errors.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+If a test fails, reproduce it by itself and compare the failure to the branch's baseline before attributing it to your change. Avoid changing unrelated behavior just to make a focused test pass.
 
-### Premium Partners
+## Architecture map
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+| Location | Responsibility |
+| --- | --- |
+| `app/Http/Controllers/` | Web/API request handling |
+| `app/Models/` | Eloquent models and relationships |
+| `app/Policies/`, `app/Http/Middleware/` | Authorization and role/dept boundaries |
+| `app/Services/` | Submission lifecycle, drafting, similarity checks, publishing, and audit behavior |
+| `app/Jobs/` | Queued work, including AI draft generation |
+| `app/Support/` | Shared time, media, notifications, and formatting helpers |
+| `app/Console/Commands/` | Scheduled publishing and provider diagnostics |
+| `routes/web.php`, `routes/api.php`, `routes/console.php` | Web, API, and scheduled routes |
+| `database/migrations/`, `database/factories/`, `database/seeders/` | Schema evolution and test/demo data |
+| `resources/views/` | Blade pages and reusable UI components |
+| `tests/Feature/`, `tests/Unit/` | Workflow/integration and isolated behavior tests |
 
-## Contributing
+Submissions use `workflow_status` for their lifecycle; the legacy `status` column remains for compatibility with existing views/data. `review_department_id = null` means PAIR; otherwise the submission is routed to that department. A department is a `users` account with role `department`, linked to the `departments` identifier table through `department_id`.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Optional integrations
 
-## Code of Conduct
+Add credentials to the server-side `.env` only. Never commit secrets, paste them into tests, or include them in logs or screenshots.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### AI draft generation
 
-## Security Vulnerabilities
+- OpenAI: `OPEN_AI_KEY`; optional `OPENAI_MODEL` (defaults to `gpt-5.4-mini`)
+- Gemini: `GEMINI_KEY`; optional `GEMINI_MODEL` (defaults to `gemini-3.8-flash`)
+- DeepSeek: `DEEPSEEK_KEY`; optional `DEEPSEEK_MODEL` (defaults to `deepseek-flash`)
+- Ollama: `OLLAMA_BASE_URL` (defaults to `http://127.0.0.1:11434`), `OLLAMA_MODEL` (defaults to `qwen3:8b`), and optional `OLLAMA_TIMEOUT` (defaults to 300 seconds)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+The Ollama service must be reachable from the Laravel process. Draft generation is queued; run a worker and ensure the queue retry window exceeds the job timeout. If Laravel runs in a container, `127.0.0.1` refers to that container, not the host. Do not expose Ollama's API publicly.
 
-## License
+AI-generated text is a draft, not a verified source. Reviewers are responsible for checking facts before approval.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Run `php artisan ai:check-providers` to check configured AI providers with short synthetic requests. The command reports safe diagnostic metadata, not generated text or credentials; it does not establish account quota or billing status.
+
+### Facebook Page publishing
+
+Configure `META_ACCESS_TOKEN` with a Page access token and `META_PAGE_ID` with the target Page ID. Optional settings are `META_PAGE_NAME` (defaults to `USJR`) and `META_GRAPH_API_VERSION` (defaults to `v23.0`). The token must have the Page publishing permission required by Meta, including `pages_manage_posts`.
+
+Publishing supports text/link posts and one JPEG, PNG, GIF, BMP, or TIFF image up to 10 MB. Videos, documents, and multiple attachments are not currently published. Article publishing remains unavailable until a university CMS integration exists. Verify the Page after an ambiguous API response before retrying.
+
+### Storage and uploads
+
+The local example uses Laravel's `public` disk. For Supabase Storage, configure `FILESYSTEM_DISK=supabase` and the `SUPABASE_S3_KEY`, `SUPABASE_S3_SECRET`, `SUPABASE_S3_REGION`, `SUPABASE_BUCKET`, `SUPABASE_S3_ENDPOINT`, and `SUPABASE_PUBLIC_BASE_URL` values. Keep bucket credentials private.
+
+Submissions accept up to 10 attachments, 50 MB each, and 100 MB total. The PHP upload limits and web server request-body limit must allow the intended upload size. `public/.user.ini` applies only to PHP-FPM/FastCGI configurations that honor per-directory overrides; local `php artisan serve` uses the CLI `php.ini` reported by `php --ini`.
+
+## Contribution guide
+
+1. Read [`AGENTS.md`](./AGENTS.md) for repository-specific engineering guidance.
+2. Find the closest existing controller/service/view/test pattern before adding a new abstraction.
+3. Keep changes focused, preserve role and department authorization at the server, and add/update tests for behavior changes.
+4. Use fakes for external services and avoid network calls in automated tests.
+5. Do not run `migrate:fresh` against any database with data you need. Migrations should be additive/reversible where practical and tested on SQLite and PostgreSQL-sensitive paths as applicable.
+6. Describe user-visible behavior and any manual setup or verification required in your change summary.
+
+## Additional references
+
+- Laravel 12 documentation: https://laravel.com/docs/12.x
+- Meta Graph API Pages documentation: https://developers.facebook.com/docs/pages-api/
+- Ollama API documentation: https://github.com/ollama/ollama/blob/main/docs/api.md
