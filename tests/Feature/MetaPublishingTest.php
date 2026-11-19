@@ -104,6 +104,71 @@ class MetaPublishingTest extends TestCase
         $this->assertSame('posted', $submission->workflow_status);
     }
 
+    public function test_review_page_shows_the_configured_meta_destination_for_an_approved_social_post(): void
+    {
+        config([
+            'services.meta.access_token' => 'page-token-for-test',
+            'services.meta.page_id' => '123456789',
+            'services.meta.page_name' => 'SyncroTest',
+        ]);
+        $admin = User::factory()->admin()->create();
+        $submission = $this->approvedSocialSubmission();
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.submissions.review', $submission))
+            ->assertOk()
+            ->assertSee('Destination: SyncroTest')
+            ->assertSee('Publish / schedule')
+            ->assertSee('one public image')
+            ->assertSee('multi-image publishing are not implemented');
+    }
+
+    public function test_review_page_explains_when_attachment_mix_is_not_supported_by_meta_publishing(): void
+    {
+        config([
+            'services.meta.access_token' => 'page-token-for-test',
+            'services.meta.page_id' => '123456789',
+        ]);
+        $admin = User::factory()->admin()->create();
+        $submission = $this->approvedSocialSubmission([
+            'media_paths' => ['submissions/media/first.jpg', 'submissions/media/second.jpg'],
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.submissions.review', $submission))
+            ->assertOk()
+            ->assertSee('text-only posts or one public image')
+            ->assertSee('this submission has 2 attachments')
+            ->assertDontSee('Publish / schedule');
+    }
+
+    public function test_reviewer_can_schedule_an_approved_social_post_without_publishing_it_immediately(): void
+    {
+        config([
+            'services.meta.access_token' => 'page-token-for-test',
+            'services.meta.page_id' => '123456789',
+        ]);
+        Http::fake();
+        $admin = User::factory()->admin()->create();
+        $submission = $this->approvedSocialSubmission();
+        $scheduledAt = now()->addDay()->startOfMinute();
+
+        $this->actingAs($admin)
+            ->postJson($this->transitionUrl($submission), [
+                'status' => 'posted',
+                'posted_at' => $scheduledAt->format('Y-m-d H:i:s'),
+                'scheduled_post_at' => $scheduledAt->format('Y-m-d H:i:s'),
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertSee('scheduled');
+
+        $submission->refresh();
+        $this->assertSame('approved', $submission->workflow_status);
+        $this->assertSame($scheduledAt->format('Y-m-d H:i'), $submission->scheduled_post_at->format('Y-m-d H:i'));
+        Http::assertNothingSent();
+    }
+
     public function test_meta_publishing_supports_one_public_image_attachment(): void
     {
         config([

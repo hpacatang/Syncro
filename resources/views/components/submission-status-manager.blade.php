@@ -2,14 +2,24 @@
 
 @php
     use App\Services\SubmissionLifecycleService;
+    use App\Support\SubmissionMedia;
 
     $isStaff  = auth()->user()->isStaffReviewer();
     $isPair   = auth()->user()->isPair();
     $allowed  = $isStaff ? app(SubmissionLifecycleService::class)->allowedTransitions($submission, auth()->user()) : [];
+    $metaConfigured = filled(config('services.meta.access_token')) && filled(config('services.meta.page_id'));
+    $metaPageName = trim((string) config('services.meta.page_name', 'Facebook Page')) ?: 'Facebook Page';
+    $mediaPaths = array_values(array_filter(
+        is_array($submission->media_paths) ? $submission->media_paths : [],
+        fn ($path) => is_string($path) && trim($path) !== ''
+    ));
+    $metaMediaSupported = $mediaPaths === []
+        || (count($mediaPaths) === 1 && SubmissionMedia::isImage($mediaPaths[0]));
 
     // Separate into ordered groups for consistent button layout
     $primaryActions = array_filter($allowed, fn($s) => in_array($s->value, ['approved', 'posted', 'under_peer_review', 'dept_approved'], true)
-        && ! ($submission->isWebsiteArticle() && $s->value === 'posted'));
+        && ! ($submission->isWebsiteArticle() && $s->value === 'posted')
+        && ! ($s->value === 'posted' && (! $metaConfigured || ! $metaMediaSupported)));
     $revisionAction = array_filter($allowed, fn($s) => $s->value === 'revised');
     $rejectAction   = array_filter($allowed, fn($s) => $s->value === 'rejected');
 @endphp
@@ -29,11 +39,25 @@
                 <div class="alert alert-info py-2 small">
                     Website article publishing is waiting for an approved university CMS API integration.
                 </div>
-            @elseif($submission->scheduled_post_at && $submission->workflow_status === 'approved')
-                <div class="alert alert-primary py-2 small">
+            @elseif($submission->workflow_status === 'approved' && ! $metaConfigured)
+                <div class="alert alert-warning py-2 small" role="status">
+                    Facebook publishing is not configured. Set the Page access token and Page ID to enable publishing.
+                </div>
+            @elseif($submission->workflow_status === 'approved' && ! $metaMediaSupported)
+                <div class="alert alert-warning py-2 small" role="status">
+                    This post cannot be sent to Facebook yet. The current proof of concept supports text-only posts or one public image; this submission has {{ count($mediaPaths) }} attachments. Video and multi-image publishing are not implemented.
+                </div>
+            @elseif($submission->workflow_status === 'approved' && $submission->scheduled_post_at)
+                <div class="alert alert-primary py-2 small" role="status">
                     <i class="bi bi-calendar-event me-1"></i>
-                    Facebook publishing is scheduled for
+                    Facebook publishing to <strong>{{ $metaPageName }}</strong> is scheduled for
                     <strong><x-formatted-date :at="$submission->scheduled_post_at" format="M d, Y h:i A" /></strong>.
+                    The current proof of concept supports text or one public image; video and multi-image publishing are not implemented.
+                </div>
+            @elseif($submission->workflow_status === 'approved')
+                <div class="alert alert-light border py-2 small" role="status">
+                    <strong>Facebook destination:</strong> {{ $metaPageName }}.
+                    The current proof of concept publishes text or one public image; video and multi-image publishing are not implemented.
                 </div>
             @endif
             @if($submission->meta_publish_status === 'failed' && $submission->meta_publish_error)
@@ -216,7 +240,9 @@
                 <div class="alert alert-light border small text-muted py-2 px-3 mb-3 d-flex align-items-start gap-2" style="background-color: #f8fafc; border-radius: 8px;">
                     <i class="bi bi-broadcast text-success fs-5 mt-0"></i>
                     <div>
-                        <strong class="text-dark">Facebook publishing:</strong> Syncro publishes only after approval using <code>META_ACCESS_TOKEN</code> and <code>META_PAGE_ID</code>. Scheduled posts are sent when their time arrives. A real Page access token and Page ID are required.
+                        <strong class="text-dark">Destination: {{ $metaPageName }}.</strong>
+                        Syncro publishes only after approval using the configured Page access token and Page ID. Scheduled posts are sent when their time arrives.
+                        This proof of concept supports text or one public image; video and multi-image publishing are not implemented.
                     </div>
                 </div>
 
